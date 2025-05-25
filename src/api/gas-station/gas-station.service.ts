@@ -11,8 +11,8 @@ import { SearchFilters, SearchResult, StatisticsResult } from './interfaces/gas-
 
 
 @Injectable()
-export class CollectorService {
-  private readonly logger = new Logger(CollectorService.name);
+export class GasStationService {
+  private readonly logger = new Logger(GasStationService.name);
 
   constructor(
     @InjectRepository(GasStation)

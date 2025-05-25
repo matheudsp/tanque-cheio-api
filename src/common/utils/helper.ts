@@ -1,4 +1,3 @@
-// Estado -> Sigla (cache imutável, carregado 1x)
 const ESTADOS_SIGLAS_MAP: Readonly<Record<string, string>> = Object.freeze({
   "ACRE": "AC",
   "ALAGOAS": "AL",

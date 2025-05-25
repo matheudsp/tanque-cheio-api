@@ -1,8 +1,9 @@
 import { Module } from '@nestjs/common';
-import { CollectorModule } from './collector/gas-station.module';
+import { GasStationModule } from './gas-station/gas-station.module';
+import { DataSyncModule } from './data-sync/data-sync.module';
 
 @Module({
-  imports: [CollectorModule],
+  imports: [GasStationModule, DataSyncModule],
   controllers: [],
   providers: [],
 })

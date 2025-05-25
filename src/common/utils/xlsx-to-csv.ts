@@ -1,33 +1,10 @@
-// src/common/utils/file-processor.util.ts
 import * as XLSX from 'xlsx';
 import { writeFile, unlink } from 'fs/promises';
 import { join } from 'path';
 import { createReadStream } from 'fs';
 import { Logger } from '@nestjs/common';
+import type { FileProcessorConfig, FileValidationResult, ProcessedFileResult } from '@/api/data-sync/interfaces/file-processor-csv.interface';
 
-export interface FileProcessorConfig {
-  tempDir?: string;
-  maxFileSize?: number; // em bytes
-  allowedExtensions?: string[];
-}
-
-export interface ProcessedFileResult {
-  csvPath: string;
-  originalName: string;
-  rowCount: number;
-  columnCount: number;
-  headers: string[];
-  tempFiles: string[]; // arquivos temporários para limpeza
-}
-
-export interface FileValidationResult {
-  isValid: boolean;
-  errors: string[];
-  warnings: string[];
-  rowCount: number;
-  emptyRows: number;
-  duplicateRows: number;
-}
 
 export class XlsxToCsv {
   private readonly logger = new Logger(XlsxToCsv.name);

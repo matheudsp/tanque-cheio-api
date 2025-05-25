@@ -10,11 +10,11 @@ import {
 import * as Papa from 'papaparse';
 import * as fs from 'fs';
 import * as path from 'path';
-import { CsvRow, ProcessingResult } from '../interfaces/process-csv.interface';
+import { CsvRow, ProcessingResult } from '@/api/data-sync/interfaces/file-processor-csv.interface';
 
 @Injectable()
-export class ProcessCsvService {
-  private readonly logger = new Logger(ProcessCsvService.name);
+export class FileProcessorCsvService {
+  private readonly logger = new Logger(FileProcessorCsvService.name);
 
   constructor(
     @InjectRepository(GasStation)

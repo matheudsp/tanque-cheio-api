@@ -1,29 +1,16 @@
-// src/common/services/file-processor.service.ts
+
 import { Injectable, Logger } from '@nestjs/common';
 import {
   XlsxToCsv,
   ANPValidators,
-  ProcessedFileResult,
-  FileValidationResult,
 } from '@/common/utils/xlsx-to-csv';
+import type { FileProcessorOptions, FileProcessorResult, FileValidationResult } from '../interfaces/file-processor-csv.interface';
 
-export interface FileProcessorOptions {
-  validateContent?: boolean;
-  requiredHeaders?: string[];
-  customValidation?: boolean;
-}
 
-export interface FileProcessorResult {
-  success: boolean;
-  processedFile?: ProcessedFileResult;
-  validation?: FileValidationResult;
-  message: string;
-  errors: string[];
-}
 
 @Injectable()
-export class XlsxProcessor {
-  private readonly logger = new Logger(XlsxProcessor.name);
+export class FileTransformerCsv {
+  private readonly logger = new Logger(FileTransformerCsv.name);
   private readonly fileProcessor: XlsxToCsv;
 
   constructor() {

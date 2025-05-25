@@ -3,7 +3,7 @@ import { writeFile, unlink } from 'fs/promises';
 import { join } from 'path';
 import { createReadStream } from 'fs';
 import { Logger } from '@nestjs/common';
-import type { FileProcessorConfig, FileValidationResult, ProcessedFileResult } from '@/api/data-sync/interfaces/file-processor-csv.interface';
+import type { FileProcessorConfig, FileValidationResult, ProcessedFileResult } from '@/api/data-sync/interfaces/file-processor.interface';
 
 
 export class XlsxToCsv {

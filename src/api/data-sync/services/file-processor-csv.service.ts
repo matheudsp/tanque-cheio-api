@@ -10,7 +10,10 @@ import {
 import * as Papa from 'papaparse';
 import * as fs from 'fs';
 import * as path from 'path';
-import { CsvRow, ProcessingResult } from '@/api/data-sync/interfaces/file-processor-csv.interface';
+import {
+  CsvRow,
+  ProcessingResult,
+} from '@/api/data-sync/interfaces/file-processor.interface';
 
 @Injectable()
 export class FileProcessorCsvService {

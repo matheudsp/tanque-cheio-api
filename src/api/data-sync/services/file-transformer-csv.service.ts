@@ -4,7 +4,7 @@ import {
   XlsxToCsv,
   ANPValidators,
 } from '@/common/utils/xlsx-to-csv';
-import type { FileProcessorOptions, FileProcessorResult, FileValidationResult } from '../interfaces/file-processor-csv.interface';
+import type { FileProcessorOptions, FileProcessorResult, FileValidationResult } from '../interfaces/file-processor.interface';
 
 
 

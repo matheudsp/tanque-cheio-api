@@ -1,3 +1,20 @@
+export interface IFileProcessor<TRow = any> {
+  processFile(filePath: string): Promise<ProcessingResult>;
+  validateRow(row: TRow): ValidationResult;
+}
+
+export interface IFileValidator<TRow = any> {
+  validate(rows: TRow[]): ValidationResult[];
+}
+
+export interface IDataMapper<TSource, TTarget> {
+  map(source: TSource): TTarget;
+}
+
+export interface IDataRepository<T> {
+  saveInBatches(entities: T[], batchSize?: number): Promise<SaveResult>;
+}
+
 export interface CsvRow {
   CNPJ: string;
   RAZÃO: string;
@@ -17,6 +34,22 @@ export interface CsvRow {
 }
 
 export interface ProcessingResult {
+  totalProcessed: number;
+  totalErrors: number;
+  errors: Array<{
+    row: number;
+    data: any;
+    error: string;
+  }>;
+}
+
+export interface ValidationResult {
+  isValid: boolean;
+  errors: string[];
+  rowIndex: number;
+}
+
+export interface SaveResult {
   totalProcessed: number;
   totalErrors: number;
   errors: Array<{

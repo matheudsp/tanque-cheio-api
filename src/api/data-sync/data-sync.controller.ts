@@ -69,7 +69,7 @@ export class DataSyncController {
   @OpenApiResponses([HttpStatus.BAD_REQUEST, HttpStatus.INTERNAL_SERVER_ERROR])
   async processCsv() {
     try {
-      const fileToProcess = 'anp_mes5_semana4_sample.csv'; 
+      const fileToProcess = 'anp_mes5_semana4_sample.csv';  
 
       this.logger.log(`Processing file: ${fileToProcess}`);
 

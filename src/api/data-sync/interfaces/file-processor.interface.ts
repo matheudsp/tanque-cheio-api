@@ -16,6 +16,7 @@ export interface IDataRepository<T> {
 }
 
 export interface CsvRow {
+  REGIÃO: any;
   CNPJ: string;
   RAZÃO: string;
   FANTASIA: string;

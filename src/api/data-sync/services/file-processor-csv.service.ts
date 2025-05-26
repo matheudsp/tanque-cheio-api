@@ -29,7 +29,7 @@ export class FileProcessorCsvService {
 
   async processCsvFile(filePath: string) {
     const startTime = Date.now();
-    
+
     try {
       const fullPath = path.resolve(process.cwd(), 'public', filePath);
 
@@ -41,15 +41,15 @@ export class FileProcessorCsvService {
       }
 
       this.logger.log(`Iniciando processamento do arquivo: ${filePath}`);
-      
+
       const fileContent = fs.readFileSync(fullPath, 'utf8');
       const result = await this.processCsvContent(fileContent);
 
       const processingTime = ((Date.now() - startTime) / 1000).toFixed(2);
-      
+
       this.logger.log(
         `Processamento concluído em ${processingTime}s: ` +
-        `${result.totalProcessed} processados, ${result.totalErrors} erros`
+          `${result.totalProcessed} processados, ${result.totalErrors} erros`,
       );
 
       return responseOk({
@@ -68,7 +68,9 @@ export class FileProcessorCsvService {
     }
   }
 
-  private async processCsvContent(csvContent: string): Promise<ProcessingResult> {
+  private async processCsvContent(
+    csvContent: string,
+  ): Promise<ProcessingResult> {
     const result: ProcessingResult = {
       totalProcessed: 0,
       totalErrors: 0,
@@ -98,15 +100,22 @@ export class FileProcessorCsvService {
           transformHeader: (header: string) => header.trim(),
           complete: async (parseResult) => {
             try {
-              this.logger.log(`Parse concluído. Linhas encontradas: ${parseResult.data.length}`);
+              this.logger.log(
+                `Parse concluído. Linhas encontradas: ${parseResult.data.length}`,
+              );
 
               if (parseResult.errors?.length > 0) {
                 this.logger.warn(`Avisos do parser:`, parseResult.errors);
               }
 
               // Filtrar e validar linhas
-              const validRows = this.filterAndValidateRows(parseResult.data, result);
-              this.logger.log(`Linhas válidas após filtro: ${validRows.length}`);
+              const validRows = this.filterAndValidateRows(
+                parseResult.data,
+                result,
+              );
+              this.logger.log(
+                `Linhas válidas após filtro: ${validRows.length}`,
+              );
 
               if (validRows.length === 0) {
                 result.totalErrors++;
@@ -120,13 +129,19 @@ export class FileProcessorCsvService {
               }
 
               // Mapear para entidades
-              const gasStations = this.mapAndValidateEntities(validRows, result);
-              this.logger.log(`Entidades válidas criadas: ${gasStations.length}`);
+              const gasStations = this.mapAndValidateEntities(
+                validRows,
+                result,
+              );
+              this.logger.log(
+                `Entidades válidas criadas: ${gasStations.length}`,
+              );
 
               if (gasStations.length > 0) {
                 // Usar o repository de lote aprimorado
-                const saveResult = await this.batchRepository.saveInBatches(gasStations);
-                
+                const saveResult =
+                  await this.batchRepository.saveInBatches(gasStations);
+
                 // Consolidar resultados
                 result.totalProcessed = saveResult.totalProcessed;
                 result.totalErrors += saveResult.totalErrors;
@@ -140,10 +155,10 @@ export class FileProcessorCsvService {
 
               this.logger.log(
                 `Processamento final: ${result.totalProcessed} processados, ` +
-                `${(result as any).totalInserted || 0} inseridos, ` +
-                `${(result as any).totalUpdated || 0} atualizados, ` +
-                `${(result as any).totalSkipped || 0} ignorados, ` +
-                `${result.totalErrors} erros`
+                  `${(result as any).totalInserted || 0} inseridos, ` +
+                  `${(result as any).totalUpdated || 0} atualizados, ` +
+                  `${(result as any).totalSkipped || 0} ignorados, ` +
+                  `${result.totalErrors} erros`,
               );
 
               resolve(result);
@@ -229,25 +244,40 @@ export class FileProcessorCsvService {
     }
   }
 
-  private filterAndValidateRows(rows: CsvRow[], result: ProcessingResult): CsvRow[] {
+  private filterAndValidateRows(
+    rows: CsvRow[],
+    result: ProcessingResult,
+  ): CsvRow[] {
     const validRows: CsvRow[] = [];
 
     rows.forEach((row, index) => {
       try {
         // Validações básicas
         const hasValidCnpj = this.isValidCnpj(row.CNPJ);
-        const hasValidMunicipio = this.isValidString(row.MUNICÍPIO, 'MUNICÍPIO');
+        const hasValidMunicipio = this.isValidString(
+          row.MUNICÍPIO,
+          'MUNICÍPIO',
+        );
         const hasValidProduto = this.isValidString(row.PRODUTO, 'PRODUTO');
         const hasValidEstado = this.isValidString(row.ESTADO, 'ESTADO');
-        const hasValidDataColeta = this.isValidString(row['DATA DA COLETA'], 'DATA DA COLETA');
+        const hasValidDataColeta = this.isValidString(
+          row['DATA DA COLETA'],
+          'DATA DA COLETA',
+        );
 
-        if (hasValidCnpj && hasValidMunicipio && hasValidProduto && hasValidEstado && hasValidDataColeta) {
+        if (
+          hasValidCnpj &&
+          hasValidMunicipio &&
+          hasValidProduto &&
+          hasValidEstado &&
+          hasValidDataColeta
+        ) {
           validRows.push(row);
         } else {
           this.logger.debug(
             `Linha ${index + 1} inválida - CNPJ: "${row.CNPJ}", ` +
-            `MUNICÍPIO: "${row.MUNICÍPIO}", PRODUTO: "${row.PRODUTO}", ` +
-            `ESTADO: "${row.ESTADO}", DATA: "${row['DATA DA COLETA']}"`
+              `MUNICÍPIO: "${row.MUNICÍPIO}", PRODUTO: "${row.PRODUTO}", ` +
+              `ESTADO: "${row.ESTADO}", DATA: "${row['DATA DA COLETA']}"`,
           );
         }
       } catch (error) {
@@ -264,13 +294,16 @@ export class FileProcessorCsvService {
     return validRows;
   }
 
-  private mapAndValidateEntities(rows: CsvRow[], result: ProcessingResult): GasStation[] {
+  private mapAndValidateEntities(
+    rows: CsvRow[],
+    result: ProcessingResult,
+  ): GasStation[] {
     const gasStations: GasStation[] = [];
 
     rows.forEach((row, index) => {
       try {
         const gasStation = this.csvMapper.map(row);
-        
+
         // Validação adicional da entidade mapeada
         if (this.validateEntity(gasStation)) {
           gasStations.push(gasStation);
@@ -293,28 +326,31 @@ export class FileProcessorCsvService {
 
   private isValidCnpj(cnpj: string): boolean {
     if (!cnpj || typeof cnpj !== 'string') return false;
-    
+
     const trimmed = cnpj.trim();
-    return trimmed.length > 0 && 
-           trimmed !== 'CNPJ' &&
-           !trimmed.includes('AGÊNCIA NACIONAL') &&
-           !trimmed.includes('SUPERINTENDÊNCIA') &&
-           !trimmed.includes('SISTEMA DE');
+    return (
+      trimmed.length > 0 &&
+      trimmed !== 'CNPJ' &&
+      !trimmed.includes('AGÊNCIA NACIONAL') &&
+      !trimmed.includes('SUPERINTENDÊNCIA') &&
+      !trimmed.includes('SISTEMA DE')
+    );
   }
 
   private isValidString(value: string, fieldName: string): boolean {
     if (!value || typeof value !== 'string') return false;
-    
+
     const trimmed = value.trim();
-    return trimmed.length > 0 && 
-           trimmed.toUpperCase() !== fieldName.toUpperCase();
+    return (
+      trimmed.length > 0 && trimmed.toUpperCase() !== fieldName.toUpperCase()
+    );
   }
 
   private validateEntity(entity: GasStation): boolean {
     return !!(
       entity.cnpj &&
-      entity.uf &&
-      entity.municipio &&
+      entity.localizacao.uf &&
+      entity.localizacao.municipio &&
       entity.nome &&
       entity.produto &&
       entity.data_coleta

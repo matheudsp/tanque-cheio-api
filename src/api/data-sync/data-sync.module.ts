@@ -15,15 +15,21 @@ import { CsvFileProcessor } from './processors/csv-file.processor';
 import { CsvRowValidator } from './validators/csv-row.validator';
 import { CsvToGasStationMapper } from './mappers/csv-to-gas-station.mapper';
 import { GasStationBatchRepository } from './repositories/gas-station-batch.repository';
+import { Localizacao } from '@/database/entity/location.entity';
+import { Produto } from '@/database/entity/product.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([GasStation])],
+  imports: [
+    TypeOrmModule.forFeature([GasStation]),
+    TypeOrmModule.forFeature([Produto]),
+    TypeOrmModule.forFeature([Localizacao]),
+  ],
   providers: [
     // Legacy services (for backward compatibility)
     DataSyncService,
     FileProcessorCsvService,
     FileTransformerCsv,
-    
+
     // New SOLID components
     CsvFileProcessor,
     CsvRowValidator,

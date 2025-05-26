@@ -2,6 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { GasStation } from '@/database/entity/gas-station.entity';
+import { Localizacao } from '@/database/entity/location.entity';
+import { Produto } from '@/database/entity/product.entity';
 import {
   IDataRepository,
   type SaveResult,
@@ -13,7 +15,11 @@ export class GasStationBatchRepository implements IDataRepository<GasStation> {
 
   constructor(
     @InjectRepository(GasStation)
-    private readonly repository: Repository<GasStation>,
+    private readonly gasStationRepository: Repository<GasStation>,
+    @InjectRepository(Localizacao)
+    private readonly localizacaoRepository: Repository<Localizacao>,
+    @InjectRepository(Produto)
+    private readonly produtoRepository: Repository<Produto>,
   ) {}
 
   async saveInBatches(
@@ -29,10 +35,12 @@ export class GasStationBatchRepository implements IDataRepository<GasStation> {
       errors: [],
     };
 
-    // Log inicial
     this.logger.log(
       `Iniciando processamento de ${entities.length} registros em lotes de ${batchSize}`,
     );
+
+    // Primeiro, processar localizações e produtos
+    await this.processLocalizacoesAndProdutos(entities);
 
     for (let i = 0; i < entities.length; i += batchSize) {
       const batch = entities.slice(i, i + batchSize);
@@ -46,7 +54,6 @@ export class GasStationBatchRepository implements IDataRepository<GasStation> {
       await this.processBatchWithUpsert(batch, result, i);
     }
 
-    // Log final
     this.logger.log(
       `Processamento concluído: ${result.totalInserted} inseridos, ` +
         `${result.totalUpdated} atualizados, ${result.totalSkipped} ignorados, ` +
@@ -56,30 +63,101 @@ export class GasStationBatchRepository implements IDataRepository<GasStation> {
     return result;
   }
 
+  private async processLocalizacoesAndProdutos(entities: GasStation[]): Promise<void> {
+    // Processar localizações únicas
+    const localizacoesMap = new Map<string, Localizacao>();
+    const produtosMap = new Map<string, Produto>();
+
+    for (const entity of entities) {
+      // Processar localização
+      const locKey = entity.localizacao.getLocationKey();
+      if (!localizacoesMap.has(locKey)) {
+        localizacoesMap.set(locKey, entity.localizacao);
+      }
+
+      // Processar produto
+      const prodKey = Produto.normalizeName(entity.produto.nome);
+      if (!produtosMap.has(prodKey)) {
+        produtosMap.set(prodKey, entity.produto);
+      }
+    }
+
+    // Salvar localizações
+    await this.upsertLocalizacoes(Array.from(localizacoesMap.values()));
+    
+    // Salvar produtos
+    await this.upsertProdutos(Array.from(produtosMap.values()));
+
+    // Atualizar referências nas entidades
+    for (const entity of entities) {
+      const locKey = entity.localizacao.getLocationKey();
+      const prodKey = Produto.normalizeName(entity.produto.nome);
+      
+      entity.localizacao = localizacoesMap.get(locKey)!;
+      entity.produto = produtosMap.get(prodKey)!;
+      
+      entity.localizacao_id = entity.localizacao.id;
+      entity.produto_id = entity.produto.id;
+    }
+  }
+
+  private async upsertLocalizacoes(localizacoes: Localizacao[]): Promise<void> {
+    for (const localizacao of localizacoes) {
+      const existing = await this.localizacaoRepository
+        .createQueryBuilder('loc')
+        .where('loc.uf = :uf', { uf: localizacao.uf })
+        .andWhere('loc.municipio = :municipio', { municipio: localizacao.municipio })
+        .andWhere('COALESCE(loc.endereco, \'\') = COALESCE(:endereco, \'\')', { endereco: localizacao.endereco || '' })
+        .andWhere('COALESCE(loc.bairro, \'\') = COALESCE(:bairro, \'\')', { bairro: localizacao.bairro || '' })
+        .andWhere('COALESCE(loc.cep, \'\') = COALESCE(:cep, \'\')', { cep: localizacao.cep || '' })
+        .getOne();
+
+      if (existing) {
+        localizacao.id = existing.id;
+        localizacao.criadoEm = existing.criadoEm;
+      } else {
+        const saved = await this.localizacaoRepository.save(localizacao);
+        localizacao.id = saved.id;
+      }
+    }
+  }
+
+  private async upsertProdutos(produtos: Produto[]): Promise<void> {
+    for (const produto of produtos) {
+      const existing = await this.produtoRepository.findOne({
+        where: { nome: produto.nome }
+      });
+
+      if (existing) {
+        produto.id = existing.id;
+        produto.criadoEm = existing.criadoEm;
+      } else {
+        const saved = await this.produtoRepository.save(produto);
+        produto.id = saved.id;
+      }
+    }
+  }
+
   private async processBatchWithUpsert(
     batch: GasStation[],
     result: SaveResult,
     startIndex: number,
   ): Promise<void> {
     try {
-      // Buscar registros existentes para comparação
       const existingRecords = await this.findExistingRecords(batch);
       const recordsToProcess = await this.categorizeRecords(
         batch,
         existingRecords,
       );
 
-      // Processar inserções
       if (recordsToProcess.toInsert.length > 0) {
         await this.insertRecords(recordsToProcess.toInsert, result);
       }
 
-      // Processar atualizações
       if (recordsToProcess.toUpdate.length > 0) {
         await this.updateRecords(recordsToProcess.toUpdate, result);
       }
 
-      // Contabilizar registros ignorados
       if (recordsToProcess.skipped.length > 0) {
         result.totalSkipped! += recordsToProcess.skipped.length;
         this.logger.debug(
@@ -97,38 +175,31 @@ export class GasStationBatchRepository implements IDataRepository<GasStation> {
   ): Promise<Map<string, GasStation>> {
     if (batch.length === 0) return new Map();
 
-    // Extrair combinações únicas de CNPJ + PRODUTO
-    const uniqueKeys = new Set(
-      batch.map((entity) => this.createRecordKey(entity.cnpj, entity.produto)),
-    );
-
     const cnpjs = [...new Set(batch.map((entity) => entity.cnpj))];
-    const produtos = [...new Set(batch.map((entity) => entity.produto))];
+    const produtoIds = [...new Set(batch.map((entity) => entity.produto_id))];
 
     this.logger.debug(
-      `Buscando registros existentes para ${cnpjs.length} CNPJs únicos e ${produtos.length} produtos únicos`,
+      `Buscando registros existentes para ${cnpjs.length} CNPJs únicos e ${produtoIds.length} produtos únicos`,
     );
 
-    // Buscar todos os registros existentes para os CNPJs e produtos do lote
-    const existingRecords = await this.repository
+    const existingRecords = await this.gasStationRepository
       .createQueryBuilder('gs')
+      .leftJoinAndSelect('gs.produto', 'produto')
       .where('gs.cnpj IN (:...cnpjs)', { cnpjs })
-      .andWhere('gs.produto IN (:...produtos)', { produtos })
-      .orderBy('gs.data_coleta', 'DESC') // Ordenar por data mais recente primeiro
+      .andWhere('gs.produto_id IN (:...produtoIds)', { produtoIds })
+      .orderBy('gs.data_coleta', 'DESC')
       .getMany();
 
     this.logger.debug(
       `Encontrados ${existingRecords.length} registros existentes no banco`,
     );
 
-    // Criar mapa mantendo apenas o registro mais recente por CNPJ + PRODUTO
     const recordMap = new Map<string, GasStation>();
 
     existingRecords.forEach((record) => {
-      const key = this.createRecordKey(record.cnpj, record.produto);
-
-      // Se ainda não existe entrada para esta chave, ou se este registro é mais recente
+      const key = this.createRecordKey(record.cnpj, record.produto_id);
       const existing = recordMap.get(key);
+      
       if (
         !existing ||
         this.isDateNewer(record.data_coleta, existing.data_coleta)
@@ -157,45 +228,40 @@ export class GasStationBatchRepository implements IDataRepository<GasStation> {
     const skipped: GasStation[] = [];
 
     for (const newRecord of batch) {
-      const key = this.createRecordKey(newRecord.cnpj, newRecord.produto);
+      const key = this.createRecordKey(newRecord.cnpj, newRecord.produto_id);
       const existingRecord = existingRecords.get(key);
 
       if (!existingRecord) {
-        // Não existe registro para este CNPJ + PRODUTO
         toInsert.push(newRecord);
         this.logger.debug(
-          `[INSERIR] CNPJ: ${newRecord.cnpj}, Produto: ${newRecord.produto}, ` +
+          `[INSERIR] CNPJ: ${newRecord.cnpj}, Produto: ${newRecord.produto.nome}, ` +
             `Data: ${this.formatDate(newRecord.data_coleta)}`,
         );
       } else {
-        // Existe registro, verificar datas
         const comparison = this.compareDates(
           newRecord.data_coleta,
           existingRecord.data_coleta,
         );
 
         if (comparison.isNewer) {
-          // CSV tem data mais recente - atualizar
           newRecord.id = existingRecord.id;
           newRecord.criadoEm = existingRecord.criadoEm;
           toUpdate.push(newRecord);
           this.logger.debug(
-            `[ATUALIZAR] CNPJ: ${newRecord.cnpj}, Produto: ${newRecord.produto}, ` +
+            `[ATUALIZAR] CNPJ: ${newRecord.cnpj}, Produto: ${newRecord.produto.nome}, ` +
               `Data BD: ${this.formatDate(existingRecord.data_coleta)} -> ` +
               `Data CSV: ${this.formatDate(newRecord.data_coleta)}`,
           );
         } else if (comparison.isSame) {
-          // Mesma data - ignorar
           skipped.push(newRecord);
           this.logger.debug(
-            `[IGNORAR] CNPJ: ${newRecord.cnpj}, Produto: ${newRecord.produto}, ` +
+            `[IGNORAR] CNPJ: ${newRecord.cnpj}, Produto: ${newRecord.produto.nome}, ` +
               `Data: ${this.formatDate(newRecord.data_coleta)} (mesma data)`,
           );
         } else {
-          // CSV tem data mais antiga - ignorar
           skipped.push(newRecord);
           this.logger.debug(
-            `[IGNORAR] CNPJ: ${newRecord.cnpj}, Produto: ${newRecord.produto}, ` +
+            `[IGNORAR] CNPJ: ${newRecord.cnpj}, Produto: ${newRecord.produto.nome}, ` +
               `Data CSV: ${this.formatDate(newRecord.data_coleta)} é anterior à ` +
               `Data BD: ${this.formatDate(existingRecord.data_coleta)}`,
           );
@@ -215,7 +281,7 @@ export class GasStationBatchRepository implements IDataRepository<GasStation> {
     result: SaveResult,
   ): Promise<void> {
     try {
-      await this.repository.save(records, {
+      await this.gasStationRepository.save(records, {
         chunk: 100,
         reload: false,
       });
@@ -227,10 +293,9 @@ export class GasStationBatchRepository implements IDataRepository<GasStation> {
     } catch (error) {
       this.logger.error(`Erro ao inserir registros em lote:`, error);
 
-      // Tentar inserção individual
       for (const record of records) {
         try {
-          await this.repository.save(record);
+          await this.gasStationRepository.save(record);
           result.totalProcessed++;
           result.totalInserted!++;
         } catch (individualError) {
@@ -239,7 +304,7 @@ export class GasStationBatchRepository implements IDataRepository<GasStation> {
             row: -1,
             data: {
               cnpj: record.cnpj,
-              produto: record.produto,
+              produto: record.produto.nome,
               data_coleta: record.data_coleta,
             },
             error: `Erro na inserção: ${individualError.message}`,
@@ -254,7 +319,7 @@ export class GasStationBatchRepository implements IDataRepository<GasStation> {
     result: SaveResult,
   ): Promise<void> {
     try {
-      await this.repository.save(records, {
+      await this.gasStationRepository.save(records, {
         chunk: 100,
         reload: false,
       });
@@ -266,10 +331,9 @@ export class GasStationBatchRepository implements IDataRepository<GasStation> {
     } catch (error) {
       this.logger.error(`Erro ao atualizar registros em lote:`, error);
 
-      // Tentar atualização individual
       for (const record of records) {
         try {
-          await this.repository.save(record);
+          await this.gasStationRepository.save(record);
           result.totalProcessed++;
           result.totalUpdated!++;
         } catch (individualError) {
@@ -278,7 +342,7 @@ export class GasStationBatchRepository implements IDataRepository<GasStation> {
             row: -1,
             data: {
               cnpj: record.cnpj,
-              produto: record.produto,
+              produto: record.produto.nome,
               data_coleta: record.data_coleta,
             },
             error: `Erro na atualização: ${individualError.message}`,
@@ -317,14 +381,12 @@ export class GasStationBatchRepository implements IDataRepository<GasStation> {
 
   private normalizeDate(date: Date | string): Date {
     if (date instanceof Date) {
-      // Verificar se a data é válida
       if (isNaN(date.getTime())) {
         throw new Error(`Data inválida: ${date}`);
       }
       return date;
     }
 
-    // Se for string, tentar converter
     const dateObj = new Date(date);
     if (isNaN(dateObj.getTime())) {
       throw new Error(`String de data inválida: ${date}`);
@@ -342,11 +404,9 @@ export class GasStationBatchRepository implements IDataRepository<GasStation> {
     }
   }
 
-  private createRecordKey(cnpj: string, produto: string): string {
-    // Chave única baseada em CNPJ + PRODUTO
-    // Normalizar CNPJ removendo formatação para garantir consistência
+  private createRecordKey(cnpj: string, produto_id: string): string {
     const normalizedCnpj = cnpj.replace(/[^\d]/g, '');
-    return `${normalizedCnpj}|${produto.trim().toUpperCase()}`;
+    return `${normalizedCnpj}|${produto_id}`;
   }
 
   private async handleBatchError(
@@ -379,15 +439,15 @@ export class GasStationBatchRepository implements IDataRepository<GasStation> {
           row: startIndex + index + 1,
           data: {
             cnpj: entity.cnpj,
-            municipio: entity.municipio,
-            produto: entity.produto,
+            municipio: entity.localizacao.municipio,
+            produto: entity.produto.nome,
             data_coleta: entity.data_coleta,
           },
           error: individualError.message,
         });
 
         this.logger.warn(
-          `❌ Falha no registro individual (CNPJ: ${entity.cnpj}, Produto: ${entity.produto}): ${individualError.message}`,
+          `❌ Falha no registro individual (CNPJ: ${entity.cnpj}, Produto: ${entity.produto.nome}): ${individualError.message}`,
         );
       }
     }
@@ -396,44 +456,40 @@ export class GasStationBatchRepository implements IDataRepository<GasStation> {
   private async processSingleRecord(
     entity: GasStation,
   ): Promise<{ action: 'inserted' | 'updated' | 'skipped' }> {
-    // Buscar o registro mais recente para este CNPJ + PRODUTO
-    const existingRecord = await this.repository
+    const existingRecord = await this.gasStationRepository
       .createQueryBuilder('gs')
+      .leftJoinAndSelect('gs.produto', 'produto')
       .where('gs.cnpj = :cnpj', { cnpj: entity.cnpj })
-      .andWhere('gs.produto = :produto', { produto: entity.produto })
+      .andWhere('gs.produto_id = :produto_id', { produto_id: entity.produto_id })
       .orderBy('gs.data_coleta', 'DESC')
       .getOne();
 
     if (!existingRecord) {
-      // Inserir novo registro
-      await this.repository.save(entity);
+      await this.gasStationRepository.save(entity);
       this.logger.debug(
-        `➕ Inserido: ${entity.cnpj} - ${entity.produto} - ${this.formatDate(entity.data_coleta)}`,
+        `➕ Inserido: ${entity.cnpj} - ${entity.produto.nome} - ${this.formatDate(entity.data_coleta)}`,
       );
       return { action: 'inserted' };
     }
 
-    // Comparar datas
     const comparison = this.compareDates(
       entity.data_coleta,
       existingRecord.data_coleta,
     );
 
     if (comparison.isNewer) {
-      // Atualizar registro existente
       entity.id = existingRecord.id;
       entity.criadoEm = existingRecord.criadoEm;
-      await this.repository.save(entity);
+      await this.gasStationRepository.save(entity);
       this.logger.debug(
-        `🔄 Atualizado: ${entity.cnpj} - ${entity.produto} - ` +
+        `🔄 Atualizado: ${entity.cnpj} - ${entity.produto.nome} - ` +
           `${this.formatDate(existingRecord.data_coleta)} -> ${this.formatDate(entity.data_coleta)}`,
       );
       return { action: 'updated' };
     } else {
-      // Pular registro (data não é mais recente)
       const reason = comparison.isSame ? 'mesma data' : 'data mais antiga';
       this.logger.debug(
-        `⏭️ Ignorado: ${entity.cnpj} - ${entity.produto} - ` +
+        `⏭️ Ignorado: ${entity.cnpj} - ${entity.produto.nome} - ` +
           `${this.formatDate(entity.data_coleta)} (${reason})`,
       );
       return { action: 'skipped' };

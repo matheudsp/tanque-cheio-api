@@ -36,6 +36,9 @@ export interface CsvRow {
 export interface ProcessingResult {
   totalProcessed: number;
   totalErrors: number;
+  totalSkipped?: number; // Novos registros pulados
+  totalInserted?: number; // Novos registros inseridos
+  totalUpdated?: number; // Registros atualizados
   errors: Array<{
     row: number;
     data: any;
@@ -52,6 +55,9 @@ export interface ValidationResult {
 export interface SaveResult {
   totalProcessed: number;
   totalErrors: number;
+  totalSkipped?: number; // Registros pulados (dados mais antigos)
+  totalInserted?: number; // Novos registros inseridos
+  totalUpdated?: number; // Registros atualizados
   errors: Array<{
     row: number;
     data: any;

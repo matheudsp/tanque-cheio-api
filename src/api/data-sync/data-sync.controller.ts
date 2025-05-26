@@ -19,23 +19,66 @@ export class DataSyncController {
   @Post('process-csv')
   @ApiOperation({
     summary: 'Process ANP CSV file',
-    description: 'Processes local CSV file with ANP fuel price data',
+    description:
+      'Processes local CSV file with ANP fuel price data. Only inserts/updates records if the collection date is newer or equal to existing records.',
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'CSV processed successfully',
+    description: 'CSV processed successfully with detailed statistics',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        message: { type: 'string' },
+        data: {
+          type: 'object',
+          properties: {
+            totalProcessed: {
+              type: 'number',
+              description: 'Total records processed (inserted + updated)',
+            },
+            totalInserted: {
+              type: 'number',
+              description: 'New records inserted',
+            },
+            totalUpdated: {
+              type: 'number',
+              description: 'Existing records updated',
+            },
+            totalSkipped: {
+              type: 'number',
+              description: 'Records skipped (older data)',
+            },
+            totalErrors: { type: 'number', description: 'Records with errors' },
+            errors: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  row: { type: 'number' },
+                  data: { type: 'object' },
+                  error: { type: 'string' },
+                },
+              },
+            },
+          },
+        },
+      },
+    },
   })
   @OpenApiResponses([HttpStatus.BAD_REQUEST, HttpStatus.INTERNAL_SERVER_ERROR])
   async processCsv() {
     try {
-      const fileToProcess = 'anp-mes5-semana4.csv';
+      const fileToProcess = 'anp-mes5-semana3.csv'; 
 
       this.logger.log(`Processing file: ${fileToProcess}`);
 
       const result = await this.csvProcessor.processFile(fileToProcess);
 
-      return responseOk({
-        message: `${result.totalProcessed} records processed successfully`,
+      const message = this.buildProcessingMessage(result);
+
+      return responseOk({ 
+        message,
         data: result,
       });
     } catch (error) {
@@ -44,10 +87,40 @@ export class DataSyncController {
     }
   }
 
+  private buildProcessingMessage(result: {
+    totalInserted: number;
+    totalUpdated: number;
+    totalSkipped: number;
+    totalErrors: number;
+  }): string {
+    // 1) deixe claro que é um array de strings
+    const parts: string[] = []; // ou:  const parts = [] as string[];
+
+    if (result.totalInserted > 0) {
+      parts.push(`${result.totalInserted} novos registros inseridos`);
+    }
+
+    if (result.totalUpdated > 0) {
+      parts.push(`${result.totalUpdated} registros atualizados`);
+    }
+
+    if (result.totalSkipped > 0) {
+      parts.push(
+        `${result.totalSkipped} registros ignorados (dados mais antigos)`,
+      );
+    }
+
+    if (result.totalErrors > 0) {
+      parts.push(`${result.totalErrors} erros encontrados`);
+    }
+
+    return parts.length > 0 ? parts.join(', ') : 'Nenhum registro processado';
+  }
+
   // @Post('download-spreadsheet')
   // @ApiOperation({
   //   summary: 'Download and process ANP spreadsheet',
-  //   description: 'Downloads and processes official ANP XLSX file'
+  //   description: 'Downloads and processes official ANP XLSX file with smart upsert logic'
   // })
   // async downloadSpreadsheet(@Body() body: DownloadSpreadsheetDto) {
   //   try {
@@ -62,7 +135,7 @@ export class DataSyncController {
   //       return responseBadRequest({ error: result.errors });
   //     }
 
-  //     // Process the converted CSV
+  //     // Process the converted CSV with smart upsert
   //     const processResult = await this.csvProcessor.processFile(
   //       result.processedFile.csvPath
   //     );
@@ -70,8 +143,10 @@ export class DataSyncController {
   //     // Cleanup temporary files
   //     await this.fileTransformer.cleanup(result.processedFile.tempFiles);
 
+  //     const message = this.buildProcessingMessage(processResult);
+
   //     return responseOk({
-  //       message: 'Spreadsheet downloaded and processed successfully',
+  //       message: `Planilha baixada e processada com sucesso. ${message}`,
   //       data: processResult
   //     });
   //   } catch (error) {

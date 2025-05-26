@@ -2,6 +2,8 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { GasStation } from '@/database/entity/gas-station.entity';
+import { GasStationBatchRepository } from '../repositories/gas-station-batch.repository';
+import { CsvToGasStationMapper } from '../mappers/csv-to-gas-station.mapper';
 import {
   responseOk,
   responseInternalServerError,
@@ -22,11 +24,15 @@ export class FileProcessorCsvService {
   constructor(
     @InjectRepository(GasStation)
     private readonly gasStationRepository: Repository<GasStation>,
+    private readonly batchRepository: GasStationBatchRepository,
+    private readonly csvMapper: CsvToGasStationMapper,
   ) {}
 
   async processCsvFile(filePath: string) {
+    const startTime = Date.now();
+    
     try {
-      const fullPath = path.join(process.cwd(), 'public', filePath);
+      const fullPath = path.resolve(process.cwd(), 'public', filePath);
 
       if (!fs.existsSync(fullPath)) {
         this.logger.error(`Arquivo não encontrado: ${fullPath}`);
@@ -35,24 +41,35 @@ export class FileProcessorCsvService {
         });
       }
 
+      this.logger.log(`Iniciando processamento do arquivo: ${filePath}`);
+      
       const fileContent = fs.readFileSync(fullPath, 'utf8');
       const result = await this.processCsvContent(fileContent);
 
+      const processingTime = ((Date.now() - startTime) / 1000).toFixed(2);
+      
+      this.logger.log(
+        `Processamento concluído em ${processingTime}s: ` +
+        `${result.totalProcessed} processados, ${result.totalErrors} erros`
+      );
+
       return responseOk({
-        message: `${result.totalProcessed} registros processados com sucesso`,
-        data: result,
+        message: `Processamento concluído: ${result.totalProcessed} registros processados`,
+        data: {
+          ...result,
+          processingTimeSeconds: parseFloat(processingTime),
+        },
       });
     } catch (error) {
       this.logger.error('Erro ao processar arquivo CSV:', error);
       return responseInternalServerError({
         message: 'Erro interno do servidor ao processar CSV',
+        error: error.message,
       });
     }
   }
 
-  private async processCsvContent(
-    csvContent: string,
-  ): Promise<ProcessingResult> {
+  private async processCsvContent(csvContent: string): Promise<ProcessingResult> {
     const result: ProcessingResult = {
       totalProcessed: 0,
       totalErrors: 0,
@@ -60,7 +77,7 @@ export class FileProcessorCsvService {
     };
 
     try {
-      // Pré-processar o CSV para remover linhas de cabeçalho e metadados
+      // Pré-processar o CSV
       const cleanedCsvContent = this.preprocessCsvContent(csvContent);
 
       if (!cleanedCsvContent) {
@@ -82,18 +99,15 @@ export class FileProcessorCsvService {
           transformHeader: (header: string) => header.trim(),
           complete: async (parseResult) => {
             try {
-              this.logger.log(
-                `Parse concluído. Linhas encontradas: ${parseResult.data.length}`,
-              );
+              this.logger.log(`Parse concluído. Linhas encontradas: ${parseResult.data.length}`);
 
-              if (parseResult.errors && parseResult.errors.length > 0) {
-                this.logger.warn(`Avisos do parser: `, parseResult.errors);
+              if (parseResult.errors?.length > 0) {
+                this.logger.warn(`Avisos do parser:`, parseResult.errors);
               }
 
-              const validRows = this.filterValidRows(parseResult.data);
-              this.logger.log(
-                `Linhas válidas após filtro: ${validRows.length}`,
-              );
+              // Filtrar e validar linhas
+              const validRows = this.filterAndValidateRows(parseResult.data, result);
+              this.logger.log(`Linhas válidas após filtro: ${validRows.length}`);
 
               if (validRows.length === 0) {
                 result.totalErrors++;
@@ -106,16 +120,33 @@ export class FileProcessorCsvService {
                 return;
               }
 
-              const gasStations = this.mapCsvToEntities(validRows, result);
-              this.logger.log(`Entidades criadas: ${gasStations.length}`);
+              // Mapear para entidades
+              const gasStations = this.mapAndValidateEntities(validRows, result);
+              this.logger.log(`Entidades válidas criadas: ${gasStations.length}`);
 
               if (gasStations.length > 0) {
-                await this.saveGasStations(gasStations, result);
+                // Usar o repository de lote aprimorado
+                const saveResult = await this.batchRepository.saveInBatches(gasStations);
+                
+                // Consolidar resultados
+                result.totalProcessed = saveResult.totalProcessed;
+                result.totalErrors += saveResult.totalErrors;
+                result.errors.push(...saveResult.errors);
+
+                // Adicionar informações detalhadas do processamento
+                (result as any).totalInserted = saveResult.totalInserted;
+                (result as any).totalUpdated = saveResult.totalUpdated;
+                (result as any).totalSkipped = saveResult.totalSkipped;
               }
 
               this.logger.log(
-                `Processamento concluído: ${result.totalProcessed} sucessos, ${result.totalErrors} erros`,
+                `Processamento final: ${result.totalProcessed} processados, ` +
+                `${(result as any).totalInserted || 0} inseridos, ` +
+                `${(result as any).totalUpdated || 0} atualizados, ` +
+                `${(result as any).totalSkipped || 0} ignorados, ` +
+                `${result.totalErrors} erros`
               );
+
               resolve(result);
             } catch (error) {
               this.logger.error('Erro durante o processamento:', error);
@@ -157,11 +188,10 @@ export class FileProcessorCsvService {
       const lines = csvContent.split('\n');
       this.logger.log(`Total de linhas no arquivo: ${lines.length}`);
 
-      // Encontrar a linha que contém os cabeçalhos reais dos dados
+      // Encontrar a linha que contém os cabeçalhos
       let headerLineIndex = -1;
       for (let i = 0; i < lines.length; i++) {
         const line = lines[i].trim();
-        // Procurar pela linha que contém CNPJ,RAZÃO,FANTASIA...
         if (
           line.includes('CNPJ') &&
           line.includes('RAZÃO') &&
@@ -179,10 +209,8 @@ export class FileProcessorCsvService {
 
       this.logger.log(`Cabeçalho encontrado na linha: ${headerLineIndex + 1}`);
 
-      // Extrair apenas as linhas de dados (cabeçalho + dados)
+      // Extrair linhas de dados
       const dataLines = lines.slice(headerLineIndex);
-
-      // Filtrar linhas vazias ou que contenham apenas vírgulas
       const validLines = dataLines.filter((line) => {
         const trimmed = line.trim();
         return trimmed.length > 0 && trimmed !== ',' && !trimmed.match(/^,+$/);
@@ -202,314 +230,95 @@ export class FileProcessorCsvService {
     }
   }
 
-  private filterValidRows(rows: CsvRow[]): CsvRow[] {
-    return rows.filter((row, index) => {
+  private filterAndValidateRows(rows: CsvRow[], result: ProcessingResult): CsvRow[] {
+    const validRows: CsvRow[] = [];
+
+    rows.forEach((row, index) => {
       try {
-        // Verificar se é uma linha válida com dados reais
-        const hasValidCnpj =
-          row.CNPJ &&
-          row.CNPJ.trim() !== '' &&
-          row.CNPJ.trim() !== 'CNPJ' &&
-          !row.CNPJ.includes('AGÊNCIA NACIONAL') &&
-          !row.CNPJ.includes('SUPERINTENDÊNCIA') &&
-          !row.CNPJ.includes('SISTEMA DE');
+        // Validações básicas
+        const hasValidCnpj = this.isValidCnpj(row.CNPJ);
+        const hasValidMunicipio = this.isValidString(row.MUNICÍPIO, 'MUNICÍPIO');
+        const hasValidProduto = this.isValidString(row.PRODUTO, 'PRODUTO');
+        const hasValidEstado = this.isValidString(row.ESTADO, 'ESTADO');
+        const hasValidDataColeta = this.isValidString(row['DATA DA COLETA'], 'DATA DA COLETA');
 
-        const hasValidMunicipio =
-          row.MUNICÍPIO &&
-          row.MUNICÍPIO.trim() !== '' &&
-          row.MUNICÍPIO.trim() !== 'MUNICÍPIO';
-
-        const hasValidProduto =
-          row.PRODUTO &&
-          row.PRODUTO.trim() !== '' &&
-          row.PRODUTO.trim() !== 'PRODUTO';
-
-        const isValid = hasValidCnpj && hasValidMunicipio && hasValidProduto;
-
-        if (!isValid) {
+        if (hasValidCnpj && hasValidMunicipio && hasValidProduto && hasValidEstado && hasValidDataColeta) {
+          validRows.push(row);
+        } else {
           this.logger.debug(
-            `Linha ${index + 1} filtrada - CNPJ: "${row.CNPJ}", MUNICÍPIO: "${row.MUNICÍPIO}", PRODUTO: "${row.PRODUTO}"`,
+            `Linha ${index + 1} inválida - CNPJ: "${row.CNPJ}", ` +
+            `MUNICÍPIO: "${row.MUNICÍPIO}", PRODUTO: "${row.PRODUTO}", ` +
+            `ESTADO: "${row.ESTADO}", DATA: "${row['DATA DA COLETA']}"`
           );
         }
-
-        return isValid;
       } catch (error) {
-        this.logger.warn(`Erro ao filtrar linha ${index + 1}:`, error);
-        return false;
+        this.logger.warn(`Erro ao validar linha ${index + 1}:`, error);
+        result.totalErrors++;
+        result.errors.push({
+          row: index + 1,
+          data: row,
+          error: `Erro na validação: ${error.message}`,
+        });
       }
     });
+
+    return validRows;
   }
 
-  private mapCsvToEntities(
-    rows: CsvRow[],
-    result: ProcessingResult,
-  ): GasStation[] {
+  private mapAndValidateEntities(rows: CsvRow[], result: ProcessingResult): GasStation[] {
     const gasStations: GasStation[] = [];
 
     rows.forEach((row, index) => {
       try {
-        const gasStation = this.createGasStationFromRow(row);
-        if (gasStation) {
+        const gasStation = this.csvMapper.map(row);
+        
+        // Validação adicional da entidade mapeada
+        if (this.validateEntity(gasStation)) {
           gasStations.push(gasStation);
+        } else {
+          throw new Error('Entidade inválida após mapeamento');
         }
       } catch (error) {
         result.totalErrors++;
         result.errors.push({
           row: index + 1,
           data: row,
-          error: error.message,
+          error: `Erro no mapeamento: ${error.message}`,
         });
-        this.logger.warn(
-          `Erro ao processar linha ${index + 1}: ${error.message}`,
-        );
+        this.logger.warn(`Erro ao mapear linha ${index + 1}: ${error.message}`);
       }
     });
 
     return gasStations;
   }
 
-  private createGasStationFromRow(row: CsvRow): GasStation | null {
-    try {
-      const gasStation = new GasStation();
-
-      // Limpa e valida CNPJ
-      const cleanedCnpj = this.cleanCnpj(row.CNPJ);
-      if (!cleanedCnpj) {
-        throw new Error(`CNPJ inválido: "${row.CNPJ}"`);
-      }
-      gasStation.cnpj = cleanedCnpj;
-
-      // Campos obrigatórios - validar antes de atribuir
-      const cleanedUf = this.cleanString(row.ESTADO)?.toUpperCase();
-      if (!cleanedUf) {
-        throw new Error(`Estado inválido: "${row.ESTADO}"`);
-      }
-      gasStation.uf = cleanedUf;
-
-      const cleanedMunicipio = this.cleanString(row.MUNICÍPIO);
-      if (!cleanedMunicipio) {
-        throw new Error(`Município inválido: "${row.MUNICÍPIO}"`);
-      }
-      gasStation.municipio = cleanedMunicipio;
-
-      const cleanedFantasia = this.cleanString(row.FANTASIA);
-      const cleanedRazao = this.cleanString(row.RAZÃO);
-
-      const nomePosto = cleanedFantasia ?? cleanedRazao;
-
-      if (!nomePosto) {
-        throw new Error(
-          `Revenda inválida: FANTASIA="${row.FANTASIA}", RAZÃO="${row.RAZÃO}"`,
-        );
-      }
-      gasStation.nome = nomePosto;
-
-      const cleanedProduto = this.cleanString(row.PRODUTO);
-      if (!cleanedProduto) {
-        throw new Error(`Produto inválido: "${row.PRODUTO}"`);
-      }
-      gasStation.produto = cleanedProduto;
-
-      // Data da coleta
-      const parsedDate = this.parseDate(row['DATA DA COLETA']);
-      if (!parsedDate) {
-        throw new Error(`Data de coleta inválida: "${row['DATA DA COLETA']}"`);
-      }
-      gasStation.data_coleta = parsedDate;
-
-      // Preço de venda
-      const precoRevenda = this.parsePrice(row['PREÇO DE REVENDA']);
-      if (precoRevenda !== null && precoRevenda > 0) {
-        gasStation.preco_venda = precoRevenda;
-      }
-
-      // Campos opcionais
-      gasStation.bandeira = this.cleanString(row.BANDEIRA);
-      gasStation.unidade_medida = this.cleanString(row['UNIDADE DE MEDIDA']);
-      gasStation.endereco = this.buildAddress(row);
-      gasStation.bairro = this.cleanString(row.BAIRRO);
-      gasStation.cep = this.cleanString(row.CEP);
-
-      return gasStation;
-    } catch (error) {
-      throw new Error(`Erro ao criar entidade: ${error.message}`);
-    }
-  }
-
-  private cleanCnpj(cnpj: string): string | null {
-    if (!cnpj || typeof cnpj !== 'string') return null;
-
-    // Remove espaços extras no início/fim
+  private isValidCnpj(cnpj: string): boolean {
+    if (!cnpj || typeof cnpj !== 'string') return false;
+    
     const trimmed = cnpj.trim();
-    if (!trimmed) return null;
-
-    // Se já está formatado, valida e retorna
-    if (
-      trimmed.includes('.') ||
-      trimmed.includes('/') ||
-      trimmed.includes('-')
-    ) {
-      // Remove formatação para validar
-      const cleaned = trimmed.replace(/[^\d]/g, '');
-      if (cleaned.length === 14) {
-        return trimmed; // Retorna com a formatação original
-      }
-      return null;
-    }
-
-    // Se são apenas números, valida e formata
-    const cleaned = trimmed.replace(/[^\d]/g, '');
-    if (cleaned.length === 14) {
-      return `${cleaned.slice(0, 2)}.${cleaned.slice(2, 5)}.${cleaned.slice(5, 8)}/${cleaned.slice(8, 12)}-${cleaned.slice(12)}`;
-    }
-
-    return null;
+    return trimmed.length > 0 && 
+           trimmed !== 'CNPJ' &&
+           !trimmed.includes('AGÊNCIA NACIONAL') &&
+           !trimmed.includes('SUPERINTENDÊNCIA') &&
+           !trimmed.includes('SISTEMA DE');
   }
 
-  private cleanString(value: string): string | null {
-    if (!value || typeof value !== 'string') return null;
-    const cleaned = value.trim();
-    return cleaned.length > 0 ? cleaned : null;
+  private isValidString(value: string, fieldName: string): boolean {
+    if (!value || typeof value !== 'string') return false;
+    
+    const trimmed = value.trim();
+    return trimmed.length > 0 && 
+           trimmed.toUpperCase() !== fieldName.toUpperCase();
   }
 
-  private parseDate(dateString: string): Date | null {
-    if (!dateString || typeof dateString !== 'string') return null;
-
-    try {
-      const trimmed = dateString.trim();
-
-      // Formato M/D/YYYY (como 5/20/2025)
-      const mdyMatch = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-      if (mdyMatch) {
-        const [, month, day, year] = mdyMatch;
-        const date = new Date(
-          parseInt(year),
-          parseInt(month) - 1,
-          parseInt(day),
-        );
-        if (!isNaN(date.getTime())) {
-          return date;
-        }
-      }
-
-      // Formato DD/MM/YYYY
-      const dmyMatch = trimmed.match(/^(\d{1,2})\/(\d{1,2})\/(\d{4})$/);
-      if (dmyMatch) {
-        const [, day, month, year] = dmyMatch;
-        const date = new Date(
-          parseInt(year),
-          parseInt(month) - 1,
-          parseInt(day),
-        );
-        if (!isNaN(date.getTime())) {
-          return date;
-        }
-      }
-
-      // Formato YYYY-MM-DD
-      const ymdMatch = trimmed.match(/^(\d{4})-(\d{2})-(\d{2})$/);
-      if (ymdMatch) {
-        const [, year, month, day] = ymdMatch;
-        const date = new Date(
-          parseInt(year),
-          parseInt(month) - 1,
-          parseInt(day),
-        );
-        if (!isNaN(date.getTime())) {
-          return date;
-        }
-      }
-
-      // Fallback para Date.parse
-      const parsed = new Date(trimmed);
-      return isNaN(parsed.getTime()) ? null : parsed;
-    } catch (error) {
-      this.logger.warn(`Erro ao fazer parse da data "${dateString}":`, error);
-      return null;
-    }
-  }
-
-  private parsePrice(priceString: string): number | null {
-    if (!priceString || typeof priceString !== 'string') return null;
-
-    try {
-      let cleaned = priceString.trim();
-
-      // Remove símbolos de moeda e outros caracteres não numéricos, mantendo vírgula e ponto
-      cleaned = cleaned
-        .replace(/[R$\s]/g, '') // Remove R$, espaços
-        .replace(/[^\d,.-]/g, '') // Mantém apenas dígitos, vírgula, ponto e hífen
-        .replace(/,(\d{2})$/, '.$1') // Converte vírgula decimal para ponto (ex: "115,00" -> "115.00")
-        .replace(/,/g, ''); // Remove vírgulas restantes (milhares)
-
-      const parsed = parseFloat(cleaned);
-      return isNaN(parsed) || parsed < 0 ? null : parsed;
-    } catch (error) {
-      this.logger.warn(`Erro ao fazer parse do preço "${priceString}":`, error);
-      return null;
-    }
-  }
-
-  private buildAddress(row: CsvRow): string | null {
-    const parts = [
-      this.cleanString(row.ENDEREÇO),
-      this.cleanString(row.NÚMERO),
-      this.cleanString(row.COMPLEMENTO),
-    ].filter(Boolean);
-
-    return parts.length > 0 ? parts.join(', ') : null;
-  }
-
-  private async saveGasStations(
-    gasStations: GasStation[],
-    result: ProcessingResult,
-  ): Promise<void> {
-    const batchSize = 500; // Reduzido para melhor controle
-
-    for (let i = 0; i < gasStations.length; i += batchSize) {
-      const batch = gasStations.slice(i, i + batchSize);
-
-      try {
-        // Usar upsert para evitar duplicatas baseado em CNPJ + produto + data
-        await this.gasStationRepository.save(batch, {
-          chunk: 100,
-          reload: false, // Não recarrega os dados após salvar
-        });
-
-        result.totalProcessed += batch.length;
-
-        this.logger.log(
-          `Processado lote ${Math.floor(i / batchSize) + 1}/${Math.ceil(gasStations.length / batchSize)}: ${batch.length} registros`,
-        );
-      } catch (error) {
-        this.logger.error(
-          `Erro ao salvar lote ${Math.floor(i / batchSize) + 1}:`,
-          error,
-        );
-
-        // Tenta salvar individualmente para identificar registros problemáticos
-        for (const [index, gasStation] of batch.entries()) {
-          try {
-            await this.gasStationRepository.save(gasStation);
-            result.totalProcessed++;
-          } catch (individualError) {
-            result.totalErrors++;
-            result.errors.push({
-              row: i + index + 1,
-              data: {
-                cnpj: gasStation.cnpj,
-                municipio: gasStation.municipio,
-                produto: gasStation.produto,
-              },
-              error: individualError.message,
-            });
-            this.logger.warn(
-              `Erro ao salvar registro individual (CNPJ: ${gasStation.cnpj}):`,
-              individualError.message,
-            );
-          }
-        }
-      }
-    }
+  private validateEntity(entity: GasStation): boolean {
+    return !!(
+      entity.cnpj &&
+      entity.uf &&
+      entity.municipio &&
+      entity.nome &&
+      entity.produto &&
+      entity.data_coleta
+    );
   }
 }

@@ -23,7 +23,6 @@ export class FileProcessorCsvService {
 
   constructor(
     @InjectRepository(GasStation)
-    private readonly gasStationRepository: Repository<GasStation>,
     private readonly batchRepository: GasStationBatchRepository,
     private readonly csvMapper: CsvToGasStationMapper,
   ) {}

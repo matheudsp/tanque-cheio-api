@@ -2,14 +2,14 @@ import { Injectable, Logger } from '@nestjs/common';
 import {
   IFileProcessor,
   type ValidationResult,
-} from '../interfaces/file-processor.interface';
+} from '../interfaces/base.interface';
 import {
   CsvRow,
   ProcessingResult,
-} from '../interfaces/file-processor.interface';
+} from '../interfaces/base.interface';
 import { CsvRowValidator } from '../validators/csv-row.validator';
-import { CsvToEntitiesMapper } from '../mappers/csv-to-gas-station.mapper';
-import { EntitiesBatchRepository } from '../repositories/gas-station-batch.repository';
+import { CsvToEntitiesMapper } from '../mappers/csv-to-entities.mapper';
+import { EntitiesBatchRepository } from '../repositories/entities-batch.repository';
 import * as Papa from 'papaparse';
 import * as fs from 'fs';
 import * as path from 'path';

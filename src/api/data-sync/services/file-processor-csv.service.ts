@@ -16,7 +16,7 @@ import * as path from 'path';
 import {
   CsvRow,
   ProcessingResult,
-} from '@/api/data-sync/interfaces/file-processor.interface';
+} from '@/api/data-sync/interfaces/base.interface';
 
 @Injectable()
 export class FileProcessorCsvService {

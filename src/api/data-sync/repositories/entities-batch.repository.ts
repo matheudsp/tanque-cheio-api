@@ -5,8 +5,8 @@ import { GasStation } from '@/database/entity/gas-station.entity';
 import { Localization } from '@/database/entity/localization.entity';
 import { Product } from '@/database/entity/product.entity';
 import { PriceHistory } from '@/database/entity/price-history.entity';
-import { MappedEntities } from '../mappers/csv-to-gas-station.mapper';
-import { ProcessingResult } from '../interfaces/file-processor.interface';
+import { MappedEntities } from '../mappers/csv-to-entities.mapper';
+import { ProcessingResult } from '../interfaces/base.interface';
 
 @Injectable()
 export class EntitiesBatchRepository {

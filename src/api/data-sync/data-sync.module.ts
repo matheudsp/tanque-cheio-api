@@ -13,8 +13,8 @@ import { FileTransformerCsv } from './services/file-transformer-csv.service';
 // New refactored components
 import { CsvFileProcessor } from './processors/csv-file.processor';
 import { CsvRowValidator } from './validators/csv-row.validator';
-import { CsvToEntitiesMapper } from './mappers/csv-to-gas-station.mapper';
-import { EntitiesBatchRepository } from './repositories/gas-station-batch.repository';
+import { CsvToEntitiesMapper } from './mappers/csv-to-entities.mapper';
+import { EntitiesBatchRepository } from './repositories/entities-batch.repository';
 import { Localization } from '@/database/entity/localization.entity';
 import { Product } from '@/database/entity/product.entity';
 import { PriceHistory } from '@/database/entity/price-history.entity';

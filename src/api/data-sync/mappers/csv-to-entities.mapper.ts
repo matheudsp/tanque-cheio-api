@@ -1,5 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
-import { CsvRow } from '../interfaces/file-processor.interface';
+import { CsvRow } from '../interfaces/base.interface';
 import { GasStation } from '@/database/entity/gas-station.entity';
 import { Localization } from '@/database/entity/localization.entity';
 import { Product } from '@/database/entity/product.entity';

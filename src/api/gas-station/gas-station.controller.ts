@@ -8,7 +8,7 @@ import { SearchGasStationsDto } from './dtos/gas-station.dto';
 import { SearchGasStationsSchema } from './schemas/gas-station.schema';
 
 @ApiTags('Posto de Combustível')
-@Controller({ path: 'postos-de-combustível', version: '1' })
+@Controller({ path: 'gas-station', version: '1' })
 export class GasStationController {
   private readonly logger = new Logger(GasStationController.name);
 

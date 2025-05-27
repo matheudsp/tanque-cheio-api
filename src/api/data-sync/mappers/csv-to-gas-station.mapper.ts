@@ -1,144 +1,214 @@
-import { Injectable } from '@nestjs/common';
-import {
-  IDataMapper,
-  type CsvRow,
-} from '../interfaces/file-processor.interface';
-
+import { Injectable, Logger } from '@nestjs/common';
+import { CsvRow } from '../interfaces/file-processor.interface';
 import { GasStation } from '@/database/entity/gas-station.entity';
-import { Localizacao } from '@/database/entity/location.entity';
-import { Produto } from '@/database/entity/product.entity';
+import { Localization } from '@/database/entity/localization.entity';
+import { Product } from '@/database/entity/product.entity';
+import { PriceHistory } from '@/database/entity/price-history.entity';
+
+export interface MappedEntities {
+  gasStations: GasStation[];
+  localizations: Localization[];
+  products: Product[];
+  priceHistories: PriceHistory[];
+}
 
 @Injectable()
-export class CsvToGasStationMapper implements IDataMapper<CsvRow, GasStation> {
-  map(csvRow: CsvRow): GasStation {
+export class CsvToEntitiesMapper {
+  private readonly logger = new Logger(CsvToEntitiesMapper.name);
+
+  mapRows(rows: CsvRow[]): MappedEntities {
+    const gasStations: GasStation[] = [];
+    const localizations: Localization[] = [];
+    const products: Product[] = [];
+    const priceHistories: PriceHistory[] = [];
+
+    // Maps para evitar duplicatas
+    const localizationMap = new Map<string, Localization>();
+    const productMap = new Map<string, Product>();
+    const gasStationMap = new Map<string, GasStation>();
+
+    for (const row of rows) {
+      try {
+        // 1. Criar/obter localização
+        const localization = this.createLocalization(row);
+        const locKey = localization.getLocationKey();
+        
+        if (!localizationMap.has(locKey)) {
+          localizationMap.set(locKey, localization);
+          localizations.push(localization);
+        }
+
+        // 2. Criar/obter produto
+        const product = this.createProduct(row);
+        const prodKey = Product.normalizeName(product.nome);
+        
+        if (!productMap.has(prodKey)) {
+          productMap.set(prodKey, product);
+          products.push(product);
+        }
+
+        // 3. Criar/obter posto de gasolina
+        const gasStation = this.createGasStation(row, localizationMap.get(locKey)!);
+        const gasStationKey = gasStation.normalizeCnpj();
+        
+        if (!gasStationMap.has(gasStationKey)) {
+          gasStationMap.set(gasStationKey, gasStation);
+          gasStations.push(gasStation);
+        }
+
+        // 4. Criar histórico de preços
+        const priceHistory = this.createPriceHistory(
+          row, 
+          gasStationMap.get(gasStationKey)!, 
+          productMap.get(prodKey)!
+        );
+        priceHistories.push(priceHistory);
+
+      } catch (error) {
+        this.logger.warn(`Erro ao mapear linha:`, error);
+        continue;
+      }
+    }
+
+    this.logger.log(
+      `Mapeamento concluído: ${gasStations.length} postos, ${localizations.length} localizações, ` +
+      `${products.length} produtos, ${priceHistories.length} históricos de preços`
+    );
+
+    return {
+      gasStations,
+      localizations,
+      products,
+      priceHistories
+    };
+  }
+
+  private createLocalization(row: CsvRow): Localization {
+    const localization = new Localization();
+    
+    localization.uf = this.cleanString(row.ESTADO);
+    localization.municipio = this.cleanString(row.MUNICÍPIO);
+    localization.endereco = this.cleanString(row.ENDEREÇO) || null;
+    localization.numero = this.cleanString(row.NÚMERO) || null;
+    localization.complemento = this.cleanString(row.COMPLEMENTO) || null;
+    localization.bairro = this.cleanString(row.BAIRRO) || null;
+    localization.cep = this.normalizeCep(row.CEP) || null;
+
+    return localization;
+  }
+
+  private createProduct(row: CsvRow): Product {
+    const product = new Product();
+    
+    const produtoNome = this.cleanString(row.PRODUTO);
+    product.nome = Product.normalizeName(produtoNome);
+    product.categoria = Product.determineCategory(produtoNome);
+    product.unidade_medida = this.cleanString(row['UNIDADE DE MEDIDA']) || Product.determineUnit(produtoNome);
+    product.ativo = true;
+
+    return product;
+  }
+
+  private createGasStation(row: CsvRow, localization: Localization): GasStation {
     const gasStation = new GasStation();
-
-    // Dados do posto
-    gasStation.cnpj = this.formatCnpj(csvRow.CNPJ);
-    gasStation.nome = this.getStationName(csvRow);
-    gasStation.bandeira = csvRow.BANDEIRA?.trim() || null;
-    gasStation.data_coleta = this.parseDate(csvRow['DATA DA COLETA']);
-    gasStation.preco_venda = this.parsePrice(csvRow['PREÇO DE REVENDA']);
-    gasStation.preco_compra = this.parsePrice(csvRow['PREÇO DE COMPRA']) || null;
-
-    // Criar localização
-    const localizacao = new Localizacao();
-    localizacao.regiao_sigla = csvRow.REGIÃO?.trim() || null;
-    localizacao.uf = csvRow.ESTADO?.trim().toUpperCase();
-    localizacao.municipio = csvRow.MUNICÍPIO?.trim();
-    localizacao.endereco = this.buildAddress(csvRow);
-    localizacao.bairro = csvRow.BAIRRO?.trim() || null;
-    localizacao.cep = csvRow.CEP?.trim() || null;
     
-    gasStation.localizacao = localizacao;
-
-    // Criar produto
-    const produto = new Produto();
-    produto.nome = csvRow.PRODUTO?.trim();
-    produto.unidade_medida = csvRow['UNIDADE DE MEDIDA']?.trim() || 
-                            Produto.determineUnit(csvRow.PRODUTO?.trim() || '');
-    produto.ativo = true;
-    
-    gasStation.produto = produto;
+    gasStation.nome = this.cleanString(row.RAZÃO);
+    gasStation.nome_fantasia = this.cleanString(row.FANTASIA) || null;
+    gasStation.bandeira = this.cleanString(row.BANDEIRA) || null;
+    gasStation.cnpj = this.normalizeCnpj(row.CNPJ);
+    gasStation.ativo = true;
+    gasStation.localizacao = localization;
 
     return gasStation;
   }
 
-  private formatCnpj(cnpj: string): string {
+  private createPriceHistory(row: CsvRow, gasStation: GasStation, product: Product): PriceHistory {
+    const priceHistory = new PriceHistory();
+    
+    priceHistory.posto = gasStation;
+    priceHistory.produto = product;
+    priceHistory.data_coleta = this.parseDate(row['DATA DA COLETA']);
+    priceHistory.preco_venda = this.parsePrice(row['PREÇO DE REVENDA']);
+    priceHistory.ativo = true;
+
+    return priceHistory;
+  }
+
+  private cleanString(value: any): string {
+    if (!value || typeof value !== 'string') return '';
+    return value.trim();
+  }
+
+  private normalizeCnpj(cnpj: string): string {
+    if (!cnpj) throw new Error('CNPJ é obrigatório');
+    
     const cleaned = cnpj.replace(/[^\d]/g, '');
-    return `${cleaned.slice(0, 2)}.${cleaned.slice(2, 5)}.${cleaned.slice(5, 8)}/${cleaned.slice(8, 12)}-${cleaned.slice(12)}`;
-  }
-
-  private getStationName(row: CsvRow): string {
-    return row.FANTASIA?.trim() || row.RAZÃO?.trim();
-  }
-
-  private parseDate(dateString: string): Date {
-    if (!dateString?.trim()) {
-      throw new Error('Data da coleta é obrigatória');
+    if (cleaned.length !== 14) {
+      throw new Error(`CNPJ inválido: ${cnpj}`);
     }
+    
+    // Formatar: 12.345.678/0001-90
+    return `${cleaned.substr(0, 2)}.${cleaned.substr(2, 3)}.${cleaned.substr(5, 3)}/${cleaned.substr(8, 4)}-${cleaned.substr(12)}`;
+  }
 
-    const cleanDate = dateString.trim();
+  private normalizeCep(cep: string): string | null {
+    if (!cep) return null;
+    
+    const cleaned = cep.replace(/[^\d]/g, '');
+    if (cleaned.length !== 8) return null;
+    
+    // Formatar: 12345-678
+    return `${cleaned.substr(0, 5)}-${cleaned.substr(5)}`;
+  }
 
+  private parseDate(dateStr: string): Date {
+    if (!dateStr) throw new Error('Data da coleta é obrigatória');
+    
+    // Tentar diferentes formatos de data
     const formats = [
-      {
-        regex: /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/,
-        parser: (match: RegExpMatchArray) => {
-          const [, month, day, year] = match;
-          return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-        },
-      },
-      {
-        regex: /^(\d{2})\/(\d{2})\/(\d{4})$/,
-        parser: (match: RegExpMatchArray) => {
-          const [, day, month, year] = match;
-          return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-        },
-      },
-      {
-        regex: /^(\d{4})-(\d{2})-(\d{2})$/,
-        parser: (match: RegExpMatchArray) => {
-          const [, year, month, day] = match;
-          return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
-        },
-      },
+      /^(\d{2})\/(\d{2})\/(\d{4})$/, // DD/MM/YYYY
+      /^(\d{4})-(\d{2})-(\d{2})$/,   // YYYY-MM-DD
+      /^(\d{2})-(\d{2})-(\d{4})$/,   // DD-MM-YYYY
     ];
 
     for (const format of formats) {
-      const match = cleanDate.match(format.regex);
+      const match = dateStr.match(format);
       if (match) {
-        const date = format.parser(match);
-        if (!isNaN(date.getTime())) {
-          const currentYear = new Date().getFullYear();
-          const dateYear = date.getFullYear();
-          if (dateYear >= 2000 && dateYear <= currentYear + 10) {
-            return date;
-          }
+        if (format === formats[0] || format === formats[2]) {
+          // DD/MM/YYYY ou DD-MM-YYYY
+          const [, day, month, year] = match;
+          return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+        } else {
+          // YYYY-MM-DD
+          const [, year, month, day] = match;
+          return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
         }
       }
     }
 
-    const parts = cleanDate.split('/');
-    if (parts.length === 3) {
-      const [part1, part2, part3] = parts.map((p) => parseInt(p));
-      if (part3 >= 2020 && part3 <= 2030) {
-        if (part1 <= 12 && part2 <= 31 && part2 > 12) {
-          return new Date(part3, part1 - 1, part2);
-        } else if (part2 <= 12 && part1 <= 31 && part1 > 12) {
-          return new Date(part3, part2 - 1, part1);
-        } else if (part1 <= 12 && part2 <= 31) {
-          return new Date(part3, part1 - 1, part2);
-        }
-      }
+    // Tentar parse direto
+    const date = new Date(dateStr);
+    if (isNaN(date.getTime())) {
+      throw new Error(`Data inválida: ${dateStr}`);
     }
-
-    const fallbackDate = new Date(cleanDate);
-    if (!isNaN(fallbackDate.getTime())) {
-      return fallbackDate;
-    }
-
-    throw new Error(`Formato de data não reconhecido: ${dateString}`);
+    
+    return date;
   }
 
-  private parsePrice(priceString: string): number | null {
-    if (!priceString?.trim()) return null;
-
-    const cleaned = priceString
+  private parsePrice(priceStr: string): number | null {
+    if (!priceStr) return null;
+    
+    // Remover símbolos de moeda e normalizar
+    const cleaned = priceStr
       .replace(/[R$\s]/g, '')
-      .replace(/,(\d{2})$/, '.$1')
-      .replace(/,/g, '');
-
-    const parsed = parseFloat(cleaned);
-    return isNaN(parsed) || parsed < 0 ? null : parsed;
-  }
-
-  private buildAddress(row: CsvRow): string | null {
-    const parts = [
-      row.ENDEREÇO?.trim(),
-      row.NÚMERO?.trim(),
-      row.COMPLEMENTO?.trim(),
-    ].filter(Boolean);
-
-    return parts.length > 0 ? parts.join(', ') : null;
+      .replace(',', '.');
+    
+    const price = parseFloat(cleaned);
+    
+    if (isNaN(price) || price < 0) {
+      return null;
+    }
+    
+    return price;
   }
 }

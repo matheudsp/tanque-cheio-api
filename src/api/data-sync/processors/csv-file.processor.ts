@@ -8,11 +8,10 @@ import {
   ProcessingResult,
 } from '../interfaces/file-processor.interface';
 import { CsvRowValidator } from '../validators/csv-row.validator';
-import { CsvToGasStationMapper } from '../mappers/csv-to-gas-station.mapper';
-import { GasStationBatchRepository } from '../repositories/gas-station-batch.repository';
+import { CsvToEntitiesMapper } from '../mappers/csv-to-gas-station.mapper';
+import { EntitiesBatchRepository } from '../repositories/gas-station-batch.repository';
 import * as Papa from 'papaparse';
 import * as fs from 'fs';
-import type { GasStation } from '@/database/entity/gas-station.entity';
 import * as path from 'path';
 
 @Injectable()
@@ -21,19 +20,19 @@ export class CsvFileProcessor implements IFileProcessor<CsvRow> {
 
   constructor(
     private readonly validator: CsvRowValidator,
-    private readonly mapper: CsvToGasStationMapper,
-    private readonly repository: GasStationBatchRepository,
+    private readonly mapper: CsvToEntitiesMapper,
+    private readonly repository: EntitiesBatchRepository,
   ) {}
 
-  async processFile(filePath: string): Promise<any> {
+  async processFile(filePath: string): Promise<ProcessingResult> {
     try {
       const fileContent = this.readFile(filePath);
       const cleanedContent = this.preprocessContent(fileContent);
       const rows = await this.parseCSV(cleanedContent);
       const validRows = this.filterValidRows(rows);
-      const entities = this.mapToEntities(validRows);
+      const mappedData = this.mapToEntities(validRows);
 
-      return await this.repository.saveInBatches(entities);
+      return await this.repository.saveInBatches(mappedData);
     } catch (error) {
       this.logger.error('File processing failed:', error);
       throw error;
@@ -43,8 +42,8 @@ export class CsvFileProcessor implements IFileProcessor<CsvRow> {
   validateRow(row: CsvRow): ValidationResult {
     return this.validator.validate([row])[0];
   }
+
   private readFile(filePath: string): string {
-    // Construir o caminho completo corretamente
     const fullPath = this.buildFullPath(filePath);
 
     if (!fs.existsSync(fullPath)) {
@@ -56,15 +55,11 @@ export class CsvFileProcessor implements IFileProcessor<CsvRow> {
   }
 
   private buildFullPath(filePath: string): string {
-    // Se o caminho já é absoluto, usar como está
     if (path.isAbsolute(filePath)) {
       return filePath;
     }
 
-    // Se começa with '/', remove para evitar path duplo
     const cleanPath = filePath.startsWith('/') ? filePath.slice(1) : filePath;
-
-    // Construir caminho relativo ao diretório public
     return path.join(process.cwd(), 'public', cleanPath);
   }
 
@@ -104,7 +99,7 @@ export class CsvFileProcessor implements IFileProcessor<CsvRow> {
     return rows.filter((row, index) => validationResults[index].isValid);
   }
 
-  private mapToEntities(rows: CsvRow[]): GasStation[] {
-    return rows.map((row) => this.mapper.map(row));
+  private mapToEntities(rows: CsvRow[]) {
+    return this.mapper.mapRows(rows);
   }
 }

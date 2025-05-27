@@ -2,8 +2,9 @@ import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { GasStation } from '@/database/entity/gas-station.entity';
-import { GasStationBatchRepository } from '../repositories/gas-station-batch.repository';
-import { CsvToGasStationMapper } from '../mappers/csv-to-gas-station.mapper';
+import { Localization } from '@/database/entity/localization.entity';
+import { Product } from '@/database/entity/product.entity';
+import { PriceHistory } from '@/database/entity/price-history.entity';
 import {
   responseOk,
   responseInternalServerError,
@@ -23,8 +24,13 @@ export class FileProcessorCsvService {
 
   constructor(
     @InjectRepository(GasStation)
-    private readonly batchRepository: GasStationBatchRepository,
-    private readonly csvMapper: CsvToGasStationMapper,
+    private readonly gasStationRepository: Repository<GasStation>,
+    @InjectRepository(Localization)
+    private readonly localizationRepository: Repository<Localization>,
+    @InjectRepository(Product)
+    private readonly productRepository: Repository<Product>,
+    @InjectRepository(PriceHistory)
+    private readonly priceHistoryRepository: Repository<PriceHistory>,
   ) {}
 
   async processCsvFile(filePath: string) {
@@ -74,6 +80,9 @@ export class FileProcessorCsvService {
     const result: ProcessingResult = {
       totalProcessed: 0,
       totalErrors: 0,
+      totalInserted: 0,
+      totalUpdated: 0,
+      totalSkipped: 0,
       errors: [],
     };
 
@@ -128,36 +137,14 @@ export class FileProcessorCsvService {
                 return;
               }
 
-              // Mapear para entidades
-              const gasStations = this.mapAndValidateEntities(
-                validRows,
-                result,
-              );
-              this.logger.log(
-                `Entidades válidas criadas: ${gasStations.length}`,
-              );
-
-              if (gasStations.length > 0) {
-                // Usar o repository de lote aprimorado
-                const saveResult =
-                  await this.batchRepository.saveInBatches(gasStations);
-
-                // Consolidar resultados
-                result.totalProcessed = saveResult.totalProcessed;
-                result.totalErrors += saveResult.totalErrors;
-                result.errors.push(...saveResult.errors);
-
-                // Adicionar informações detalhadas do processamento
-                (result as any).totalInserted = saveResult.totalInserted;
-                (result as any).totalUpdated = saveResult.totalUpdated;
-                (result as any).totalSkipped = saveResult.totalSkipped;
-              }
+              // Processar as linhas em lotes
+              await this.processRowsInBatches(validRows, result);
 
               this.logger.log(
                 `Processamento final: ${result.totalProcessed} processados, ` +
-                  `${(result as any).totalInserted || 0} inseridos, ` +
-                  `${(result as any).totalUpdated || 0} atualizados, ` +
-                  `${(result as any).totalSkipped || 0} ignorados, ` +
+                  `${result.totalInserted} inseridos, ` +
+                  `${result.totalUpdated} atualizados, ` +
+                  `${result.totalSkipped} ignorados, ` +
                   `${result.totalErrors} erros`,
               );
 
@@ -194,6 +181,241 @@ export class FileProcessorCsvService {
         error: `Erro no pré-processamento: ${error.message}`,
       });
       return result;
+    }
+  }
+
+  private async processRowsInBatches(
+    rows: CsvRow[],
+    result: ProcessingResult,
+    batchSize: number = 100,
+  ): Promise<void> {
+    for (let i = 0; i < rows.length; i += batchSize) {
+      const batch = rows.slice(i, i + batchSize);
+      await this.processBatch(batch, result, i);
+    }
+  }
+
+  private async processBatch(
+    batch: CsvRow[],
+    result: ProcessingResult,
+    startIndex: number,
+  ): Promise<void> {
+    const queryRunner = this.gasStationRepository.manager.connection.createQueryRunner();
+    await queryRunner.connect();
+    await queryRunner.startTransaction();
+
+    try {
+      for (let i = 0; i < batch.length; i++) {
+        const row = batch[i];
+        const rowIndex = startIndex + i + 1;
+
+        try {
+          await this.processRow(row, queryRunner, result);
+          result.totalProcessed++;
+        } catch (error) {
+          result.totalErrors++;
+          result.errors.push({
+            row: rowIndex,
+            data: row,
+            error: error.message,
+          });
+          this.logger.warn(`Erro ao processar linha ${rowIndex}: ${error.message}`);
+        }
+      }
+
+      await queryRunner.commitTransaction();
+    } catch (error) {
+      await queryRunner.rollbackTransaction();
+      this.logger.error('Erro ao processar lote:', error);
+      throw error;
+    } finally {
+      await queryRunner.release();
+    }
+  }
+
+  private async processRow(row: CsvRow, queryRunner: any, result: ProcessingResult): Promise<void> {
+    // 1. Processar/criar localização
+    const localization = await this.findOrCreateLocalization(row, queryRunner);
+
+    // 2. Processar/criar produto
+    const product = await this.findOrCreateProduct(row, queryRunner);
+
+    // 3. Processar/criar posto de gasolina
+    const gasStation = await this.findOrCreateGasStation(row, localization, queryRunner);
+
+    // 4. Processar histórico de preços
+    await this.createOrUpdatePriceHistory(row, gasStation, product, queryRunner, result);
+  }
+
+  private async findOrCreateLocalization(row: CsvRow, queryRunner: any): Promise<Localization> {
+    const localizationData = {
+      uf: row.ESTADO?.trim().toUpperCase(),
+      municipio: row.MUNICÍPIO?.trim(),
+      endereco: row.ENDEREÇO?.trim() || null,
+      numero: row.NÚMERO?.trim() || null,
+      complemento: row.COMPLEMENTO?.trim() || null,
+      bairro: row.BAIRRO?.trim() || null,
+      cep: this.formatCep(row.CEP),
+    };
+
+    // Buscar localização existente usando a chave única
+    const tempLocalization = new Localization();
+    Object.assign(tempLocalization, localizationData);
+    const locationKey = tempLocalization.getLocationKey();
+
+    let existingLocalization = await queryRunner.manager
+      .createQueryBuilder(Localization, 'loc')
+      .where('loc.uf = :uf AND loc.municipio = :municipio', {
+        uf: localizationData.uf,
+        municipio: localizationData.municipio,
+      })
+      .andWhere(
+        '(loc.endereco = :endereco OR (loc.endereco IS NULL AND :endereco IS NULL))',
+        { endereco: localizationData.endereco },
+      )
+      .andWhere(
+        '(loc.numero = :numero OR (loc.numero IS NULL AND :numero IS NULL))',
+        { numero: localizationData.numero },
+      )
+      .getOne();
+
+    if (!existingLocalization) {
+      const newLocalization = queryRunner.manager.create(Localization, localizationData);
+      if (!newLocalization.isValid()) {
+        throw new Error(`Dados de localização inválidos: ${JSON.stringify(localizationData)}`);
+      }
+      existingLocalization = await queryRunner.manager.save(newLocalization);
+    }
+
+    return existingLocalization;
+  }
+
+  private async findOrCreateProduct(row: CsvRow, queryRunner: any): Promise<Product> {
+    const normalizedName = Product.normalizeName(row.PRODUTO?.trim() || '');
+    
+    if (!normalizedName) {
+      throw new Error('Nome do produto é obrigatório');
+    }
+
+    let existingProduct = await queryRunner.manager.findOne(Product, {
+      where: { nome: normalizedName },
+    });
+
+    if (!existingProduct) {
+      const productData = {
+        nome: normalizedName,
+        categoria: Product.determineCategory(normalizedName),
+        unidade_medida: Product.determineUnit(normalizedName),
+        descricao: null,
+        ativo: true,
+      };
+
+      const newProduct = queryRunner.manager.create(Product, productData);
+      if (!newProduct.isValid()) {
+        throw new Error(`Dados do produto inválidos: ${JSON.stringify(productData)}`);
+      }
+      existingProduct = await queryRunner.manager.save(newProduct);
+    }
+
+    return existingProduct;
+  }
+
+  private async findOrCreateGasStation(
+    row: CsvRow,
+    localization: Localization,
+    queryRunner: any,
+  ): Promise<GasStation> {
+    const normalizedCnpj = this.normalizeCnpj(row.CNPJ);
+    
+    if (!GasStation.validateCnpj(normalizedCnpj)) {
+      throw new Error(`CNPJ inválido: ${row.CNPJ}`);
+    }
+
+    let existingGasStation = await queryRunner.manager.findOne(GasStation, {
+      where: { cnpj: normalizedCnpj },
+    });
+
+    if (!existingGasStation) {
+      const gasStationData = {
+        nome: GasStation.normalizeName(row.RAZÃO?.trim() || ''),
+        nome_fantasia: row.FANTASIA?.trim() || null,
+        bandeira: row.BANDEIRA?.trim() || null,
+        cnpj: normalizedCnpj,
+        ativo: true,
+        localizacao: localization,
+        localizacao_id: localization.id,
+        bandeira_id: null,
+      };
+
+      const newGasStation = queryRunner.manager.create(GasStation, gasStationData);
+      if (!newGasStation.isValid()) {
+        throw new Error(`Dados do posto inválidos: ${JSON.stringify(gasStationData)}`);
+      }
+      existingGasStation = await queryRunner.manager.save(newGasStation);
+    }
+
+    return existingGasStation;
+  }
+
+  private async createOrUpdatePriceHistory(
+    row: CsvRow,
+    gasStation: GasStation,
+    product: Product,
+    queryRunner: any,
+    result: ProcessingResult,
+  ): Promise<void> {
+    const dataColeta = this.parseDate(row['DATA DA COLETA']);
+    const precoVenda = this.parsePrice(row['PREÇO DE REVENDA']);
+
+    if (!dataColeta) {
+      throw new Error(`Data de coleta inválida: ${row['DATA DA COLETA']}`);
+    }
+
+    const upsertKey = PriceHistory.createUpsertKey(
+      gasStation.id,
+      product.id,
+      dataColeta,
+    );
+
+    // Verificar se já existe registro para esta data
+    const existingPriceHistory = await queryRunner.manager.findOne(PriceHistory, {
+      where: {
+        posto_id: gasStation.id,
+        produto_id: product.id,
+        data_coleta: dataColeta,
+      },
+    });
+
+    if (existingPriceHistory) {
+      // Verificar se os dados são diferentes
+      const needsUpdate = existingPriceHistory.preco_venda !== precoVenda;
+
+      if (needsUpdate) {
+        existingPriceHistory.preco_venda = precoVenda;
+        existingPriceHistory.ativo = true;
+        await queryRunner.manager.save(existingPriceHistory);
+        result.totalUpdated++;
+      } else {
+        result.totalSkipped++;
+      }
+    } else {
+      // Criar novo registro
+      const priceHistoryData = {
+        data_coleta: dataColeta,
+        preco_venda: precoVenda,
+        ativo: true,
+        posto: gasStation,
+        posto_id: gasStation.id,
+        produto: product,
+        produto_id: product.id,
+      };
+
+      const newPriceHistory = queryRunner.manager.create(PriceHistory, priceHistoryData);
+      if (!newPriceHistory.isValid()) {
+        throw new Error(`Dados do histórico de preços inválidos: ${JSON.stringify(priceHistoryData)}`);
+      }
+      await queryRunner.manager.save(newPriceHistory);
+      result.totalInserted++;
     }
   }
 
@@ -254,30 +476,30 @@ export class FileProcessorCsvService {
       try {
         // Validações básicas
         const hasValidCnpj = this.isValidCnpj(row.CNPJ);
-        const hasValidMunicipio = this.isValidString(
-          row.MUNICÍPIO,
-          'MUNICÍPIO',
-        );
+        const hasValidMunicipio = this.isValidString(row.MUNICÍPIO, 'MUNICÍPIO');
         const hasValidProduto = this.isValidString(row.PRODUTO, 'PRODUTO');
         const hasValidEstado = this.isValidString(row.ESTADO, 'ESTADO');
         const hasValidDataColeta = this.isValidString(
           row['DATA DA COLETA'],
           'DATA DA COLETA',
         );
+        const hasValidRazao = this.isValidString(row.RAZÃO, 'RAZÃO');
 
         if (
           hasValidCnpj &&
           hasValidMunicipio &&
           hasValidProduto &&
           hasValidEstado &&
-          hasValidDataColeta
+          hasValidDataColeta &&
+          hasValidRazao
         ) {
           validRows.push(row);
         } else {
           this.logger.debug(
             `Linha ${index + 1} inválida - CNPJ: "${row.CNPJ}", ` +
               `MUNICÍPIO: "${row.MUNICÍPIO}", PRODUTO: "${row.PRODUTO}", ` +
-              `ESTADO: "${row.ESTADO}", DATA: "${row['DATA DA COLETA']}"`,
+              `ESTADO: "${row.ESTADO}", DATA: "${row['DATA DA COLETA']}", ` +
+              `RAZÃO: "${row.RAZÃO}"`,
           );
         }
       } catch (error) {
@@ -294,36 +516,6 @@ export class FileProcessorCsvService {
     return validRows;
   }
 
-  private mapAndValidateEntities(
-    rows: CsvRow[],
-    result: ProcessingResult,
-  ): GasStation[] {
-    const gasStations: GasStation[] = [];
-
-    rows.forEach((row, index) => {
-      try {
-        const gasStation = this.csvMapper.map(row);
-
-        // Validação adicional da entidade mapeada
-        if (this.validateEntity(gasStation)) {
-          gasStations.push(gasStation);
-        } else {
-          throw new Error('Entidade inválida após mapeamento');
-        }
-      } catch (error) {
-        result.totalErrors++;
-        result.errors.push({
-          row: index + 1,
-          data: row,
-          error: `Erro no mapeamento: ${error.message}`,
-        });
-        this.logger.warn(`Erro ao mapear linha ${index + 1}: ${error.message}`);
-      }
-    });
-
-    return gasStations;
-  }
-
   private isValidCnpj(cnpj: string): boolean {
     if (!cnpj || typeof cnpj !== 'string') return false;
 
@@ -333,7 +525,8 @@ export class FileProcessorCsvService {
       trimmed !== 'CNPJ' &&
       !trimmed.includes('AGÊNCIA NACIONAL') &&
       !trimmed.includes('SUPERINTENDÊNCIA') &&
-      !trimmed.includes('SISTEMA DE')
+      !trimmed.includes('SISTEMA DE') &&
+      GasStation.validateCnpj(trimmed)
     );
   }
 
@@ -346,14 +539,62 @@ export class FileProcessorCsvService {
     );
   }
 
-  private validateEntity(entity: GasStation): boolean {
-    return !!(
-      entity.cnpj &&
-      entity.localizacao.uf &&
-      entity.localizacao.municipio &&
-      entity.nome &&
-      entity.produto &&
-      entity.data_coleta
-    );
+  private normalizeCnpj(cnpj: string): string {
+    return cnpj?.replace(/[^\d]/g, '') || '';
+  }
+
+  private formatCep(cep: string): string | null {
+    if (!cep) return null;
+    const cleaned = cep.replace(/[^\d]/g, '');
+    if (cleaned.length === 8) {
+      return `${cleaned.substr(0, 5)}-${cleaned.substr(5)}`;
+    }
+    return cleaned.length > 0 ? cleaned : null;
+  }
+
+  private parseDate(dateString: string): Date | null {
+    if (!dateString) return null;
+
+    try {
+      // Assumindo formato DD/MM/YYYY ou DD-MM-YYYY
+      const cleaned = dateString.trim();
+      const parts = cleaned.split(/[\/\-]/);
+      
+      if (parts.length === 3) {
+        const day = parseInt(parts[0], 10);
+        const month = parseInt(parts[1], 10) - 1; // Month is 0-indexed
+        const year = parseInt(parts[2], 10);
+        
+        if (year > 1900 && month >= 0 && month <= 11 && day >= 1 && day <= 31) {
+          return new Date(year, month, day);
+        }
+      }
+
+      // Tentar parse direto
+      const parsed = new Date(cleaned);
+      if (!isNaN(parsed.getTime())) {
+        return parsed;
+      }
+
+      return null;
+    } catch (error) {
+      return null;
+    }
+  }
+
+  private parsePrice(priceString: string): number | null {
+    if (!priceString) return null;
+
+    try {
+      // Remover símbolos de moeda e espaços
+      const cleaned = priceString
+        .replace(/[R$\s]/g, '')
+        .replace(',', '.');
+      
+      const parsed = parseFloat(cleaned);
+      return !isNaN(parsed) && parsed >= 0 ? parsed : null;
+    } catch (error) {
+      return null;
+    }
   }
 }

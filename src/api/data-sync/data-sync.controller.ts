@@ -69,7 +69,7 @@ export class DataSyncController {
   @OpenApiResponses([HttpStatus.BAD_REQUEST, HttpStatus.INTERNAL_SERVER_ERROR])
   async processCsv() {
     try {
-      const fileToProcess = 'anp_mes5_semana4_sample.csv';  
+      const fileToProcess = 'anp_mes5_semana4.csv';  
 
       this.logger.log(`Processing file: ${fileToProcess}`);
 
@@ -96,7 +96,7 @@ export class DataSyncController {
     // 1) deixe claro que é um array de strings
     const parts: string[] = []; // ou:  const parts = [] as string[];
 
-    if (result.totalInserted > 0) {
+    if (result.totalInserted! > 0) {
       parts.push(`${result.totalInserted} novos registros inseridos`);
     }
 

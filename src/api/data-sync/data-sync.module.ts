@@ -13,16 +13,18 @@ import { FileTransformerCsv } from './services/file-transformer-csv.service';
 // New refactored components
 import { CsvFileProcessor } from './processors/csv-file.processor';
 import { CsvRowValidator } from './validators/csv-row.validator';
-import { CsvToGasStationMapper } from './mappers/csv-to-gas-station.mapper';
-import { GasStationBatchRepository } from './repositories/gas-station-batch.repository';
-import { Localizacao } from '@/database/entity/location.entity';
-import { Produto } from '@/database/entity/product.entity';
+import { CsvToEntitiesMapper } from './mappers/csv-to-gas-station.mapper';
+import { EntitiesBatchRepository } from './repositories/gas-station-batch.repository';
+import { Localization } from '@/database/entity/localization.entity';
+import { Product } from '@/database/entity/product.entity';
+import { PriceHistory } from '@/database/entity/price-history.entity';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([GasStation]),
-    TypeOrmModule.forFeature([Produto]),
-    TypeOrmModule.forFeature([Localizacao]),
+    TypeOrmModule.forFeature([Product]),
+    TypeOrmModule.forFeature([Localization]),
+    TypeOrmModule.forFeature([PriceHistory]),
   ],
   providers: [
     // Legacy services (for backward compatibility)
@@ -33,10 +35,10 @@ import { Produto } from '@/database/entity/product.entity';
     // New SOLID components
     CsvFileProcessor,
     CsvRowValidator,
-    CsvToGasStationMapper,
-    GasStationBatchRepository,
+    CsvToEntitiesMapper,
+    EntitiesBatchRepository,
   ],
   controllers: [DataSyncController],
-  exports: [CsvFileProcessor, GasStationBatchRepository],
+  exports: [CsvFileProcessor, EntitiesBatchRepository],
 })
 export class DataSyncModule {}

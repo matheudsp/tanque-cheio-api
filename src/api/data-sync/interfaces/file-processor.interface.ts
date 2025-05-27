@@ -37,9 +37,9 @@ export interface CsvRow {
 export interface ProcessingResult {
   totalProcessed: number;
   totalErrors: number;
-  totalSkipped?: number; // Novos registros pulados
-  totalInserted?: number; // Novos registros inseridos
-  totalUpdated?: number; // Registros atualizados
+  totalSkipped: number; // Novos registros pulados
+  totalInserted: number; // Novos registros inseridos
+  totalUpdated: number; // Registros atualizados
   errors: Array<{
     row: number;
     data: any;

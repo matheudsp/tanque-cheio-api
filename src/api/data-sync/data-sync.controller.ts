@@ -1,11 +1,12 @@
 import { Body, Controller, HttpStatus, Logger, Post } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
-import { CsvFileProcessor } from './processors/csv-file.processor';
+
 import { FileTransformerService } from './services/file-transformer.service';
 
 import { OpenApiResponses } from '@/common/decorators/openapi.decorator';
 import { DownloadSpreadsheetDto } from './dtos/download-spreadsheet.dto';
 import { responseOk, responseBadRequest } from '@/common/utils/response-api';
+import { CsvProcessor } from './processors/csv-file.processor';
 
 @ApiTags('Sincronizar Dados')
 @Controller({ path: 'data-sync', version: '1' })
@@ -13,7 +14,7 @@ export class DataSyncController {
   private readonly logger = new Logger(DataSyncController.name);
 
   constructor(
-    private readonly csvProcessor: CsvFileProcessor,
+    private readonly csvProcessor: CsvProcessor,
     private readonly fileTransformer: FileTransformerService,
   ) {}
 
@@ -70,7 +71,7 @@ export class DataSyncController {
   @OpenApiResponses([HttpStatus.BAD_REQUEST, HttpStatus.INTERNAL_SERVER_ERROR])
   async processCsv() {
     try {
-      const fileToProcess = 'anp_mes5_semana4.csv';
+      const fileToProcess = 'anp_mes5_semana4_sample.csv';
 
       this.logger.log(`Processing file: ${fileToProcess}`);
 

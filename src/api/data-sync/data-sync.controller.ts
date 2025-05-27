@@ -1,9 +1,10 @@
 import { Body, Controller, HttpStatus, Logger, Post } from '@nestjs/common';
-import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CsvFileProcessor } from './processors/csv-file.processor';
-import { FileTransformerCsv } from './services/file-transformer-csv.service';
+import { FileTransformerService } from './services/file-transformer.service';
+
 import { OpenApiResponses } from '@/common/decorators/openapi.decorator';
-import { DownloadSpreadsheetDto } from '../gas-station/dtos/gas-station.dto';
+import { DownloadSpreadsheetDto } from './dtos/download-spreadsheet.dto';
 import { responseOk, responseBadRequest } from '@/common/utils/response-api';
 
 @ApiTags('Sincronizar Dados')
@@ -13,7 +14,7 @@ export class DataSyncController {
 
   constructor(
     private readonly csvProcessor: CsvFileProcessor,
-    private readonly fileTransformer: FileTransformerCsv,
+    private readonly fileTransformer: FileTransformerService,
   ) {}
 
   @Post('process-csv')
@@ -69,7 +70,7 @@ export class DataSyncController {
   @OpenApiResponses([HttpStatus.BAD_REQUEST, HttpStatus.INTERNAL_SERVER_ERROR])
   async processCsv() {
     try {
-      const fileToProcess = 'anp_mes5_semana4.csv';  
+      const fileToProcess = 'anp_mes5_semana4.csv';
 
       this.logger.log(`Processing file: ${fileToProcess}`);
 
@@ -77,7 +78,7 @@ export class DataSyncController {
 
       const message = this.buildProcessingMessage(result);
 
-      return responseOk({ 
+      return responseOk({
         message,
         data: result,
       });
@@ -87,16 +88,152 @@ export class DataSyncController {
     }
   }
 
+  @Post('download-spreadsheet')
+  @ApiOperation({
+    summary: 'Download and process ANP spreadsheet',
+    description:
+      'Downloads and processes official ANP XLSX file with smart upsert logic',
+  })
+  @ApiResponse({
+    status: HttpStatus.OK,
+    description: 'Spreadsheet downloaded and processed successfully',
+    schema: {
+      type: 'object',
+      properties: {
+        success: { type: 'boolean' },
+        message: { type: 'string' },
+        data: {
+          type: 'object',
+          properties: {
+            downloadInfo: {
+              type: 'object',
+              properties: {
+                originalUrl: { type: 'string' },
+                fileName: { type: 'string' },
+                csvPath: { type: 'string' },
+                rowCount: { type: 'number' },
+                columnCount: { type: 'number' },
+                fileSize: { type: 'number' },
+                headers: {
+                  type: 'array',
+                  items: { type: 'string' },
+                },
+                validationSummary: {
+                  type: 'object',
+                  properties: {
+                    isValid: { type: 'boolean' },
+                    errorCount: { type: 'number' },
+                    warningCount: { type: 'number' },
+                    emptyRows: { type: 'number' },
+                    duplicateRows: { type: 'number' },
+                  },
+                },
+              },
+            },
+            processingResult: {
+              type: 'object',
+              properties: {
+                totalProcessed: { type: 'number' },
+                totalInserted: { type: 'number' },
+                totalUpdated: { type: 'number' },
+                totalSkipped: { type: 'number' },
+                totalErrors: { type: 'number' },
+              },
+            },
+          },
+        },
+      },
+    },
+  })
+  @OpenApiResponses([HttpStatus.BAD_REQUEST, HttpStatus.INTERNAL_SERVER_ERROR])
+  async downloadSpreadsheet(@Body() body: DownloadSpreadsheetDto) {
+    let tempFiles: string[] = [];
+    
+    try {
+      this.logger.log(`Starting spreadsheet download from: ${body.url}`);
+
+      // Step 1: Download and convert XLSX to CSV
+      const downloadResult = await this.fileTransformer.downloadAndConvert(
+        body.url,
+      );
+
+      if (!downloadResult.success) {
+        this.logger.error(
+          'Failed to download and convert spreadsheet',
+          downloadResult.errors,
+        );
+        return responseBadRequest({
+          error: 'Falha no download da planilha',
+          message: downloadResult.errors?.join(', ') || 'Erro desconhecido',
+        });
+      }
+
+      const processedFile = downloadResult.processedFile!;
+      tempFiles = downloadResult.tempFiles || [];
+
+      this.logger.log(
+        `Spreadsheet converted successfully: ${processedFile.rowCount} rows, ${processedFile.columnCount} columns`,
+      );
+
+      // Step 2: Process the converted CSV
+      const processingResult = await this.csvProcessor.processFile(
+        processedFile.csvPath,
+      );
+
+      this.logger.log(
+        `CSV processing completed: ${processingResult.totalProcessed} records processed`,
+      );
+
+      // Step 3: Build response message
+      const processingMessage = this.buildProcessingMessage(processingResult);
+      const validationSummary = this.buildValidationSummary(processedFile.validationResult);
+      
+      let successMessage = `Planilha baixada e processada com sucesso. ${processingMessage}`;
+      
+      if (processedFile.validationResult.warnings.length > 0) {
+        successMessage += ` (${processedFile.validationResult.warnings.length} avisos encontrados)`;
+      }
+
+      return responseOk({
+        message: successMessage,
+        data: {
+          downloadInfo: {
+            originalUrl: body.url,
+            fileName: processedFile.originalName,
+            csvPath: processedFile.csvPath,
+            rowCount: processedFile.rowCount,
+            columnCount: processedFile.columnCount,
+            fileSize: processedFile.fileSize,
+            headers: processedFile.headers,
+            validationSummary,
+          },
+          processingResult,
+        },
+      });
+
+    } catch (error) {
+      this.logger.error('Spreadsheet processing failed:', error);
+      return responseBadRequest({
+        error: 'Erro no processamento da planilha',
+        message: error.message,
+      });
+    } finally {
+      // Cleanup temporary files asynchronously
+      if (tempFiles.length > 0) {
+        this.cleanupTempFilesAsync(tempFiles);
+      }
+    }
+  }
+
   private buildProcessingMessage(result: {
     totalInserted: number;
     totalUpdated: number;
     totalSkipped: number;
     totalErrors: number;
   }): string {
-    // 1) deixe claro que é um array de strings
-    const parts: string[] = []; // ou:  const parts = [] as string[];
+    const parts: string[] = [];
 
-    if (result.totalInserted! > 0) {
+    if (result.totalInserted > 0) {
       parts.push(`${result.totalInserted} novos registros inseridos`);
     }
 
@@ -117,41 +254,25 @@ export class DataSyncController {
     return parts.length > 0 ? parts.join(', ') : 'Nenhum registro processado';
   }
 
-  // @Post('download-spreadsheet')
-  // @ApiOperation({
-  //   summary: 'Download and process ANP spreadsheet',
-  //   description: 'Downloads and processes official ANP XLSX file with smart upsert logic'
-  // })
-  // async downloadSpreadsheet(@Body() body: DownloadSpreadsheetDto) {
-  //   try {
-  //     // Implementation would use fileTransformer service
-  //     const result = await this.fileTransformer.processFile(
-  //       body.url,
-  //       'anp-spreadsheet.xlsx',
-  //       { validateContent: true, customValidation: true }
-  //     );
+  private buildValidationSummary(validationResult: any) {
+    return {
+      isValid: validationResult.isValid,
+      errorCount: validationResult.errors.length,
+      warningCount: validationResult.warnings.length,
+      emptyRows: validationResult.emptyRows,
+      duplicateRows: validationResult.duplicateRows,
+    };
+  }
 
-  //     if (!result.success) {
-  //       return responseBadRequest({ error: result.errors });
-  //     }
-
-  //     // Process the converted CSV with smart upsert
-  //     const processResult = await this.csvProcessor.processFile(
-  //       result.processedFile.csvPath
-  //     );
-
-  //     // Cleanup temporary files
-  //     await this.fileTransformer.cleanup(result.processedFile.tempFiles);
-
-  //     const message = this.buildProcessingMessage(processResult);
-
-  //     return responseOk({
-  //       message: `Planilha baixada e processada com sucesso. ${message}`,
-  //       data: processResult
-  //     });
-  //   } catch (error) {
-  //     this.logger.error('Spreadsheet processing failed:', error);
-  //     return responseBadRequest({ error: error.message });
-  //   }
-  // }
+  private cleanupTempFilesAsync(tempFiles: string[]): void {
+    // Cleanup files asynchronously without blocking the response
+    setTimeout(async () => {
+      try {
+        await this.fileTransformer.cleanupFiles(tempFiles);
+        this.logger.log(`Cleaned up ${tempFiles.length} temporary files`);
+      } catch (error) {
+        this.logger.warn(`Failed to cleanup temporary files: ${error.message}`);
+      }
+    }, 5000); // Wait 5 seconds before cleanup to ensure response is sent
+  }
 }

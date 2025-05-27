@@ -1,11 +1,4 @@
 
-export class DownloadSpreadsheetDto {
-  /**
-   * URL da planilha XLSX da ANP
-   * @example "https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/arquivos-lpc/2025/revendas_lpc_2025-05-18_2025-05-24.xlsx"
-   */
-  url: string;
-}
 
 export class SearchGasStationsDto {
   /**

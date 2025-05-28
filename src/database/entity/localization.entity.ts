@@ -27,7 +27,7 @@ export class Localization {
   @Column({ type: 'text', nullable: true })
   endereco?: string | null;
 
-  @Column({ type: 'varchar', length: 10, nullable: true })
+  @Column({ type: 'varchar', length: 25, nullable: true })
   numero?: string | null;
 
   @Column({ type: 'varchar', length: 200, nullable: true })
@@ -36,7 +36,7 @@ export class Localization {
   @Column({ type: 'varchar', length: 200, nullable: true })
   bairro?: string | null;
 
-  @Column({ type: 'varchar', length: 9, nullable: true })
+  @Column({ type: 'varchar', length: 10, nullable: true })
   cep?: string | null; // Formato: 12345-678
 
   @Column({ type: 'decimal', precision: 11, scale: 8, nullable: true })

@@ -348,7 +348,7 @@ export class CsvProcessor {
     newRecord: PriceHistory,
   ): boolean {
     // Se os preços são iguais, não há necessidade de atualizar
-    if (existing.preco_venda === newRecord.preco_venda) {
+    if (existing.preco_venda == newRecord.preco_venda) {
       return false;
     }
 

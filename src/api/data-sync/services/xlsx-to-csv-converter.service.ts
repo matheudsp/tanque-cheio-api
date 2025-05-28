@@ -4,7 +4,10 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { randomUUID } from 'crypto';
 import { CsvRow } from '../interfaces/csv-row.interface';
-import type { ConversionResult, ValidationResult } from '../interfaces/xlsx-to-csv.interface';
+import type {
+  ConversionResult,
+  ValidationResult,
+} from '../interfaces/xlsx-to-csv.interface';
 
 @Injectable()
 export class XlsxToCsvConverterService {
@@ -26,7 +29,7 @@ export class XlsxToCsvConverterService {
 
   async convertToCsv(xlsxPath: string): Promise<ConversionResult> {
     try {
-      this.logger.log(`Converting XLSX to CSV: ${xlsxPath}`);
+      this.logger.log(`🔎Convertendo XLSX para CSV: ${xlsxPath}`);
 
       // Verificar se o arquivo existe
       await fs.access(xlsxPath);
@@ -34,26 +37,26 @@ export class XlsxToCsvConverterService {
       // Ler o arquivo XLSX preservando formato original
       const workbook = XLSX.readFile(xlsxPath, {
         type: 'file',
-        cellText: false,     // Desabilitar para ter controle manual
-        cellDates: false,    // Não converter datas automaticamente
-        cellNF: false,       // Desabilitar formatação automática
-        cellStyles: true,    // Preservar estilos para acessar formatação
-        sheetStubs: true,    // Incluir células vazias
-        raw: false,          // Não usar apenas valores brutos
-        dateNF: 'yyyy-mm-dd' // Formato padrão para datas se necessário
+        cellText: false, // Desabilitar para ter controle manual
+        cellDates: false, // Não converter datas automaticamente
+        cellNF: false, // Desabilitar formatação automática
+        cellStyles: true, // Preservar estilos para acessar formatação
+        sheetStubs: true, // Incluir células vazias
+        raw: false, // Não usar apenas valores brutos
+        dateNF: 'yyyy-mm-dd', // Formato padrão para datas se necessário
       });
-      
+
       // Obter a primeira planilha
       const sheetName = workbook.SheetNames[0];
       if (!sheetName) {
-        throw new Error('No worksheets found in the file');
+        throw new Error('❌Nenhuma planilha no arquivo');
       }
 
       const worksheet = workbook.Sheets[sheetName];
-      
+
       // Obter o range da planilha
       const range = XLSX.utils.decode_range(worksheet['!ref'] || 'A1');
-      
+
       // Encontrar a linha de cabeçalho procurando por 'CNPJ'
       let headerRowIndex = -1;
       for (let row = range.s.r; row <= range.e.r; row++) {
@@ -69,13 +72,16 @@ export class XlsxToCsvConverterService {
       }
 
       if (headerRowIndex === -1) {
-        throw new Error('Header row with CNPJ not found in the file');
+        throw new Error('❌Linha do cabeçalho com CNPJ não encontrado no arquivo');
       }
 
       // Extrair cabeçalhos
       const headers: string[] = [];
       for (let col = range.s.c; col <= range.e.c; col++) {
-        const cellAddress = XLSX.utils.encode_cell({ r: headerRowIndex, c: col });
+        const cellAddress = XLSX.utils.encode_cell({
+          r: headerRowIndex,
+          c: col,
+        });
         const cell = worksheet[cellAddress];
         headers.push(cell ? String(cell.v).trim() : '');
       }
@@ -88,79 +94,83 @@ export class XlsxToCsvConverterService {
         }
       });
 
-      const filteredHeaders = validColumns.map(col => headers[col]);
+      const filteredHeaders = validColumns.map((col) => headers[col]);
 
-      // Extrair dados das linhas
+      // Extrair dados das linhas com tratamento especial para CNPJ
       const dataRows: string[][] = [];
+      const cnpjColIndex = filteredHeaders.findIndex(
+        (h) => h.toUpperCase().trim() === 'CNPJ',
+      );
+
       for (let row = headerRowIndex + 1; row <= range.e.r; row++) {
         const rowData: string[] = [];
         let hasData = false;
 
-        for (const colIndex of validColumns) {
+        for (let i = 0; i < validColumns.length; i++) {
+          const colIndex = validColumns[i];
           const cellAddress = XLSX.utils.encode_cell({ r: row, c: colIndex });
           const cell = worksheet[cellAddress];
-          
+
           let cellValue = '';
           if (cell) {
-            // Estratégia para preservar formatação visual (especialmente CNPJ)
-            if (cell.w !== undefined && cell.w !== null && String(cell.w).trim() !== '') {
-              // Priorizar texto formatado - preserva formatação visual como CNPJ
+            if (
+              cell.w !== undefined &&
+              cell.w !== null &&
+              String(cell.w).trim() !== ''
+            ) {
               cellValue = String(cell.w).trim();
-            } else if (cell.z && cell.v !== undefined && cell.v !== null) {
-              // Se há formato personalizado, aplicar manualmente
-              try {
-                // Para CNPJ que pode estar formatado como número
-                if (typeof cell.v === 'number' && cell.z && cell.z.includes('.') && cell.z.includes('/')) {
-                  // Tentar formatar número como CNPJ
-                  const numStr = String(cell.v).padStart(14, '0');
-                  cellValue = `${numStr.substring(0,2)}.${numStr.substring(2,5)}.${numStr.substring(5,8)}/${numStr.substring(8,12)}-${numStr.substring(12,14)}`;
-                } else {
-                  cellValue = String(cell.v).trim();
-                }
-              } catch {
-                cellValue = String(cell.v).trim();
-              }
-            } else if (cell.t === 's') {
-              // Célula de texto - usar valor original
-              cellValue = String(cell.v).trim();
             } else if (cell.v !== undefined && cell.v !== null) {
-              // Para números que podem ser CNPJ (14 dígitos)
-              const rawValue = String(cell.v);
-              if (/^\d{11,14}$/.test(rawValue) && rawValue.length >= 11) {
-                // Pode ser CNPJ sem formatação - tentar formatar
-                const paddedValue = rawValue.padStart(14, '0');
-                if (paddedValue.length === 14) {
-                  cellValue = `${paddedValue.substring(0,2)}.${paddedValue.substring(2,5)}.${paddedValue.substring(5,8)}/${paddedValue.substring(8,12)}-${paddedValue.substring(12,14)}`;
-                } else {
-                  cellValue = rawValue;
-                }
-              } else {
-                cellValue = rawValue.trim();
-              }
-            }
-            
-            if (cellValue !== '') {
-              hasData = true;
+              cellValue = String(cell.v).trim();
             }
           }
-          
+
+          const headerName = filteredHeaders[i].toUpperCase().trim();
+
+          // Tratamento para CNPJ
+          if (i === cnpjColIndex && cellValue !== '') {
+            const numericCnpj = cellValue.replace(/\D/g, '').padStart(14, '0');
+
+            if (/^\d{14}$/.test(numericCnpj)) {
+              cellValue = `${numericCnpj.slice(0, 2)}.${numericCnpj.slice(2, 5)}.${numericCnpj.slice(5, 8)}/${numericCnpj.slice(8, 12)}-${numericCnpj.slice(12)}`;
+            }
+          }
+
+          // Tratamento para DATA DA COLETA
+          else if (headerName === 'DATA DA COLETA' && cell?.t === 'n') {
+            const excelDate = Number(cell.v); 
+
+            // Convertendo número serial para data no formato dd/MM/yyyy
+            if (!isNaN(excelDate)) { 
+              const date = XLSX.SSF.parse_date_code(excelDate);
+              if (date) {
+                const dd = String(date.d).padStart(2, '0');
+                const mm = String(date.m).padStart(2, '0');
+                const yyyy = date.y;
+                cellValue = `${dd}/${mm}/${yyyy}`;
+              }
+            }
+          }
+
+          if (cellValue !== '') {
+            hasData = true;
+          }
+
           rowData.push(cellValue);
         }
 
-        // Apenas adicionar linhas que têm pelo menos um dado
         if (hasData) {
           dataRows.push(rowData);
         }
       }
 
       // Gerar nome único para o arquivo CSV
-      const csvFileName = `converted_${randomUUID()}.csv`;
+      const csvFileName = `anp_${randomUUID()}.csv`;
       const csvPath = path.join(this.tempDir, csvFileName);
 
       // Construir dados para CSV
       const csvData = [filteredHeaders, ...dataRows];
       const csvContent = this.convertJsonToCsv(csvData);
-      
+
       // Salvar arquivo CSV
       await fs.writeFile(csvPath, csvContent, 'utf8');
 
@@ -168,7 +178,7 @@ export class XlsxToCsvConverterService {
       const columnCount = filteredHeaders.length;
 
       this.logger.log(
-        `XLSX converted successfully: ${csvFileName} (${rowCount} rows, ${columnCount} columns)`
+        `✅XLSX convertido com sucesso: ${csvFileName} (${rowCount} linhas, ${columnCount} colunas)`,
       );
 
       return {
@@ -179,44 +189,53 @@ export class XlsxToCsvConverterService {
         columnCount,
         headers: filteredHeaders,
       };
-
     } catch (error) {
-      this.logger.error(`XLSX conversion failed: ${error.message}`, error.stack);
+      this.logger.error(
+        `❌Conversão XLSX falhou: ${error.message}`,
+        error.stack,
+      );
       return {
         success: false,
-        error: `Conversion failed: ${error.message}`,
+        error: `❌Conversão falhou: ${error.message}`,
       };
     }
   }
 
   private convertJsonToCsv(data: string[][]): string {
     return data
-      .map(row => 
-        row.map(cell => {
-          const cellValue = String(cell || '');
-          
-          // Escapar aspas duplas e envolver em aspas se necessário
-          if (cellValue.includes(',') || cellValue.includes('\n') || cellValue.includes('"') || cellValue.includes(';')) {
-            return `"${cellValue.replace(/"/g, '""')}"`;
-          }
-          
-          return cellValue;
-        }).join(',')
+      .map((row) =>
+        row
+          .map((cell) => {
+            const cellValue = String(cell || '');
+
+            // Escapar aspas duplas e envolver em aspas se necessário
+            if (
+              cellValue.includes(',') ||
+              cellValue.includes('\n') ||
+              cellValue.includes('"') ||
+              cellValue.includes(';')
+            ) {
+              return `"${cellValue.replace(/"/g, '""')}"`;
+            }
+
+            return cellValue;
+          })
+          .join(','),
       )
       .join('\n');
   }
 
   async validateCsvStructure(csvPath: string): Promise<ValidationResult> {
     try {
-      this.logger.log(`Validating CSV structure: ${csvPath}`);
+      this.logger.log(`🔎Validando estrutura CSV: ${csvPath}`);
 
       const csvContent = await fs.readFile(csvPath, 'utf8');
-      const lines = csvContent.split('\n').filter(line => line.trim() !== '');
-      
+      const lines = csvContent.split('\n').filter((line) => line.trim() !== '');
+
       if (lines.length === 0) {
         return {
           isValid: false,
-          errors: ['CSV file is empty'],
+          errors: ['Arquivo CSV está vazio'],
           warnings: [],
           emptyRows: 0,
           duplicateRows: 0,
@@ -229,11 +248,11 @@ export class XlsxToCsvConverterService {
       // Validação básica apenas
       const headerLine = lines[0];
       const headers = this.parseCsvLine(headerLine);
-      
+
       if (headers.length === 0) {
         return {
           isValid: false,
-          errors: ['No headers found'],
+          errors: ['Nenhum cabeçalho encontrado'],
           warnings: [],
           emptyRows: 0,
           duplicateRows: 0,
@@ -250,10 +269,12 @@ export class XlsxToCsvConverterService {
       }
 
       if (emptyRows > 0) {
-        warnings.push(`Found ${emptyRows} empty rows`);
+        warnings.push(`Encontrado ${emptyRows} linhas vazias`);
       }
 
-      this.logger.log(`CSV validation completed: VALID (${warnings.length} warnings)`);
+      this.logger.log(
+        `✅Validação do CSV concluida: (${warnings.length} avisos)`,
+      );
 
       return {
         isValid: true,
@@ -262,12 +283,11 @@ export class XlsxToCsvConverterService {
         emptyRows,
         duplicateRows: 0,
       };
-
     } catch (error) {
-      this.logger.error(`CSV validation failed: ${error.message}`, error.stack);
+      this.logger.error(`❌Validação do CSV falhou: ${error.message}`, error.stack);
       return {
         isValid: false,
-        errors: [`Validation failed: ${error.message}`],
+        errors: [`Validação falhou: ${error.message}`],
         warnings: [],
         emptyRows: 0,
         duplicateRows: 0,
@@ -314,28 +334,30 @@ export class XlsxToCsvConverterService {
   async readCsvAsObjects(csvPath: string): Promise<CsvRow[]> {
     try {
       const csvContent = await fs.readFile(csvPath, 'utf8');
-      const lines = csvContent.split('\n').filter(line => line.trim() !== '');
-      
+      const lines = csvContent.split('\n').filter((line) => line.trim() !== '');
+
       if (lines.length < 2) {
         return [];
       }
 
       const headers = this.parseCsvLine(lines[0]);
       const dataLines = lines.slice(1);
-      
-      return dataLines.map(line => {
+
+      return dataLines.map((line) => {
         const cells = this.parseCsvLine(line);
         const row: any = {};
-        
+
         headers.forEach((header, index) => {
           row[header.trim()] = cells[index] || '';
         });
-        
+
         return row as CsvRow;
       });
-
     } catch (error) {
-      this.logger.error(`Failed to read CSV as objects: ${error.message}`, error.stack);
+      this.logger.error(
+        `❌Falha ao ler o CSV como objeto: ${error.message}`,
+        error.stack,
+      );
       throw error;
     }
   }
@@ -343,9 +365,11 @@ export class XlsxToCsvConverterService {
   async deleteCsvFile(csvPath: string): Promise<void> {
     try {
       await fs.unlink(csvPath);
-      this.logger.log(`Deleted CSV file: ${csvPath}`);
+      this.logger.log(`🎆Arquivo CSV deletado: ${csvPath}`);
     } catch (error) {
-      this.logger.warn(`Failed to delete CSV file ${csvPath}: ${error.message}`);
+      this.logger.warn(
+        `❌Falha ao deletar CSV ${csvPath}: ${error.message}`,
+      );
     }
   }
 }

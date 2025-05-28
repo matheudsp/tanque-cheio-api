@@ -26,7 +26,7 @@ export class PriceHistory {
   @Column({ type: 'date', nullable: false })
   data_coleta: Date;
 
-  @Column({ type: 'decimal', precision: 10, scale: 3, nullable: true })
+  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
   preco_venda?: number | null;
 
   @Column({ type: 'boolean', default: true })

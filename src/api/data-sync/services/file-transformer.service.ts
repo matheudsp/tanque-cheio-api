@@ -1,7 +1,9 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as fs from 'fs/promises';
 import { FileDownloaderService } from './file-downloader.service';
-import { XlsxToCsvConverterService, ProcessedFileInfo, ValidationResult } from './xlsx-to-csv-converter.service';
+import { XlsxToCsvConverterService} from './xlsx-to-csv-converter.service';
+import type { ProcessedFileInfo } from '../interfaces/xlsx-to-csv.interface';
+
 
 export interface FileTransformationResult {
   success: boolean;

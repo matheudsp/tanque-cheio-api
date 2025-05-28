@@ -303,7 +303,7 @@ export class CsvProcessor {
             // Registro idêntico ou mais antigo, pular
             result.totalSkipped++;
             this.logger.debug(
-              `⏭️ Registro ignorado - dados idênticos ou mais antigos: ${key}`,
+              `⏭️ Registro ignorado - dados idênticos: ${key}`,
             );
           }
         }
@@ -340,7 +340,7 @@ export class CsvProcessor {
    * Determina se um registro de histórico de preço deve ser atualizado
    * Critérios:
    * 1. Preço diferente
-   * 2. Data de coleta mais recente ou igual (permite re-processamento do mesmo arquivo)
+   * 2. Data de coleta igual (permite re-processamento do mesmo arquivo)
    * 3. Outros campos relevantes diferentes
    */
   private shouldUpdatePriceHistory(
@@ -364,7 +364,7 @@ export class CsvProcessor {
     }
 
     // Se chegou até aqui, o registro deve ser atualizado
-    // (preço diferente E data igual ou mais recente)
+    // (preço diferente E data igual)
     this.logger.debug(
       `🔄 Atualização necessária - preço: ${existing.preco_venda} → ${newRecord.preco_venda}`,
     );

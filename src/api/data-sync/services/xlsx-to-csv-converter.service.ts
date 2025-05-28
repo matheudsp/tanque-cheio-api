@@ -24,45 +24,6 @@ export class XlsxToCsvConverterService {
     }
   }
 
-  // Função auxiliar para verificar se um valor é uma data serial do Excel
-  private isExcelDateSerial(value: any): boolean {
-    return typeof value === 'number' && value > 1 && value < 2958466; // Range válido para datas Excel
-  }
-
-  // Função auxiliar para converter data serial do Excel para MM/DD/YYYY
-  private convertExcelSerialToDate(serial: number): string {
-    try {
-      // Excel conta a partir de 1/1/1900, mas tem um bug onde considera 1900 como ano bissexto
-      const excelEpoch = new Date(1900, 0, 1);
-      const millisecondsPerDay = 24 * 60 * 60 * 1000;
-      
-      // Ajuste para o bug do Excel (dia 60 = 29/02/1900 que não existe)
-      let adjustedSerial = serial;
-      if (serial >= 60) {
-        adjustedSerial = serial - 1;
-      }
-      
-      const date = new Date(excelEpoch.getTime() + (adjustedSerial - 1) * millisecondsPerDay);
-      
-      // Formatar como MM/DD/YYYY
-      const month = String(date.getMonth() + 1).padStart(2, '0');
-      const day = String(date.getDate()).padStart(2, '0');
-      const year = date.getFullYear();
-      
-      return `${month}/${day}/${year}`;
-    } catch (error) {
-      this.logger.warn(`Failed to convert Excel serial ${serial} to date: ${error.message}`);
-      return String(serial);
-    }
-  }
-
-  // Função auxiliar para verificar se uma coluna pode ser de data baseada no cabeçalho
-  private isDateColumn(header: string): boolean {
-    const dateKeywords = ['data', 'date', 'coleta', 'created', 'updated', 'nascimento', 'vencimento'];
-    const headerLower = header.toLowerCase();
-    return dateKeywords.some(keyword => headerLower.includes(keyword));
-  }
-
   async convertToCsv(xlsxPath: string): Promise<ConversionResult> {
     try {
       this.logger.log(`Converting XLSX to CSV: ${xlsxPath}`);
@@ -79,7 +40,7 @@ export class XlsxToCsvConverterService {
         cellStyles: true,    // Preservar estilos para acessar formatação
         sheetStubs: true,    // Incluir células vazias
         raw: false,          // Não usar apenas valores brutos
-        dateNF: 'mm/dd/yyyy' // Formato padrão para datas se necessário
+        dateNF: 'yyyy-mm-dd' // Formato padrão para datas se necessário
       });
       
       // Obter a primeira planilha
@@ -129,62 +90,52 @@ export class XlsxToCsvConverterService {
 
       const filteredHeaders = validColumns.map(col => headers[col]);
 
-      // Identificar colunas de data baseadas nos cabeçalhos
-      const dateColumnIndexes = new Set<number>();
-      filteredHeaders.forEach((header, index) => {
-        if (this.isDateColumn(header)) {
-          dateColumnIndexes.add(validColumns[index]);
-        }
-      });
-
       // Extrair dados das linhas
       const dataRows: string[][] = [];
       for (let row = headerRowIndex + 1; row <= range.e.r; row++) {
         const rowData: string[] = [];
         let hasData = false;
 
-        for (let i = 0; i < validColumns.length; i++) {
-          const colIndex = validColumns[i];
+        for (const colIndex of validColumns) {
           const cellAddress = XLSX.utils.encode_cell({ r: row, c: colIndex });
           const cell = worksheet[cellAddress];
           
           let cellValue = '';
           if (cell) {
-            // Verificar se é uma coluna de data e o valor é um serial do Excel
-            if (dateColumnIndexes.has(colIndex) && this.isExcelDateSerial(cell.v)) {
-              cellValue = this.convertExcelSerialToDate(cell.v);
-            }
-            // Tratamento especial para CNPJ (manter formatação existente)
-            else if (filteredHeaders[i] && filteredHeaders[i].toUpperCase() === 'CNPJ') {
-              if (cell.w !== undefined && cell.w !== null && String(cell.w).trim() !== '') {
-                // Priorizar texto formatado - preserva formatação visual como CNPJ
-                cellValue = String(cell.w).trim();
-              } else if (cell.v !== undefined && cell.v !== null) {
-                // Para números que podem ser CNPJ (14 dígitos)
-                const rawValue = String(cell.v);
-                if (/^\d{11,14}$/.test(rawValue) && rawValue.length >= 11) {
-                  // Pode ser CNPJ sem formatação - tentar formatar
-                  const paddedValue = rawValue.padStart(14, '0');
-                  if (paddedValue.length === 14) {
-                    cellValue = `${paddedValue.substring(0,2)}.${paddedValue.substring(2,5)}.${paddedValue.substring(5,8)}/${paddedValue.substring(8,12)}-${paddedValue.substring(12,14)}`;
-                  } else {
-                    cellValue = rawValue;
-                  }
+            // Estratégia para preservar formatação visual (especialmente CNPJ)
+            if (cell.w !== undefined && cell.w !== null && String(cell.w).trim() !== '') {
+              // Priorizar texto formatado - preserva formatação visual como CNPJ
+              cellValue = String(cell.w).trim();
+            } else if (cell.z && cell.v !== undefined && cell.v !== null) {
+              // Se há formato personalizado, aplicar manualmente
+              try {
+                // Para CNPJ que pode estar formatado como número
+                if (typeof cell.v === 'number' && cell.z && cell.z.includes('.') && cell.z.includes('/')) {
+                  // Tentar formatar número como CNPJ
+                  const numStr = String(cell.v).padStart(14, '0');
+                  cellValue = `${numStr.substring(0,2)}.${numStr.substring(2,5)}.${numStr.substring(5,8)}/${numStr.substring(8,12)}-${numStr.substring(12,14)}`;
                 } else {
-                  cellValue = rawValue.trim();
+                  cellValue = String(cell.v).trim();
                 }
+              } catch {
+                cellValue = String(cell.v).trim();
               }
-            }
-            // Tratamento geral para outras colunas
-            else {
-              if (cell.w !== undefined && cell.w !== null && String(cell.w).trim() !== '') {
-                // Priorizar texto formatado
-                cellValue = String(cell.w).trim();
-              } else if (cell.t === 's') {
-                // Célula de texto - usar valor original
-                cellValue = String(cell.v).trim();
-              } else if (cell.v !== undefined && cell.v !== null) {
-                cellValue = String(cell.v).trim();
+            } else if (cell.t === 's') {
+              // Célula de texto - usar valor original
+              cellValue = String(cell.v).trim();
+            } else if (cell.v !== undefined && cell.v !== null) {
+              // Para números que podem ser CNPJ (14 dígitos)
+              const rawValue = String(cell.v);
+              if (/^\d{11,14}$/.test(rawValue) && rawValue.length >= 11) {
+                // Pode ser CNPJ sem formatação - tentar formatar
+                const paddedValue = rawValue.padStart(14, '0');
+                if (paddedValue.length === 14) {
+                  cellValue = `${paddedValue.substring(0,2)}.${paddedValue.substring(2,5)}.${paddedValue.substring(5,8)}/${paddedValue.substring(8,12)}-${paddedValue.substring(12,14)}`;
+                } else {
+                  cellValue = rawValue;
+                }
+              } else {
+                cellValue = rawValue.trim();
               }
             }
             
@@ -219,14 +170,6 @@ export class XlsxToCsvConverterService {
       this.logger.log(
         `XLSX converted successfully: ${csvFileName} (${rowCount} rows, ${columnCount} columns)`
       );
-
-      // Log das colunas identificadas como data para debug
-      if (dateColumnIndexes.size > 0) {
-        const dateColumns = filteredHeaders.filter((_, index) => 
-          dateColumnIndexes.has(validColumns[index])
-        );
-        this.logger.log(`Date columns identified: ${dateColumns.join(', ')}`);
-      }
 
       return {
         success: true,

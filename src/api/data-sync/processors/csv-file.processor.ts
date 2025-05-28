@@ -47,7 +47,7 @@ export class CsvProcessor {
       const validRows = rows.filter(DataUtils.isValidRow);
 
       this.logger.log(
-        `Processing ${validRows.length} valid rows from ${rows.length} total`,
+        `🧪Processando ${validRows.length} linhas válidas de ${rows.length}`,
       );
 
       await this.processRowsInBatches(validRows, result);
@@ -55,7 +55,7 @@ export class CsvProcessor {
       result.processingTimeSeconds = (Date.now() - startTime) / 1000;
       return result;
     } catch (error) {
-      this.logger.error('File processing failed:', error);
+      this.logger.error('❌Processamento do arquivo falhou:', error);
       result.totalErrors++;
       result.errors.push({ row: -1, data: null, error: error.message });
       return result;
@@ -68,7 +68,7 @@ export class CsvProcessor {
       : path.join(process.cwd(), 'public', filePath);
 
     if (!fs.existsSync(fullPath)) {
-      throw new Error(`File not found: ${fullPath}`);
+      throw new Error(`❌Arquivo não encontrado: ${fullPath}`);
     }
 
     const content = fs.readFileSync(fullPath, 'utf8');
@@ -82,7 +82,7 @@ export class CsvProcessor {
     );
 
     if (headerIndex === -1) {
-      throw new Error('CSV header not found');
+      throw new Error('❌CSV cabeçaçlho não encontrado');
     }
 
     return lines
@@ -206,7 +206,7 @@ export class CsvProcessor {
           product: productMap.get(prodKey)!,
         });
       } catch (error) {
-        this.logger.warn(`Error processing row:`, error);
+        this.logger.warn(`❌Erro ao processar linha:`, error);
       }
     }
 
@@ -361,13 +361,13 @@ export class CsvProcessor {
     error: any,
     result: ProcessingResult,
   ): void {
-    this.logger.error('Batch processing failed:', error);
+    this.logger.error('❌Processamento do lote falhou:', error);
     batch.forEach((row, index) => {
       result.totalErrors++;
       result.errors.push({
         row: startIndex + index + 1,
         data: row,
-        error: `Batch error: ${error.message}`,
+        error: `❌Erro do lote: ${error.message}`,
       });
     });
   }

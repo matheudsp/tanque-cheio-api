@@ -16,19 +16,19 @@ export class FileProcessorService {
 
   async processCsvFile(filePath: string) {
     try {
-      this.logger.log(`Starting CSV processing: ${filePath}`);
+      this.logger.log(`🕛Iniciando processamento do CSV: ${filePath}`);
       const result = await this.csvProcessor.processFile(filePath);
 
       const message =
-        `Processing completed: ${result.totalProcessed} processed, ` +
-        `${result.totalInserted} inserted, ${result.totalUpdated} updated, ` +
-        `${result.totalSkipped} skipped, ${result.totalErrors} errors`;
+        `✅Processamento do CSV finalizado: ${result.totalProcessed} processados, ` +
+        `${result.totalInserted} inseridos, ${result.totalUpdated} atualizados, ` +
+        `${result.totalSkipped} ignorados, ${result.totalErrors} erros`;
 
       return responseOk({ message, data: result });
     } catch (error) {
-      this.logger.error('CSV processing failed:', error);
+      this.logger.error('Falha ao processar CSV:', error);
       return responseInternalServerError({
-        message: 'Internal server error during CSV processing',
+        message: 'Erro interno do servidor durante processamento do CSV',
         error: error.message,
       });
     }

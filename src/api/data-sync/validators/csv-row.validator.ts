@@ -3,7 +3,7 @@ import {
   IFileValidator,
   type CsvRow,
   type ValidationResult,
-} from '../interfaces/base.interface';
+} from '../interfaces/csv-row.interface';
 
 @Injectable()
 export class CsvRowValidator implements IFileValidator<CsvRow> {

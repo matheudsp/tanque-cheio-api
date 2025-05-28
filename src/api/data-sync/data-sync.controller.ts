@@ -73,7 +73,7 @@ export class DataSyncController {
     try {
       const fileToProcess = 'anp_mes5_semana4_sample.csv';
 
-      this.logger.log(`Processing file: ${fileToProcess}`);
+      this.logger.log(`Processando arquivo: ${fileToProcess}`);
 
       const result = await this.csvProcessor.processFile(fileToProcess);
 

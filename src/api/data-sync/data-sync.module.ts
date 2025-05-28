@@ -21,7 +21,7 @@ import { FileTransformerService } from './services/file-transformer.service';
 // SOLID components for CSV processing
 import { CsvProcessor } from './processors/csv-file.processor';
 import { CsvRowValidator } from './validators/csv-row.validator';
-import { CsvToEntitiesMapper } from './mappers/csv-to-entities.mapper';
+
 
 
 @Module({
@@ -47,7 +47,7 @@ import { CsvToEntitiesMapper } from './mappers/csv-to-entities.mapper';
     // SOLID components for CSV processing
     CsvProcessor,
     CsvRowValidator,
-    CsvToEntitiesMapper,
+    
     
   ],
   controllers: [DataSyncController],

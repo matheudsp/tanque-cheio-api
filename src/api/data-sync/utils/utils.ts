@@ -1,4 +1,4 @@
-import type { CsvRow } from "../interfaces/processor.interface";
+import type { CsvRow } from '../interfaces/processor.interface';
 
 export class DataUtils {
   static cleanString(value: any): string {
@@ -15,16 +15,19 @@ export class DataUtils {
   static normalizeCep(cep: string): string | null {
     if (!cep) return null;
     const cleaned = cep.replace(/[^\d]/g, '');
-    return cleaned.length === 8 ? `${cleaned.substr(0, 5)}-${cleaned.substr(5)}` : null;
+    return cleaned.length === 8
+      ? `${cleaned.substr(0, 5)}-${cleaned.substr(5)}`
+      : null;
   }
 
   static parseDate(dateStr: string): Date {
     if (!dateStr) throw new Error('Data é obrigatória');
-    
+
     const formats = [
       /^(\d{2})\/(\d{2})\/(\d{4})$/,
       /^(\d{4})-(\d{2})-(\d{2})$/,
       /^(\d{2})-(\d{2})-(\d{4})$/,
+      /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/,
     ];
 
     for (const [index, format] of formats.entries()) {
@@ -32,7 +35,34 @@ export class DataUtils {
       if (match) {
         const [, p1, p2, p3] = match;
         const [year, month, day] = index === 1 ? [p1, p2, p3] : [p3, p2, p1];
-        return new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+
+        const yearNum = parseInt(year);
+        const monthNum = parseInt(month);
+        const dayNum = parseInt(day);
+
+        // Validações básicas
+        if (yearNum < 1900 || yearNum > 2100) {
+          throw new Error(`Ano inválido: ${year}`);
+        }
+        if (monthNum < 1 || monthNum > 12) {
+          throw new Error(`Mês inválido: ${month}`);
+        }
+        if (dayNum < 1 || dayNum > 31) {
+          throw new Error(`Dia inválido: ${day}`);
+        }
+
+        const date = new Date(yearNum, monthNum - 1, dayNum);
+
+        // Verificar se a data é válida (ex: 31/02 seria inválida)
+        if (
+          date.getFullYear() !== yearNum ||
+          date.getMonth() !== monthNum - 1 ||
+          date.getDate() !== dayNum
+        ) {
+          throw new Error(`Data inválida: ${dateStr}`);
+        }
+
+        return date;
       }
     }
 
@@ -43,26 +73,165 @@ export class DataUtils {
 
   static parsePrice(priceStr: string): number | null {
     if (!priceStr) return null;
-    const cleaned = priceStr.replace(/[R$\s]/g, '').replace(',', '.');
-    const price = parseFloat(cleaned);
-    return isNaN(price) || price < 0 ? null : price;
+
+    // Remove caracteres não numéricos exceto vírgula e ponto
+    const cleaned = priceStr.replace(/[R$\s]/g, '').replace(/[^\d,.-]/g, '');
+
+    // Se está vazio após limpeza, retorna null
+    if (!cleaned) return null;
+
+    // Substitui vírgula por ponto para parseFloat
+    const normalized = cleaned.replace(',', '.');
+    const price = parseFloat(normalized);
+ 
+    // Validações
+    if (isNaN(price)) {
+      console.warn(`Preço inválido encontrado: ${priceStr}`);
+      return null;
+    }
+
+    if (price < 0) {
+      console.warn(`Preço negativo encontrado: ${priceStr}`);
+      return null;
+    }
+    return price;
   }
 
   static isValidRow(row: CsvRow): boolean {
-    return !!(
-      row.CNPJ?.trim() &&
-      row.MUNICÍPIO?.trim() &&
-      row.PRODUTO?.trim() &&
-      row.ESTADO?.trim() &&
-      row['DATA DA COLETA']?.trim() &&
-      row.RAZÃO?.trim() &&
-      DataUtils.isValidCnpj(row.CNPJ)
-    );
+    try {
+      // Verificações básicas de campos obrigatórios
+      if (!row.CNPJ?.trim()) return false;
+      if (!row.MUNICÍPIO?.trim()) return false;
+      if (!row.PRODUTO?.trim()) return false;
+      if (!row.ESTADO?.trim()) return false;
+      if (!row['DATA DA COLETA']?.trim()) return false;
+      if (!row.RAZÃO?.trim()) return false;
+
+      // Validação de CNPJ
+      if (!DataUtils.isValidCnpj(row.CNPJ)) return false;
+
+      // Validação de data
+      try {
+        DataUtils.parseDate(row['DATA DA COLETA']);
+      } catch {
+        return false;
+      }
+
+      // Validação de preço (se presente)
+      if (row['PREÇO DE REVENDA']?.trim()) {
+        const price = DataUtils.parsePrice(row['PREÇO DE REVENDA']);
+        if (price === null || price <= 0) return false;
+      }
+
+      return true;
+    } catch (error) {
+      console.warn(`Erro na validação da linha:`, error);
+      return false;
+    }
   }
 
   private static isValidCnpj(cnpj: string): boolean {
     if (!cnpj?.trim()) return false;
     const cleaned = cnpj.replace(/[^\d]/g, '');
-    return cleaned.length === 14;
+
+    // Deve ter exatamente 14 dígitos
+    if (cleaned.length !== 14) return false;
+
+    // Não pode ser sequência de números iguais
+    if (/^(\d)\1{13}$/.test(cleaned)) return false;
+
+    return true;
+  }
+
+  /**
+   * Compara duas datas e retorna se a primeira é mais recente ou igual à segunda
+   */
+  static isDateNewerOrEqual(date1: Date, date2: Date): boolean {
+    return date1.getTime() >= date2.getTime();
+  }
+
+  /**
+   * Compara duas datas ignorando horas/minutos/segundos
+   */
+  static isSameDate(date1: Date, date2: Date): boolean {
+    return date1.toDateString() === date2.toDateString();
+  }
+
+  /**
+   * Formata uma data para string no padrão brasileiro
+   */
+  static formatDateBR(date: Date): string {
+    return date.toLocaleDateString('pt-BR');
+  }
+
+  /**
+   * Formata preço para string no padrão brasileiro
+   */
+  static formatPrice(price: number): string {
+    return new Intl.NumberFormat('pt-BR', {
+      style: 'currency',
+      currency: 'BRL',
+    }).format(price);
+  }
+
+  /**
+   * Cria uma chave única para identificar registros duplicados
+   */
+  static createRecordKey(
+    gasStationId: string,
+    productId: string,
+    date: Date,
+  ): string {
+    const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
+    return `${gasStationId}|${productId}|${dateStr}`;
+  }
+
+  /**
+   * Valida se um estado brasileiro é válido
+   */
+  static isValidBrazilianState(state: string): boolean {
+    const validStates = [
+      'AC',
+      'AL',
+      'AP',
+      'AM',
+      'BA',
+      'CE',
+      'DF',
+      'ES',
+      'GO',
+      'MA',
+      'MT',
+      'MS',
+      'MG',
+      'PA',
+      'PB',
+      'PR',
+      'PE',
+      'PI',
+      'RJ',
+      'RN',
+      'RS',
+      'RO',
+      'RR',
+      'SC',
+      'SP',
+      'SE',
+      'TO',
+    ];
+
+    return validStates.includes(state.toUpperCase());
+  }
+
+  /**
+   * Normaliza nome de produto para facilitar comparações
+   */
+  static normalizeProductName(productName: string): string {
+    return productName
+      .trim()
+      .toUpperCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '') // Remove acentos
+      .replace(/\s+/g, ' '); // Remove espaços extras
   }
 }

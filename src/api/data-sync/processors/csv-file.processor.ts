@@ -285,13 +285,27 @@ export class CsvProcessor {
         );
         const existing = existingMap.get(key);
 
-        if (existing && existing.preco_venda !== priceHistory.preco_venda) {
-          priceHistory.id = existing.id;
-          toUpdate.push(priceHistory);
-        } else if (!existing) {
+        if (!existing) {
+          // Registro não existe, inserir
           toInsert.push(priceHistory);
         } else {
-          result.totalSkipped++;
+          // Registro existe, verificar se precisa atualizar
+          const needsUpdate = this.shouldUpdatePriceHistory(
+            existing,
+            priceHistory,
+          );
+
+          if (needsUpdate) {
+            priceHistory.id = existing.id;
+            priceHistory.criadoEm = existing.criadoEm; // Preservar data de criação original
+            toUpdate.push(priceHistory);
+          } else {
+            // Registro idêntico ou mais antigo, pular
+            result.totalSkipped++;
+            this.logger.debug(
+              `⏭️ Registro ignorado - dados idênticos ou mais antigos: ${key}`,
+            );
+          }
         }
       } catch (error) {
         result.totalErrors++;
@@ -306,12 +320,55 @@ export class CsvProcessor {
     if (toInsert.length > 0) {
       await queryRunner.manager.save(toInsert, { chunk: 100 });
       result.totalInserted += toInsert.length;
+      this.logger.log(`✅ ${toInsert.length} registros inseridos`);
     }
 
     if (toUpdate.length > 0) {
       await queryRunner.manager.save(toUpdate, { chunk: 100 });
       result.totalUpdated += toUpdate.length;
+      this.logger.log(`🔄 ${toUpdate.length} registros atualizados`);
     }
+
+    if (result.totalSkipped > 0) {
+      this.logger.log(
+        `⏭️ ${result.totalSkipped} registros ignorados (dados idênticos)`,
+      );
+    }
+  }
+
+  /**
+   * Determina se um registro de histórico de preço deve ser atualizado
+   * Critérios:
+   * 1. Preço diferente
+   * 2. Data de coleta mais recente ou igual (permite re-processamento do mesmo arquivo)
+   * 3. Outros campos relevantes diferentes
+   */
+  private shouldUpdatePriceHistory(
+    existing: PriceHistory,
+    newRecord: PriceHistory,
+  ): boolean {
+    // Se os preços são iguais, não há necessidade de atualizar
+    if (existing.preco_venda === newRecord.preco_venda) {
+      return false;
+    }
+
+    // Se a data de coleta é mais antiga que a existente, não atualizar
+    const existingDate = new Date(existing.data_coleta);
+    const newDate = new Date(newRecord.data_coleta);
+
+    if (newDate < existingDate) {
+      this.logger.debug(
+        `⏭️ Data mais antiga detectada - existente: ${existingDate.toISOString()}, nova: ${newDate.toISOString()}`,
+      );
+      return false;
+    }
+
+    // Se chegou até aqui, o registro deve ser atualizado
+    // (preço diferente E data igual ou mais recente)
+    this.logger.debug(
+      `🔄 Atualização necessária - preço: ${existing.preco_venda} → ${newRecord.preco_venda}`,
+    );
+    return true;
   }
 
   private async findExistingPriceHistories(
@@ -358,7 +415,7 @@ export class CsvProcessor {
   private handleBatchError(
     batch: CsvRow[],
     startIndex: number,
-    error: any,
+    error: any, 
     result: ProcessingResult,
   ): void {
     this.logger.error('❌Processamento do lote falhou:', error);

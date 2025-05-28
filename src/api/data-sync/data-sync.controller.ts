@@ -71,7 +71,7 @@ export class DataSyncController {
   @OpenApiResponses([HttpStatus.BAD_REQUEST, HttpStatus.INTERNAL_SERVER_ERROR])
   async processCsv() {
     try {
-      const fileToProcess = 'anp_mes5_semana4_sample.csv';
+      const fileToProcess = 'anp_mes5_semana3_sample.csv';
 
       this.logger.log(`Processando arquivo: ${fileToProcess}`);
 
@@ -149,7 +149,7 @@ export class DataSyncController {
   @OpenApiResponses([HttpStatus.BAD_REQUEST, HttpStatus.INTERNAL_SERVER_ERROR])
   async downloadSpreadsheet(@Body() body: DownloadSpreadsheetDto) {
     let tempFiles: string[] = [];
-    
+
     try {
       this.logger.log(`Starting spreadsheet download from: ${body.url}`);
 
@@ -187,10 +187,12 @@ export class DataSyncController {
 
       // Step 3: Build response message
       const processingMessage = this.buildProcessingMessage(processingResult);
-      const validationSummary = this.buildValidationSummary(processedFile.validationResult);
-      
+      const validationSummary = this.buildValidationSummary(
+        processedFile.validationResult,
+      );
+
       let successMessage = `Planilha baixada e processada com sucesso. ${processingMessage}`;
-      
+
       if (processedFile.validationResult.warnings.length > 0) {
         successMessage += ` (${processedFile.validationResult.warnings.length} avisos encontrados)`;
       }
@@ -211,7 +213,6 @@ export class DataSyncController {
           processingResult,
         },
       });
-
     } catch (error) {
       this.logger.error('Spreadsheet processing failed:', error);
       return responseBadRequest({

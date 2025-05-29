@@ -1,8 +1,7 @@
 import { Body, Controller, HttpStatus, Logger, Post } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
-import { FileTransformerService } from './services/file-transformer.service';
-
+import { DataSyncService } from './data-sync.service';
 import { OpenApiResponses } from '@/common/decorators/openapi.decorator';
 import { DownloadSpreadsheetDto } from './dtos/download-spreadsheet.dto';
 import { responseOk, responseBadRequest } from '@/common/utils/response-api';
@@ -15,89 +14,18 @@ export class DataSyncController {
 
   constructor(
     private readonly csvProcessor: CsvProcessor,
-    private readonly fileTransformer: FileTransformerService,
+    private readonly fileTransformer: DataSyncService,
   ) {}
-
-  @Post('process-csv')
-  @ApiOperation({
-    summary: 'Process ANP CSV file',
-    description:
-      'Processes local CSV file with ANP fuel price data. Only inserts/updates records if the collection date is newer or equal to existing records.',
-  })
-  @ApiResponse({
-    status: HttpStatus.OK,
-    description: 'CSV processed successfully with detailed statistics',
-    schema: {
-      type: 'object',
-      properties: {
-        success: { type: 'boolean' },
-        message: { type: 'string' },
-        data: {
-          type: 'object',
-          properties: {
-            totalProcessed: {
-              type: 'number',
-              description: 'Total records processed (inserted + updated)',
-            },
-            totalInserted: {
-              type: 'number',
-              description: 'New records inserted',
-            },
-            totalUpdated: {
-              type: 'number',
-              description: 'Existing records updated',
-            },
-            totalSkipped: {
-              type: 'number',
-              description: 'Records skipped (older data)',
-            },
-            totalErrors: { type: 'number', description: 'Records with errors' },
-            errors: {
-              type: 'array',
-              items: {
-                type: 'object',
-                properties: {
-                  row: { type: 'number' },
-                  data: { type: 'object' },
-                  error: { type: 'string' },
-                },
-              },
-            },
-          },
-        },
-      },
-    },
-  })
-  @OpenApiResponses([HttpStatus.BAD_REQUEST, HttpStatus.INTERNAL_SERVER_ERROR])
-  async processCsv() {
-    try {
-      const fileToProcess = 'anp_mes5_semana3_sample.csv';
-
-      this.logger.log(`Processando arquivo: ${fileToProcess}`);
-
-      const result = await this.csvProcessor.processFile(fileToProcess);
-
-      const message = this.buildProcessingMessage(result);
-
-      return responseOk({
-        message,
-        data: result,
-      });
-    } catch (error) {
-      this.logger.error('CSV processing failed:', error);
-      return responseBadRequest({ error: error.message });
-    }
-  }
 
   @Post('download-spreadsheet')
   @ApiOperation({
-    summary: 'Download and process ANP spreadsheet',
+    summary: 'Baixar e processar planilha da ANP',
     description:
-      'Downloads and processes official ANP XLSX file with smart upsert logic',
+      'Faz o download de uma planilha da ANP em formato XLSX, converte para CSV e aplica lógica de upsert inteligente nos registros.',
   })
   @ApiResponse({
     status: HttpStatus.OK,
-    description: 'Spreadsheet downloaded and processed successfully',
+    description: 'Planilha baixada e processada com sucesso',
     schema: {
       type: 'object',
       properties: {
@@ -139,7 +67,7 @@ export class DataSyncController {
                 totalUpdated: { type: 'number' },
                 totalSkipped: { type: 'number' },
                 totalErrors: { type: 'number' },
-              },
+              }, 
             },
           },
         },
@@ -148,58 +76,43 @@ export class DataSyncController {
   })
   @OpenApiResponses([HttpStatus.BAD_REQUEST, HttpStatus.INTERNAL_SERVER_ERROR])
   async downloadSpreadsheet(@Body() body: DownloadSpreadsheetDto) {
-    let tempFiles: string[] = [];
-
     try {
-      this.logger.log(`Starting spreadsheet download from: ${body.url}`);
-
-      // Step 1: Download and convert XLSX to CSV
+      // 1) Baixar e converter a planilha (XLSX → CSV + validação estrutural)
       const downloadResult = await this.fileTransformer.downloadAndConvert(
         body.url,
       );
-
       if (!downloadResult.success) {
-        this.logger.error(
-          'Failed to download and convert spreadsheet',
-          downloadResult.errors,
-        );
+        // this.logger.warn(
+        //   'Falha no download ou conversão da planilha',
+        //   downloadResult.errors,
+        // );
         return responseBadRequest({
-          error: 'Falha no download da planilha',
-          message: downloadResult.errors?.join(', ') || 'Erro desconhecido',
+          error: 'Erro no download/conversão da planilha',
+          message: `${downloadResult.errors}`,
         });
       }
 
       const processedFile = downloadResult.processedFile!;
-      tempFiles = downloadResult.tempFiles || [];
 
-      this.logger.log(
-        `Spreadsheet converted successfully: ${processedFile.rowCount} rows, ${processedFile.columnCount} columns`,
-      );
-
-      // Step 2: Process the converted CSV
+      // 2) Processar o CSV para inserir/atualizar no banco
       const processingResult = await this.csvProcessor.processFile(
         processedFile.csvPath,
       );
 
-      this.logger.log(
-        `CSV processing completed: ${processingResult.totalProcessed} records processed`,
-      );
-
-      // Step 3: Build response message
+      // 3) Montar mensagem final de processamento
       const processingMessage = this.buildProcessingMessage(processingResult);
       const validationSummary = this.buildValidationSummary(
         processedFile.validationResult,
       );
 
-      let successMessage = `Planilha baixada e processada com sucesso. ${processingMessage}`;
-
+      let finalMessage = `Planilha baixada e processada com sucesso. ${processingMessage}`;
       if (processedFile.validationResult.warnings.length > 0) {
-        successMessage += ` (${processedFile.validationResult.warnings.length} avisos encontrados)`;
+        finalMessage += ` (${processedFile.validationResult.warnings.length} aviso(s) encontrados)`;
       }
 
- 
+      // 4) Retornar resposta 200 com dados
       return responseOk({
-        message: successMessage,
+        message: finalMessage,
         data: {
           downloadInfo: {
             originalUrl: body.url,
@@ -215,49 +128,56 @@ export class DataSyncController {
         },
       });
     } catch (error) {
-      this.logger.error('Spreadsheet processing failed:', error);
-      return responseBadRequest({
+      // this.logger.error('Erro no processamento da planilha:', error);
+      return responseBadRequest({ 
         error: 'Erro no processamento da planilha',
-        message: error.message,
+        message: error instanceof Error ? error.message : String(error),
       });
-    } finally {
-      // Cleanup temporary files asynchronously
-      if (tempFiles.length > 0) {
-        this.cleanupTempFilesAsync(tempFiles);
-      }
     }
   }
 
+  /**
+   * Constrói a mensagem descritiva com base no resultado do processamento.
+   */
   private buildProcessingMessage(result: {
     totalInserted: number;
     totalUpdated: number;
     totalSkipped: number;
     totalErrors: number;
+    totalProcessed: number;
   }): string {
     const parts: string[] = [];
 
     if (result.totalInserted > 0) {
-      parts.push(`${result.totalInserted} novos registros inseridos`);
+      parts.push(`${result.totalInserted} novo(s) registro(s) inserido(s)`);
     }
-
     if (result.totalUpdated > 0) {
-      parts.push(`${result.totalUpdated} registros atualizados`);
+      parts.push(`${result.totalUpdated} registro(s) atualizado(s)`);
     }
-
     if (result.totalSkipped > 0) {
       parts.push(
-        `${result.totalSkipped} registros ignorados (dados mais antigos)`,
+        `${result.totalSkipped} registro(s) ignorado(s) (dados mais antigos)`,
       );
     }
-
     if (result.totalErrors > 0) {
-      parts.push(`${result.totalErrors} erros encontrados`);
+      parts.push(`${result.totalErrors} erro(s) encontrado(s)`);
     }
 
-    return parts.length > 0 ? parts.join(', ') : 'Nenhum registro processado';
+    return parts.length > 0
+      ? parts.join(', ')
+      : 'Nenhum registro foi processado';
   }
 
-  private buildValidationSummary(validationResult: any) {
+  /**
+   * Resume o resultado da validação da planilha baixada.
+   */
+  private buildValidationSummary(validationResult: {
+    isValid: boolean;
+    errors: any[];
+    warnings: any[];
+    emptyRows: number;
+    duplicateRows: number;
+  }) {
     return {
       isValid: validationResult.isValid,
       errorCount: validationResult.errors.length,
@@ -265,17 +185,5 @@ export class DataSyncController {
       emptyRows: validationResult.emptyRows,
       duplicateRows: validationResult.duplicateRows,
     };
-  }
-
-  private cleanupTempFilesAsync(tempFiles: string[]): void {
-    // Cleanup files asynchronously without blocking the response
-    setTimeout(async () => {
-      try {
-        await this.fileTransformer.cleanupFiles(tempFiles);
-        this.logger.log(`Cleaned up ${tempFiles.length} temporary files`);
-      } catch (error) {
-        this.logger.warn(`Failed to cleanup temporary files: ${error.message}`);
-      }
-    }, 5000); // Wait 5 seconds before cleanup to ensure response is sent
   }
 }

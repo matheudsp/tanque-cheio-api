@@ -101,7 +101,7 @@ export class CsvProcessor {
         error: reject,
       });
     });
-  }
+  } 
 
   private async processRowsInBatches(
     rows: CsvRow[],

@@ -83,7 +83,7 @@ export class DataUtils {
     // Substitui vírgula por ponto para parseFloat
     const normalized = cleaned.replace(',', '.');
     const price = parseFloat(normalized);
- 
+
     // Validações
     if (isNaN(price)) {
       console.warn(`Preço inválido encontrado: ${priceStr}`);
@@ -141,97 +141,5 @@ export class DataUtils {
     if (/^(\d)\1{13}$/.test(cleaned)) return false;
 
     return true;
-  }
-
-  /**
-   * Compara duas datas e retorna se a primeira é mais recente ou igual à segunda
-   */
-  static isDateNewerOrEqual(date1: Date, date2: Date): boolean {
-    return date1.getTime() >= date2.getTime();
-  }
-
-  /**
-   * Compara duas datas ignorando horas/minutos/segundos
-   */
-  static isSameDate(date1: Date, date2: Date): boolean {
-    return date1.toDateString() === date2.toDateString();
-  }
-
-  /**
-   * Formata uma data para string no padrão brasileiro
-   */
-  static formatDateBR(date: Date): string {
-    return date.toLocaleDateString('pt-BR');
-  }
-
-  /**
-   * Formata preço para string no padrão brasileiro
-   */
-  static formatPrice(price: number): string {
-    return new Intl.NumberFormat('pt-BR', {
-      style: 'currency',
-      currency: 'BRL',
-    }).format(price);
-  }
-
-  /**
-   * Cria uma chave única para identificar registros duplicados
-   */
-  static createRecordKey(
-    gasStationId: string,
-    productId: string,
-    date: Date,
-  ): string {
-    const dateStr = date.toISOString().split('T')[0]; // YYYY-MM-DD
-    return `${gasStationId}|${productId}|${dateStr}`;
-  }
-
-  /**
-   * Valida se um estado brasileiro é válido
-   */
-  static isValidBrazilianState(state: string): boolean {
-    const validStates = [
-      'AC',
-      'AL',
-      'AP',
-      'AM',
-      'BA',
-      'CE',
-      'DF',
-      'ES',
-      'GO',
-      'MA',
-      'MT',
-      'MS',
-      'MG',
-      'PA',
-      'PB',
-      'PR',
-      'PE',
-      'PI',
-      'RJ',
-      'RN',
-      'RS',
-      'RO',
-      'RR',
-      'SC',
-      'SP',
-      'SE',
-      'TO',
-    ];
-
-    return validStates.includes(state.toUpperCase());
-  }
-
-  /**
-   * Normaliza nome de produto para facilitar comparações
-   */
-  static normalizeProductName(productName: string): string {
-    return productName
-      .trim()
-      .toUpperCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '') // Remove acentos
-      .replace(/\s+/g, ' '); // Remove espaços extras
   }
 }

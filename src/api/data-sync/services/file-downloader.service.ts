@@ -28,13 +28,13 @@ export class FileDownloaderService {
       await fs.access(this.tempDir);
     } catch {
       await fs.mkdir(this.tempDir, { recursive: true });
-      this.logger.log(`Created temp directory: ${this.tempDir}`);
+      this.logger.log(`Diretório temporário criado: ${this.tempDir}`);
     }
   }
 
   async downloadFile(url: string): Promise<FileDownloadResult> {
     try {
-      this.logger.log(`Starting download from: ${url}`);
+      this.logger.log(`⬇️Iniciando download da planilha: ${url}`);
 
       const response = await firstValueFrom(
         this.httpService.get(url, {
@@ -47,7 +47,7 @@ export class FileDownloaderService {
       );
 
       if (!response.data) {
-        throw new Error('No data received from server');
+        throw new Error('❌Nenhum dado recebido do servidor.');
       }
 
       const contentType = response.headers['content-type'] || 'application/octet-stream';
@@ -60,7 +60,7 @@ export class FileDownloaderService {
       const stats = await fs.stat(filePath);
       const fileSize = stats.size;
 
-      this.logger.log(`File downloaded successfully: ${fileName} (${fileSize} bytes)`);
+      this.logger.log(`⬇️Arquivo baixado com sucesso: ${fileName} (${fileSize} bytes)`);
 
       return {
         success: true,
@@ -70,10 +70,10 @@ export class FileDownloaderService {
         contentType,
       };
     } catch (error) {
-      this.logger.error(`Download failed: ${error.message}`, error.stack);
+      this.logger.error(`❌Falha ao baixar: ${error.message}`, error.stack);
       return {
         success: false,
-        error: `Download failed: ${error.message}`,
+        error: `❌Falha ao baixar: ${error.message}`,
       };
     }
   }
@@ -102,9 +102,9 @@ export class FileDownloaderService {
   async deleteFile(filePath: string): Promise<void> {
     try {
       await fs.unlink(filePath);
-      this.logger.log(`Deleted temporary file: ${filePath}`);
+      this.logger.log(`♻️Arquivo temporário deletado: ${filePath}`);
     } catch (error) {
-      this.logger.warn(`Failed to delete file ${filePath}: ${error.message}`);
+      this.logger.warn(`❌Falha ao deletar arquivo temporário ${filePath}: ${error.message}`);
     }
   }
 

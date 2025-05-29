@@ -25,3 +25,10 @@ export interface ProcessedFileInfo {
   headers: string[];
   validationResult: ValidationResult;
 }
+
+export interface FileTransformationResult {
+  success: boolean;
+  processedFile?: ProcessedFileInfo;
+  tempFiles?: string[];
+  errors?: string[];
+}

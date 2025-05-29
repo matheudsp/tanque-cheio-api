@@ -8,23 +8,24 @@ import type {
   ConversionResult,
   ValidationResult,
 } from '../interfaces/xlsx-to-csv.interface';
+import { generateCsvFileName } from '../utils/generate-csv-filename';
 
 @Injectable()
 export class XlsxToCsvConverterService {
   private readonly logger = new Logger(XlsxToCsvConverterService.name);
-  private readonly tempDir = path.join(process.cwd(), 'temp');
+  private readonly datasetDir = path.join(process.cwd(), 'dataset');
 
   constructor() {
-    this.ensureTempDirectory();
+    this.ensureDirectory();
   }
 
-  private async ensureTempDirectory(): Promise<void> {
-    try {
-      await fs.access(this.tempDir);
-    } catch {
-      await fs.mkdir(this.tempDir, { recursive: true });
-      this.logger.log(`Created temp directory: ${this.tempDir}`);
-    }
+  private async ensureDirectory(): Promise<void> {
+    fs.mkdir(this.datasetDir, { recursive: true }).catch((err) => {
+      this.logger.error(
+        `Não foi possível criar a pasta dataset: ${err.message}`,
+        err.stack,
+      );
+    });
   }
 
   async convertToCsv(xlsxPath: string): Promise<ConversionResult> {
@@ -72,7 +73,9 @@ export class XlsxToCsvConverterService {
       }
 
       if (headerRowIndex === -1) {
-        throw new Error('❌Linha do cabeçalho com CNPJ não encontrado no arquivo');
+        throw new Error(
+          '❌Linha do cabeçalho com CNPJ não encontrado no arquivo',
+        );
       }
 
       // Extrair cabeçalhos
@@ -137,10 +140,10 @@ export class XlsxToCsvConverterService {
 
           // Tratamento para DATA DA COLETA
           else if (headerName === 'DATA DA COLETA' && cell?.t === 'n') {
-            const excelDate = Number(cell.v); 
+            const excelDate = Number(cell.v);
 
             // Convertendo número serial para data no formato dd/MM/yyyy
-            if (!isNaN(excelDate)) { 
+            if (!isNaN(excelDate)) {
               const date = XLSX.SSF.parse_date_code(excelDate);
               if (date) {
                 const dd = String(date.d).padStart(2, '0');
@@ -163,9 +166,9 @@ export class XlsxToCsvConverterService {
         }
       }
 
-      // Gerar nome único para o arquivo CSV
-      const csvFileName = `anp_${randomUUID()}.csv`;
-      const csvPath = path.join(this.tempDir, csvFileName);
+      // Gerar nome
+      const csvFileName = generateCsvFileName('anp');
+      const csvPath = path.join(this.datasetDir, csvFileName);
 
       // Construir dados para CSV
       const csvData = [filteredHeaders, ...dataRows];
@@ -284,7 +287,10 @@ export class XlsxToCsvConverterService {
         duplicateRows: 0,
       };
     } catch (error) {
-      this.logger.error(`❌Validação do CSV falhou: ${error.message}`, error.stack);
+      this.logger.error(
+        `❌Validação do CSV falhou: ${error.message}`,
+        error.stack,
+      );
       return {
         isValid: false,
         errors: [`Validação falhou: ${error.message}`],
@@ -367,9 +373,7 @@ export class XlsxToCsvConverterService {
       await fs.unlink(csvPath);
       this.logger.log(`🎆Arquivo CSV deletado: ${csvPath}`);
     } catch (error) {
-      this.logger.warn(
-        `❌Falha ao deletar CSV ${csvPath}: ${error.message}`,
-      );
+      this.logger.warn(`❌Falha ao deletar CSV ${csvPath}: ${error.message}`);
     }
   }
 }

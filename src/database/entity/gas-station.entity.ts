@@ -16,14 +16,14 @@ import { PriceHistory } from './price-history.entity';
 @Entity('posto_gasolina')
 @Index(['cnpj'], { unique: true })
 @Index(['localizacao_id'])
-@Index(['nome', 'cnpj']) // Para busca por nome e CNPJ
+@Index(['nome_razao', 'cnpj']) // Para busca por RAZAO e CNPJ
 @Index(['ativo'])
 export class GasStation {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column({ type: 'varchar', length: 200, nullable: false })
-  nome: string;
+  nome_razao: string;
 
   @Column({ type: 'varchar', length: 300, nullable: true })
   nome_fantasia?: string | null;
@@ -59,10 +59,10 @@ export class GasStation {
 
   // Métodos de negócio
   getDisplayName(): string {
-    if (this.nome_fantasia && this.nome_fantasia !== this.nome) {
-      return `${this.nome_fantasia} (${this.nome})`;
+    if (this.nome_fantasia && this.nome_fantasia !== this.nome_razao) {
+      return `${this.nome_fantasia} (${this.nome_razao})`;
     }
-    return this.nome;
+    return this.nome_razao;
   }
 
   normalizeCnpj(): string {
@@ -122,7 +122,7 @@ export class GasStation {
 
   isValid(): boolean {
     return !!(
-      this.nome?.trim() &&
+      this.nome_razao?.trim() &&
       this.cnpj?.trim() &&
       this.localizacao_id &&
       GasStation.validateCnpj(this.cnpj)

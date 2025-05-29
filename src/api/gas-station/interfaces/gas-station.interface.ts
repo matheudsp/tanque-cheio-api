@@ -19,7 +19,6 @@ export interface SearchResult {
 
 export interface StatisticsResult {
   totalStations: number;
-  byState: Array<{ uf: string; total: number }>;
   byProduct: Array<{ 
     produto: string; 
     total: number; 

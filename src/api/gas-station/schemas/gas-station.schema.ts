@@ -5,11 +5,6 @@ export const DownloadSpreadsheetSchema = z.object({
 });
 
 export const SearchGasStationsSchema = z.object({
-  uf: z
-    .string()
-    .length(2, 'UF deve ter 2 caracteres')
-    .regex(/^[A-Z]{2}$/, 'UF deve conter apenas letras maiúsculas')
-    .optional(),
   municipio: z
     .string()
     .min(2, 'Município deve ter pelo menos 2 caracteres')

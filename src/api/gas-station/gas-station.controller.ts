@@ -23,12 +23,6 @@ export class GasStationController {
       'Permite filtrar postos por estado, município, produto e bandeira',
   })
   @ApiQuery({
-    name: 'uf',
-    required: false,
-    description: 'Sigla do estado (UF)',
-    example: 'SP',
-  })
-  @ApiQuery({
     name: 'municipio',
     required: false,
     description: 'Nome do município',

@@ -1,6 +1,6 @@
 import type { ProcessingResult } from '../interfaces/processor.interface';
 import type { CsvRow } from '../interfaces/csv-row.interface';
-import { DataUtils } from '../utils/utils';
+import { DataUtils } from '../utils/data-utils';
 import { Injectable, Logger } from '@nestjs/common';
 
 import { InjectRepository } from '@nestjs/typeorm';

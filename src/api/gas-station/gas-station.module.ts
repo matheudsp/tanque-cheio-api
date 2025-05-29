@@ -8,6 +8,6 @@ import {  GasStation } from '@/database/entity/gas-station.entity';
   imports: [TypeOrmModule.forFeature([GasStation])],
   controllers: [GasStationController],
   providers: [GasStationService],
-  // exports: [GasStationService , ProcessCsvService],
+  // exports: [GasStationService],
 })
 export class GasStationModule {}

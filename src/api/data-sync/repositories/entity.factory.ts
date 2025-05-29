@@ -3,7 +3,7 @@ import { Localization } from "@/database/entity/localization.entity";
 import { PriceHistory } from "@/database/entity/price-history.entity";
 import { Product } from "@/database/entity/product.entity";
 import type { CsvRow } from "../interfaces/csv-row.interface";
-import { DataUtils } from "../utils/utils";
+import { DataUtils } from "../utils/data-utils";
 
 export class EntityFactory {
   static createLocalization(row: CsvRow): Localization {
@@ -30,7 +30,7 @@ export class EntityFactory {
 
   static createGasStation(row: CsvRow, localization: Localization): GasStation {
     const gasStation = new GasStation();
-    gasStation.nome = DataUtils.cleanString(row.RAZÃO);
+    gasStation.nome_razao = DataUtils.cleanString(row.RAZÃO);
     gasStation.nome_fantasia = DataUtils.cleanString(row.FANTASIA) || null;
     gasStation.bandeira = DataUtils.cleanString(row.BANDEIRA) || null;
     gasStation.cnpj = DataUtils.normalizeCnpj(row.CNPJ);

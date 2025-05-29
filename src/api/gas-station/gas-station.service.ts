@@ -7,7 +7,7 @@ import {
   responseInternalServerError,
   responseBadRequest 
 } from '@/common/utils/response-api';
-import { SearchFilters, SearchResult, StatisticsResult } from './interfaces/gas-station.interface';
+import { SearchFilters, SearchResult, type StatisticsResult } from './interfaces/gas-station.interface';
 
 
 @Injectable()
@@ -24,10 +24,6 @@ export class GasStationService {
     try {
       const queryBuilder = this.gasStationRepository.createQueryBuilder('gs');
 
-      // Aplicar filtros
-      if (filters.uf) {
-        queryBuilder.andWhere('UPPER(gs.uf) = UPPER(:uf)', { uf: filters.uf });
-      }
 
       if (filters.municipio) {
         queryBuilder.andWhere('UPPER(gs.municipio) ILIKE UPPER(:municipio)', { 
@@ -110,7 +106,7 @@ export class GasStationService {
       const statistics: StatisticsResult = {
         totalStations,
         byState: byState.map(item => ({
-          uf: item.uf,
+          municipio: item.municipio,
           total: parseInt(item.total),
         })),
         byProduct: byProduct.map(item => ({

@@ -2,7 +2,7 @@ import { GasStation } from "@/database/entity/gas-station.entity";
 import { Localization } from "@/database/entity/localization.entity";
 import { PriceHistory } from "@/database/entity/price-history.entity";
 import { Product } from "@/database/entity/product.entity";
-import type { CsvRow } from "../interfaces/processor.interface";
+import type { CsvRow } from "../interfaces/csv-row.interface";
 import { DataUtils } from "../utils/utils";
 
 export class EntityFactory {

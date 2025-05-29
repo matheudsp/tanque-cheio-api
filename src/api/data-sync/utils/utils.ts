@@ -1,4 +1,4 @@
-import type { CsvRow } from '../interfaces/processor.interface';
+import type { CsvRow } from '../interfaces/csv-row.interface';
 
 export class DataUtils {
   static cleanString(value: any): string {

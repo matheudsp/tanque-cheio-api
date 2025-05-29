@@ -1,7 +1,5 @@
-import type {
-  CsvRow,
-  ProcessingResult,
-} from '../interfaces/processor.interface';
+import type { ProcessingResult } from '../interfaces/processor.interface';
+import type { CsvRow } from '../interfaces/csv-row.interface';
 import { DataUtils } from '../utils/utils';
 import { Injectable, Logger } from '@nestjs/common';
 
@@ -101,7 +99,7 @@ export class CsvProcessor {
         error: reject,
       });
     });
-  } 
+  }
 
   private async processRowsInBatches(
     rows: CsvRow[],
@@ -302,9 +300,7 @@ export class CsvProcessor {
           } else {
             // Registro idêntico ou mais antigo, pular
             result.totalSkipped++;
-            this.logger.debug(
-              `⏭️ Registro ignorado - dados idênticos: ${key}`,
-            );
+            this.logger.debug(`⏭️ Registro ignorado - dados idênticos: ${key}`);
           }
         }
       } catch (error) {
@@ -415,7 +411,7 @@ export class CsvProcessor {
   private handleBatchError(
     batch: CsvRow[],
     startIndex: number,
-    error: any, 
+    error: any,
     result: ProcessingResult,
   ): void {
     this.logger.error('❌Processamento do lote falhou:', error);

@@ -8,8 +8,8 @@ export class DataUtils {
   static normalizeCnpj(cnpj: string): string {
     if (!cnpj) throw new Error('CNPJ é obrigatório');
     const cleaned = cnpj.replace(/[^\d]/g, '');
-    if (cleaned.length !== 14) throw new Error(`CNPJ inválido: ${cnpj}`);
-    return `${cleaned.substr(0, 2)}.${cleaned.substr(2, 3)}.${cleaned.substr(5, 3)}/${cleaned.substr(8, 4)}-${cleaned.substr(12)}`;
+    if (cleaned.length !== 14) throw new Error(`CNPJ inválido ${cnpj}`);
+    return `${cleaned.substring(0, 2)}.${cleaned.substring(2, 5)}.${cleaned.substring(8, 5)}/${cleaned.substring(12, 8)}-${cleaned.substring(12)}`;
   }
 
   static normalizeCep(cep: string): string | null {

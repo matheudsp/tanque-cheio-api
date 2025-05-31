@@ -7,13 +7,13 @@ import {
   Index,
   OneToMany,
 } from 'typeorm';
-import { PriceHistory } from './price-history.entity';
+import { PriceHistoryEntity } from './price-history.entity';
 
 @Entity('produto')
 @Index(['nome'], { unique: true })
 @Index(['categoria'])
 @Index(['ativo'])
-export class Product {
+export class ProductEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -36,8 +36,8 @@ export class Product {
   atualizadoEm: Date;
 
   // Relacionamentos
-  @OneToMany(() => PriceHistory, (priceHistory) => priceHistory.produto)
-  historicoPrecos: PriceHistory[];
+  @OneToMany(() => PriceHistoryEntity, (priceHistory) => priceHistory.produto)
+  historicoPrecos: PriceHistoryEntity[];
 
   // Métodos de negócio
   static normalizeName(nome: string): string {

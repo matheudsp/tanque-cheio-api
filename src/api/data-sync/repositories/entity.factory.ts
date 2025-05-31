@@ -1,13 +1,13 @@
-import { GasStation } from "@/database/entity/gas-station.entity";
-import { Localization } from "@/database/entity/localization.entity";
-import { PriceHistory } from "@/database/entity/price-history.entity";
-import { Product } from "@/database/entity/product.entity";
-import type { CsvRow } from "../interfaces/csv-row.interface";
-import { DataUtils } from "../utils/data-utils";
+import { GasStationEntity } from '@/database/entity/gas-station.entity';
+import { LocalizationEntity } from '@/database/entity/localization.entity';
+import { PriceHistoryEntity } from '@/database/entity/price-history.entity';
+import { ProductEntity } from '@/database/entity/product.entity';
+import type { CsvRow } from '../interfaces/csv-row.interface';
+import { DataUtils } from '../utils/data-utils';
 
 export class EntityFactory {
-  static createLocalization(row: CsvRow): Localization {
-    const localization = new Localization();
+  static createLocalization(row: CsvRow): LocalizationEntity {
+    const localization = new LocalizationEntity();
     localization.uf = DataUtils.cleanString(row.ESTADO);
     localization.municipio = DataUtils.cleanString(row.MUNICÍPIO);
     localization.endereco = DataUtils.cleanString(row.ENDEREÇO) || null;
@@ -18,18 +18,23 @@ export class EntityFactory {
     return localization;
   }
 
-  static createProduct(row: CsvRow): Product {
-    const product = new Product();
+  static createProduct(row: CsvRow): ProductEntity {
+    const product = new ProductEntity();
     const produtoNome = DataUtils.cleanString(row.PRODUTO);
-    product.nome = Product.normalizeName(produtoNome);
-    product.categoria = Product.determineCategory(produtoNome);
-    product.unidade_medida = DataUtils.cleanString(row['UNIDADE DE MEDIDA']) || Product.determineUnit(produtoNome);
+    product.nome = ProductEntity.normalizeName(produtoNome);
+    product.categoria = ProductEntity.determineCategory(produtoNome);
+    product.unidade_medida =
+      DataUtils.cleanString(row['UNIDADE DE MEDIDA']) ||
+      ProductEntity.determineUnit(produtoNome);
     product.ativo = true;
     return product;
   }
 
-  static createGasStation(row: CsvRow, localization: Localization): GasStation {
-    const gasStation = new GasStation();
+  static createGasStation(
+    row: CsvRow,
+    localization: LocalizationEntity,
+  ): GasStationEntity {
+    const gasStation = new GasStationEntity();
     gasStation.nome_razao = DataUtils.cleanString(row.RAZÃO);
     gasStation.nome_fantasia = DataUtils.cleanString(row.FANTASIA) || null;
     gasStation.bandeira = DataUtils.cleanString(row.BANDEIRA) || null;
@@ -40,8 +45,12 @@ export class EntityFactory {
     return gasStation;
   }
 
-  static createPriceHistory(row: CsvRow, gasStation: GasStation, product: Product): PriceHistory {
-    const priceHistory = new PriceHistory();
+  static createPriceHistory(
+    row: CsvRow,
+    gasStation: GasStationEntity,
+    product: ProductEntity,
+  ): PriceHistoryEntity {
+    const priceHistory = new PriceHistoryEntity();
     priceHistory.posto = gasStation;
     priceHistory.produto = product;
     priceHistory.posto_id = gasStation.id;

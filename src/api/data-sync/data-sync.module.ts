@@ -1,10 +1,10 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { HttpModule } from '@nestjs/axios';
-import { GasStation } from '@/database/entity/gas-station.entity';
-import { Localization } from '@/database/entity/localization.entity';
-import { Product } from '@/database/entity/product.entity';
-import { PriceHistory } from '@/database/entity/price-history.entity';
+import { GasStationEntity } from '@/database/entity/gas-station.entity';
+import { LocalizationEntity } from '@/database/entity/localization.entity';
+import { ProductEntity } from '@/database/entity/product.entity';
+import { PriceHistoryEntity } from '@/database/entity/price-history.entity';
 import { DataSyncController } from './data-sync.controller';
 import { DataSyncService } from './data-sync.service';
 import { FileProcessorService } from './services/file-processor-csv.service';
@@ -15,9 +15,9 @@ import { CsvRowValidator } from './validators/csv-row.validator';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([GasStation, Product, Localization, PriceHistory]),
+    TypeOrmModule.forFeature([GasStationEntity, ProductEntity, LocalizationEntity, PriceHistoryEntity]),
     HttpModule.register({
-      timeout: 120000, // 2 minutes for large file downloads
+      timeout: 120000, // 2 minutes if the datasheet is a large file
       maxRedirects: 5,
       maxContentLength: 100 * 1024 * 1024, // 100MB
       maxBodyLength: 100 * 1024 * 1024, // 100MB

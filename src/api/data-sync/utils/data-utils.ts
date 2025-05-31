@@ -16,7 +16,7 @@ export class DataUtils {
     if (!cep) return null;
     const cleaned = cep.replace(/[^\d]/g, '');
     return cleaned.length === 8
-      ? `${cleaned.substr(0, 5)}-${cleaned.substr(5)}`
+      ? `${cleaned.substring(0, 5)}-${cleaned.substring(5)}`
       : null;
   }
 

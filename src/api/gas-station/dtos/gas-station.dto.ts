@@ -1,121 +1,68 @@
-export class SearchGasStationsDto {
-  /**
-   * Nome do município
-   * @example "São Paulo"
-   */
+import { ApiProperty, ApiSchema } from '@nestjs/swagger';
+
+@ApiSchema({ name: 'Gas Station' })
+export class GasStationDto {
+  @ApiProperty()
+  id: string;
+
+  @ApiProperty()
+  nome_razao: string;
+
+  @ApiProperty({ required: false })
+  nome_fantasia?: string | null;
+
+  @ApiProperty({ required: false })
+  bandeira?: string | null;
+
+  @ApiProperty()
+  cnpj: string;
+
+  @ApiProperty()
+  ativo: boolean;
+
+  @ApiProperty()
+  criadoEm: Date;
+
+  @ApiProperty()
+  atualizadoEm: Date;
+
+  @ApiProperty()
+  localizacao_id: string;
+}
+
+@ApiSchema({ name: 'Gas Station Query' })
+export class GasStationQueryDto {
+  @ApiProperty({ required: false })
   municipio?: string;
 
-  /**
-   * Tipo de combustível
-   * @example "GASOLINA COMUM"
-   */
+  @ApiProperty({ required: false })
   produto?: string;
 
-  /**
-   * Bandeira do posto
-   * @example "Petrobras"
-   */
+  @ApiProperty({ required: false })
   bandeira?: string;
 
-  /**
-   * Quantidade máxima de resultados
-   * @example 50
-   */
-  limit?: number;
+  @ApiProperty({ required: false })
+  limite?: number;
 
-  /**
-   * Quantidade de registros a pular
-   * @example 0
-   */
+  @ApiProperty({ required: false })
   offset?: number;
 }
 
-export class GetNearbyStationsDto {
-  /**
-   * Latitude da localização
-   * @example -23.5505
-   */
+@ApiSchema({ name: 'Nearby Stations Query' })
+export class NearbyStationsQueryDto {
+  @ApiProperty()
   latitude: number;
 
-  /**
-   * Longitude da localização
-   * @example -46.6333
-   */
+  @ApiProperty()
   longitude: number;
 
-  /**
-   * Raio de busca em quilômetros
-   * @example 10
-   */
+  @ApiProperty({ required: false })
   radius?: number;
 
-  /**
-   * Filtrar por tipo de combustível
-   * @example "GASOLINA COMUM"
-   */
+  @ApiProperty({ required: false })
   produto?: string;
 
-  /**
-   * Quantidade máxima de resultados
-   * @example 20
-   */
-  limit?: number;
+  @ApiProperty({ required: false })
+  limite?: number;
 }
 
-export class GetStationsByProductDto {
-  /**
-   * Sigla do estado (UF)
-   * @example "SP"
-   */
-  uf?: string;
-
-  /**
-   * Nome do município
-   * @example "São Paulo"
-   */
-  municipio?: string;
-
-  /**
-   * Ordenação dos resultados
-   * @example "price_asc"
-   */
-  orderBy?: 'price_asc' | 'price_desc' | 'date_desc';
-
-  /**
-   * Quantidade máxima de resultados
-   * @example 50
-   */
-  limit?: number;
-
-  /**
-   * Quantidade de registros a pular
-   * @example 0
-   */
-  offset?: number;
-}
-
-export class GetStationPriceHistoryDto {
-  /**
-   * Filtrar por produto específico
-   * @example "GASOLINA COMUM"
-   */
-  produto?: string;
-
-  /**
-   * Data inicial para filtro (YYYY-MM-DD)
-   * @example "2025-01-01"
-   */
-  startDate?: string;
-
-  /**
-   * Data final para filtro (YYYY-MM-DD)
-   * @example "2025-05-29"
-   */
-  endDate?: string;
-
-  /**
-   * Quantidade máxima de resultados
-   * @example 100
-   */
-  limit?: number;
-}

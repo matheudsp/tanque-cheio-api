@@ -9,12 +9,12 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { GasStation } from './gas-station.entity';
+import { GasStationEntity } from './gas-station.entity';
 @Entity('localizacao')
 @Index(['uf', 'municipio'])
 @Index(['cep'])
 @Index(['uf', 'municipio', 'endereco']) // Para busca otimizada
-export class Localization {
+export class LocalizationEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -51,8 +51,8 @@ export class Localization {
   @UpdateDateColumn()
   atualizadoEm: Date;
 
-  @OneToMany(() => GasStation, (gasStation) => gasStation.localizacao)
-  postos: GasStation[];
+  @OneToMany(() => GasStationEntity, (gasStation) => gasStation.localizacao)
+  postos: GasStationEntity[];
 
   // Métodos de negócio
   getLocationKey(): string {
@@ -68,7 +68,7 @@ export class Localization {
     return parts.join('|');
   }
 
-  isSimilarTo(other: Localization): boolean {
+  isSimilarTo(other: LocalizationEntity): boolean {
     const normalize = (str?: string) => str?.trim().toUpperCase() || '';
     
     // Verifica se UF e município são iguais (obrigatório)

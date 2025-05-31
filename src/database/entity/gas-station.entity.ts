@@ -9,16 +9,16 @@ import {
   JoinColumn,
   OneToMany,
 } from 'typeorm';
-import { Localization } from './localization.entity';
+import { LocalizationEntity } from './localization.entity';
 
-import { PriceHistory } from './price-history.entity';
+import { PriceHistoryEntity } from './price-history.entity';
 
 @Entity('posto_gasolina')
 @Index(['cnpj'], { unique: true })
 @Index(['localizacao_id'])
 @Index(['nome_razao', 'cnpj']) // Para busca por RAZAO e CNPJ
 @Index(['ativo'])
-export class GasStation {
+export class GasStationEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
@@ -44,18 +44,18 @@ export class GasStation {
   atualizadoEm: Date;
 
   // Relacionamentos
-  @ManyToOne(() => Localization, (localizacao) => localizacao.postos, {
+  @ManyToOne(() => LocalizationEntity, (localizacao) => localizacao.postos, {
     nullable: false,
     onDelete: 'RESTRICT',
   })
   @JoinColumn({ name: 'localizacao_id' })
-  localizacao: Localization;  
+  localizacao: LocalizationEntity;  
 
   @Column({ type: 'uuid', nullable: false })
   localizacao_id: string;
 
-  @OneToMany(() => PriceHistory, (priceHistory) => priceHistory.posto)
-  historicoPrecos: PriceHistory[];
+  @OneToMany(() => PriceHistoryEntity, (priceHistory) => priceHistory.posto)
+  historicoPrecos: PriceHistoryEntity[];
 
   // Métodos de negócio
   getDisplayName(): string {
@@ -125,7 +125,7 @@ export class GasStation {
       this.nome_razao?.trim() &&
       this.cnpj?.trim() &&
       this.localizacao_id &&
-      GasStation.validateCnpj(this.cnpj)
+      GasStationEntity.validateCnpj(this.cnpj)
     );
   }
 

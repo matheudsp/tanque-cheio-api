@@ -8,8 +8,8 @@ import {
   ManyToOne,
   JoinColumn,
 } from 'typeorm';
-import { GasStation } from './gas-station.entity';
-import { Product } from './product.entity';
+import { GasStationEntity } from './gas-station.entity';
+import { ProductEntity } from './product.entity';
 
 @Entity('historico_precos')
 @Index(['posto_id', 'produto_id', 'data_coleta']) // Índice composto principal
@@ -19,15 +19,15 @@ import { Product } from './product.entity';
 @Index(['posto_id', 'produto_id'], { unique: false }) // Para consultas de posto+produto
 @Index(['preco_venda']) // Para consultas de preço
 @Index(['data_coleta', 'produto_id']) // Para relatórios por período e produto
-export class PriceHistory {
+export class PriceHistoryEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column({ type: 'date', nullable: false })
   data_coleta: Date;
 
-  @Column({ type: 'decimal', precision: 10, scale: 2, nullable: true })
-  preco_venda?: number | null;
+  @Column({ type: 'decimal', precision: 10, scale: 2 })
+  preco_venda: number | null;
 
   @Column({ type: 'boolean', default: true })
   ativo: boolean;
@@ -39,23 +39,25 @@ export class PriceHistory {
   atualizadoEm: Date;
 
   // Relacionamentos
-  @ManyToOne(() => GasStation, (gasStation) => gasStation.historicoPrecos, {
-    nullable: false,
-    onDelete: 'CASCADE',
-  })
+  @ManyToOne(
+    () => GasStationEntity,
+    (gasStation) => gasStation.historicoPrecos,
+    {
+      nullable: false,
+      onDelete: 'CASCADE',
+    },
+  )
   @JoinColumn({ name: 'posto_id' })
-  posto: GasStation;
-
+  posto: GasStationEntity;
   @Column({ type: 'uuid', nullable: false })
   posto_id: string;
 
-  @ManyToOne(() => Product, (produto) => produto.historicoPrecos, {
+  @ManyToOne(() => ProductEntity, (produto) => produto.historicoPrecos, {
     nullable: false,
     onDelete: 'RESTRICT',
   })
   @JoinColumn({ name: 'produto_id' })
-  produto: Product;
-
+  produto: ProductEntity;
   @Column({ type: 'uuid', nullable: false })
   produto_id: string;
 
@@ -95,16 +97,16 @@ export class PriceHistory {
     return !!this.preco_venda;
   }
 
-  isSameDay(other: PriceHistory): boolean {
+  isSameDay(other: PriceHistoryEntity): boolean {
     return this.data_coleta.toDateString() === other.data_coleta.toDateString();
   }
 
-  isMoreRecentThan(other: PriceHistory): boolean {
+  isMoreRecentThan(other: PriceHistoryEntity): boolean {
     return this.data_coleta.getTime() > other.data_coleta.getTime();
   }
 
   // Métodos para comparação de preços
-  getPriceVariation(previousPrice?: PriceHistory): number | null {
+  getPriceVariation(previousPrice?: PriceHistoryEntity): number | null {
     if (!previousPrice || !this.preco_venda || !previousPrice.preco_venda) {
       return null;
     }
@@ -112,7 +114,9 @@ export class PriceHistory {
     return Number((this.preco_venda - previousPrice.preco_venda).toFixed(3));
   }
 
-  getPriceVariationPercentage(previousPrice?: PriceHistory): number | null {
+  getPriceVariationPercentage(
+    previousPrice?: PriceHistoryEntity,
+  ): number | null {
     if (
       !previousPrice ||
       !this.preco_venda ||

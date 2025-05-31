@@ -5,10 +5,29 @@ import { LocalizationModule } from './localization/localization.module';
 import { PriceHistoryModule } from './price-history/price-history.module';
 import { ProductModule } from './product/product.module';
 import { HealthModule } from './health/health.module';
+import { RolesModule } from './roles/roles.module';
+import { UsersModule } from './users/users.module';
+import { AuthModule } from './auth/auth.module';
+import { PermissionsModule } from './permissions/permissions.module';
+import { HasRolesModule } from './has-roles/has-roles.module';
+import { ResourcesModule } from './resources/resources.module';
 
 @Module({
-  imports: [GasStationModule, DataSyncModule, LocalizationModule, PriceHistoryModule, ProductModule, HealthModule],
-  controllers: [],
+  imports: [
+    GasStationModule,
+    DataSyncModule,
+    LocalizationModule,
+    PriceHistoryModule,
+    ProductModule,
+    HealthModule,
+    RolesModule,
+    UsersModule,
+    AuthModule,
+    PermissionsModule,
+    HasRolesModule,
+    ResourcesModule,
+  ],
+  // controllers: [],
   providers: [],
 })
 export class ApiModule {}

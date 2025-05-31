@@ -1,7 +1,7 @@
-import z from 'zod';
+import { z } from 'zod';
 
-export const SearchGasStationsSchema = z.object({
-
+// Schema para busca geral de postos
+const searchGasStationsQuerySchema = z.object({
   municipio: z
     .string()
     .min(2, 'Município deve ter pelo menos 2 caracteres')
@@ -32,7 +32,8 @@ export const SearchGasStationsSchema = z.object({
     .optional(),
 });
 
-export const GetNearbyStationsSchema = z.object({
+// Schema para busca por proximidade
+const getNearbyStationsSchema = z.object({
   latitude: z
     .number()
     .min(-90, 'Latitude deve estar entre -90 e 90')
@@ -61,23 +62,76 @@ export const GetNearbyStationsSchema = z.object({
     .optional(),
 });
 
-export const GetStationsByProductSchema = z.object({
-  productName: z
+// Schema para histórico de preços
+const getPriceHistorySchema = z.object({
+  stationId: z.string().uuid('ID do posto deve ser um UUID válido'),
+  produto: z
     .string()
-    .min(2, 'Nome do produto deve ter pelo menos 2 caracteres')
-    .max(100, 'Nome do produto deve ter no máximo 100 caracteres'),
-  
+    .min(2, 'Produto deve ter pelo menos 2 caracteres')
+    .max(100, 'Produto deve ter no máximo 100 caracteres')
+    .optional(),
+  limit: z
+    .number()
+    .int('Limite deve ser um número inteiro')
+    .min(1, 'Limite deve ser pelo menos 1')
+    .max(500, 'Limite não pode ser maior que 500')
+    .default(50)
+    .optional(),
+  startDate: z
+    .string()
+    .datetime('Data de início deve estar no formato ISO')
+    .optional(),
+  endDate: z
+    .string()
+    .datetime('Data de fim deve estar no formato ISO')
+    .optional(),
+});
+
+// Schema para busca por ID
+const getStationByIdSchema = z.object({
+  id: z.string().uuid('ID deve ser um UUID válido'),
+});
+
+// Schema para download de planilha
+const downloadSpreadsheetSchema = z.object({
+  url: z.string().url('URL deve ser válida'),
+});
+
+// Schema para filtros avançados
+const advancedSearchSchema = z.object({
+  uf: z
+    .string()
+    .length(2, 'UF deve ter exatamente 2 caracteres')
+    .toUpperCase()
+    .optional(),
   municipio: z
     .string()
     .min(2, 'Município deve ter pelo menos 2 caracteres')
     .max(100, 'Município deve ter no máximo 100 caracteres')
     .optional(),
-  orderBy: z
-    .enum(['price_asc', 'price_desc', 'date_desc'], {
-      errorMap: () => ({ message: 'Ordenação deve ser price_asc, price_desc ou date_desc' })
-    })
-    .default('price_asc')
+  produto: z
+    .string()
+    .min(2, 'Produto deve ter pelo menos 2 caracteres')
+    .max(100, 'Produto deve ter no máximo 100 caracteres')
     .optional(),
+  bandeira: z
+    .string()
+    .min(2, 'Bandeira deve ter pelo menos 2 caracteres')
+    .max(100, 'Bandeira deve ter no máximo 100 caracteres')
+    .optional(),
+  orderBy: z
+    .enum(['name_asc', 'name_desc', 'price_asc', 'price_desc', 'date_desc'])
+    .default('name_asc')
+    .optional(),
+  priceMin: z
+    .number()
+    .min(0, 'Preço mínimo deve ser maior que 0')
+    .optional(),
+  priceMax: z
+    .number()
+    .min(0, 'Preço máximo deve ser maior que 0')
+    .optional(),
+  hasCurrentPrice: z.boolean().optional(),
   limit: z
     .number()
     .int('Limite deve ser um número inteiro')
@@ -93,45 +147,29 @@ export const GetStationsByProductSchema = z.object({
     .optional(),
 });
 
-export const GetStationPriceHistorySchema = z.object({
-  stationId: z
-    .string()
-    .uuid('ID do posto deve ser um UUID válido'),
-  produto: z
-    .string()
-    .min(2, 'Produto deve ter pelo menos 2 caracteres')
-    .max(100, 'Produto deve ter no máximo 100 caracteres')
-    .optional(),
-  startDate: z
-    .date({
-      errorMap: () => ({ message: 'Data inicial deve ser uma data válida' })
-    })
-    .optional(),
-  endDate: z
-    .date({
-      errorMap: () => ({ message: 'Data final deve ser uma data válida' })
-    })
-    .optional(),
-  limit: z
-    .number()
-    .int('Limite deve ser um número inteiro')
-    .min(1, 'Limite deve ser pelo menos 1')
-    .max(1000, 'Limite não pode ser maior que 1000')
-    .default(100)
-    .optional(),
-}).refine(
-  (data) => {
-    if (data.startDate && data.endDate) {
-      return data.startDate <= data.endDate;
-    }
-    return true;
-  },
-  {
-    message: 'Data inicial deve ser anterior ou igual à data final',
-    path: ['startDate'],
-  }
-);
+// Tipos TypeScript inferidos dos schemas
+type SearchGasStationsQuerySchema = z.infer<typeof searchGasStationsQuerySchema>;
+type GetNearbyStationsSchema = z.infer<typeof getNearbyStationsSchema>;
+type GetPriceHistorySchema = z.infer<typeof getPriceHistorySchema>;
+type GetStationByIdSchema = z.infer<typeof getStationByIdSchema>;
+type DownloadSpreadsheetSchema = z.infer<typeof downloadSpreadsheetSchema>;
+type AdvancedSearchSchema = z.infer<typeof advancedSearchSchema>;
 
-export const DownloadSpreadsheetSchema = z.object({
-  url: z.string().url('URL deve ser válida'),
-});
+// Exports
+export {
+  searchGasStationsQuerySchema,
+  getNearbyStationsSchema,
+  getPriceHistorySchema,
+  getStationByIdSchema,
+  downloadSpreadsheetSchema,
+  advancedSearchSchema,
+};
+
+export type {
+  SearchGasStationsQuerySchema,
+  GetNearbyStationsSchema,
+  GetPriceHistorySchema,
+  GetStationByIdSchema,
+  DownloadSpreadsheetSchema,
+  AdvancedSearchSchema,
+};

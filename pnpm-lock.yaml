@@ -71,12 +71,6 @@ importers:
       class-validator:
         specifier: ^0.14.2
         version: 0.14.2
-      csv-parse:
-        specifier: ^5.6.0
-        version: 5.6.0
-      csv-parser:
-        specifier: ^3.2.0
-        version: 3.2.0
       ioredis:
         specifier: ^5.6.1
         version: 5.6.1
@@ -86,9 +80,6 @@ importers:
       nanoid:
         specifier: '3'
         version: 3.3.11
-      node-xlsx:
-        specifier: ^0.24.0
-        version: 0.24.0
       papaparse:
         specifier: ^5.5.3
         version: 5.5.3
@@ -107,9 +98,6 @@ importers:
       xlsx:
         specifier: ^0.18.5
         version: 0.18.5
-      xlsx-to-csv-ts:
-        specifier: ^1.0.10
-        version: 1.0.10
       zod:
         specifier: ^3.24.4
         version: 3.25.28
@@ -147,9 +135,6 @@ importers:
       '@types/node':
         specifier: ^22.10.7
         version: 22.15.21
-      '@types/node-xlsx':
-        specifier: ^0.21.0
-        version: 0.21.0
       '@types/papaparse':
         specifier: ^5.3.16
         version: 5.3.16
@@ -1262,10 +1247,6 @@ packages:
   '@types/mime@1.3.5':
     resolution: {integrity: sha512-/pyBZWSLD2n0dcHE3hq8s8ZvcETHtEuF+3E7XVt0Ig2nvsVQXdghHVcEkIWjy9A0wKfTn97a/PSDYohKIlnP/w==}
 
-  '@types/node-xlsx@0.21.0':
-    resolution: {integrity: sha512-2phXePog1DbnNWMpl0wEaH/4ABKOBfgp+0IWLFzVzKkaWwHKwT5HcKHZYvEVv/Tntr3xf4J98Syvz7aPUmU2wA==}
-    deprecated: This is a stub types definition. node-xlsx provides its own type definitions, so you do not need this installed.
-
   '@types/node@22.15.21':
     resolution: {integrity: sha512-EV/37Td6c+MgKAbkcLG6vqZ2zEYHD7bvSrzqqs2RIhbA6w3x+Dqz8MZM3sP6kGTeLrdoOgKZe+Xja7tUB2DNkQ==}
 
@@ -1901,14 +1882,6 @@ packages:
   cross-spawn@7.0.6:
     resolution: {integrity: sha512-uV2QOWP2nWzsy2aMp8aRibhi9dlzF5Hgh5SHaB9OiTGEyDTiJJyx0uy51QXdyWbtAHNua4XJzUKca3OzKUd3vA==}
     engines: {node: '>= 8'}
-
-  csv-parse@5.6.0:
-    resolution: {integrity: sha512-l3nz3euub2QMg5ouu5U09Ew9Wf6/wQ8I++ch1loQ0ljmzhmfZYrH9fflS22i/PQEvsPvxCwxgz5q7UB8K1JO4Q==}
-
-  csv-parser@3.2.0:
-    resolution: {integrity: sha512-fgKbp+AJbn1h2dcAHKIdKNSSjfp43BZZykXsCjzALjKy80VXQNHPFJ6T9Afwdzoj24aMkq8GwDS7KGcDPpejrA==}
-    engines: {node: '>= 10'}
-    hasBin: true
 
   dayjs@1.11.13:
     resolution: {integrity: sha512-oaMBel6gjolK862uaPQOVTA7q3TZhuSvuMQAAglQDOWYO9A91IrAOUJEyKVlqJlHE0vq5p5UXxzdPfMH/x6xNg==}
@@ -3096,11 +3069,6 @@ packages:
   node-releases@2.0.19:
     resolution: {integrity: sha512-xxOWJsBKtzAq7DY0J+DTzuz58K8e7sJbdgwkbMWQe8UYB6ekmsQ45q0M/tJDsGaZmbC+l7n57UV8Hl5tHxO9uw==}
 
-  node-xlsx@0.24.0:
-    resolution: {integrity: sha512-1olwK48XK9nXZsyH/FCltvGrQYvXXZuxVitxXXv2GIuRm51aBi1+5KwR4rWM4KeO61sFU+00913WLZTD+AcXEg==}
-    engines: {node: '>=10.0.0'}
-    hasBin: true
-
   normalize-path@3.0.0:
     resolution: {integrity: sha512-6eZs5Ls3WtCisHWp9S2GUy8dqkpGi4BVSz3GaqiE6ezub0512ESztXUwUB6C6IKbQkY2Pnb/mD4WYojCRwcwLA==}
     engines: {node: '>=0.10.0'}
@@ -4085,17 +4053,8 @@ packages:
     resolution: {integrity: sha512-7KxauUdBmSdWnmpaGFg+ppNjKF8uNLry8LyzjauQDOVONfFLNKrKvQOxZ/VuTIcS/gge/YNahf5RIIQWTSarlg==}
     engines: {node: ^12.13.0 || ^14.15.0 || >=16.0.0}
 
-  xlsx-to-csv-ts@1.0.10:
-    resolution: {integrity: sha512-D7cOrF8K3DOCuG6stkYK2tzkKuTqaH740Iu0yxFfzw+Oa8D7SqCW4VY4elnULe3efW7+QOyI1XnQV0BjmE+Elg==}
-
   xlsx@0.18.5:
     resolution: {integrity: sha512-dmg3LCjBPHZnQp5/F/+nnTa+miPJxUXB6vtk42YjBBKayDNagxGEeIdWApkYPOf3Z3pm3k62Knjzp7lMeTEtFQ==}
-    engines: {node: '>=0.8'}
-    hasBin: true
-
-  xlsx@https://cdn.sheetjs.com/xlsx-0.20.2/xlsx-0.20.2.tgz:
-    resolution: {tarball: https://cdn.sheetjs.com/xlsx-0.20.2/xlsx-0.20.2.tgz}
-    version: 0.20.2
     engines: {node: '>=0.8'}
     hasBin: true
 
@@ -5350,10 +5309,6 @@ snapshots:
 
   '@types/mime@1.3.5': {}
 
-  '@types/node-xlsx@0.21.0':
-    dependencies:
-      node-xlsx: 0.24.0
-
   '@types/node@22.15.21':
     dependencies:
       undici-types: 6.21.0
@@ -6093,10 +6048,6 @@ snapshots:
       path-key: 3.1.1
       shebang-command: 2.0.0
       which: 2.0.2
-
-  csv-parse@5.6.0: {}
-
-  csv-parser@3.2.0: {}
 
   dayjs@1.11.13: {}
 
@@ -7465,10 +7416,6 @@ snapshots:
 
   node-releases@2.0.19: {}
 
-  node-xlsx@0.24.0:
-    dependencies:
-      xlsx: https://cdn.sheetjs.com/xlsx-0.20.2/xlsx-0.20.2.tgz
-
   normalize-path@3.0.0: {}
 
   normalize-url@8.0.1: {}
@@ -8411,10 +8358,6 @@ snapshots:
       imurmurhash: 0.1.4
       signal-exit: 3.0.7
 
-  xlsx-to-csv-ts@1.0.10:
-    dependencies:
-      xlsx: 0.18.5
-
   xlsx@0.18.5:
     dependencies:
       adler-32: 1.3.1
@@ -8424,8 +8367,6 @@ snapshots:
       ssf: 0.11.2
       wmf: 1.0.2
       word: 0.3.0
-
-  xlsx@https://cdn.sheetjs.com/xlsx-0.20.2/xlsx-0.20.2.tgz: {}
 
   xtend@4.0.2: {}
 

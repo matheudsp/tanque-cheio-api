@@ -5,10 +5,10 @@ import { Injectable, Logger } from '@nestjs/common';
 
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { GasStation } from '@/database/entity/gas-station.entity';
-import { Localization } from '@/database/entity/localization.entity';
-import { Product } from '@/database/entity/product.entity';
-import { PriceHistory } from '@/database/entity/price-history.entity';
+import { GasStationEntity } from '@/database/entity/gas-station.entity';
+import { LocalizationEntity } from '@/database/entity/localization.entity';
+import { ProductEntity } from '@/database/entity/product.entity';
+import { PriceHistoryEntity } from '@/database/entity/price-history.entity';
 import { EntityFactory } from '../repositories/entity.factory';
 import * as Papa from 'papaparse';
 import * as fs from 'fs';
@@ -19,13 +19,13 @@ export class CsvProcessor {
   private readonly logger = new Logger(CsvProcessor.name);
 
   constructor(
-    @InjectRepository(GasStation)
-    private gasStationRepo: Repository<GasStation>,
-    @InjectRepository(Localization)
-    private localizationRepo: Repository<Localization>,
-    @InjectRepository(Product) private productRepo: Repository<Product>,
-    @InjectRepository(PriceHistory)
-    private priceHistoryRepo: Repository<PriceHistory>,
+    @InjectRepository(GasStationEntity)
+    private gasStationRepo: Repository<GasStationEntity>,
+    @InjectRepository(LocalizationEntity)
+    private localizationRepo: Repository<LocalizationEntity>,
+    @InjectRepository(ProductEntity) private productRepo: Repository<ProductEntity>,
+    @InjectRepository(PriceHistoryEntity)
+    private priceHistoryRepo: Repository<PriceHistoryEntity>,
   ) {}
 
   async processFile(filePath: string): Promise<ProcessingResult> {
@@ -145,13 +145,13 @@ export class CsvProcessor {
   }
 
   private async processEntities(batch: CsvRow[], queryRunner: any) {
-    const localizationMap = new Map<string, Localization>();
-    const productMap = new Map<string, Product>();
-    const gasStationMap = new Map<string, GasStation>();
+    const localizationMap = new Map<string, LocalizationEntity>();
+    const productMap = new Map<string, ProductEntity>();
+    const gasStationMap = new Map<string, GasStationEntity>();
     const priceHistories: Array<{
       row: CsvRow;
-      gasStation: GasStation;
-      product: Product;
+      gasStation: GasStationEntity;
+      product: ProductEntity;
     }> = [];
 
     for (const row of batch) {
@@ -162,7 +162,7 @@ export class CsvProcessor {
         if (!localizationMap.has(locKey)) {
           const existing = await this.findOrCreateEntity(
             queryRunner,
-            Localization,
+            LocalizationEntity,
             localization,
             this.getLocalizationQuery(localization),
           );
@@ -175,7 +175,7 @@ export class CsvProcessor {
         if (!productMap.has(prodKey)) {
           const existing = await this.findOrCreateEntity(
             queryRunner,
-            Product,
+            ProductEntity,
             product,
             { nome: product.nome },
           );
@@ -191,7 +191,7 @@ export class CsvProcessor {
         if (!gasStationMap.has(gasKey)) {
           const existing = await this.findOrCreateEntity(
             queryRunner,
-            GasStation,
+            GasStationEntity,
             gasStation,
             { cnpj: gasStation.cnpj },
           );
@@ -230,7 +230,7 @@ export class CsvProcessor {
     return await queryRunner.manager.save(entity);
   }
 
-  private getLocalizationQuery(localization: Localization) {
+  private getLocalizationQuery(localization: LocalizationEntity) {
     return {
       uf: localization.uf,
       municipio: localization.municipio,
@@ -243,15 +243,15 @@ export class CsvProcessor {
   private async upsertPriceHistories(
     priceHistories: Array<{
       row: CsvRow;
-      gasStation: GasStation;
-      product: Product;
+      gasStation: GasStationEntity;
+      product: ProductEntity;
     }>,
     entities: any,
     queryRunner: any,
     result: ProcessingResult,
   ): Promise<void> {
-    const toInsert: PriceHistory[] = [];
-    const toUpdate: PriceHistory[] = [];
+    const toInsert: PriceHistoryEntity[] = [];
+    const toUpdate: PriceHistoryEntity[] = [];
 
     // Build search criteria for batch lookup
     const searchCriteria = priceHistories.map(
@@ -276,7 +276,7 @@ export class CsvProcessor {
           gasStation,
           product,
         );
-        const key = PriceHistory.createUpsertKey(
+        const key = PriceHistoryEntity.createUpsertKey(
           gasStation.id,
           product.id,
           priceHistory.data_coleta,
@@ -340,8 +340,8 @@ export class CsvProcessor {
    * 3. Outros campos relevantes diferentes
    */
   private shouldUpdatePriceHistory(
-    existing: PriceHistory,
-    newRecord: PriceHistory,
+    existing: PriceHistoryEntity,
+    newRecord: PriceHistoryEntity,
   ): boolean {
     // Se os preços são iguais, não há necessidade de atualizar
     if (existing.preco_venda == newRecord.preco_venda) {
@@ -374,7 +374,7 @@ export class CsvProcessor {
       data_coleta: string;
     }>,
     queryRunner: any,
-  ): Promise<Map<string, PriceHistory>> {
+  ): Promise<Map<string, PriceHistoryEntity>> {
     if (criteria.length === 0) return new Map();
 
     const conditions = criteria
@@ -395,11 +395,11 @@ export class CsvProcessor {
     );
 
     const records = await queryRunner.manager
-      .createQueryBuilder(PriceHistory, 'ph')
+      .createQueryBuilder(PriceHistoryEntity, 'ph')
       .where(`(${conditions})`, parameters)
       .getMany();
 
-    const resultMap = new Map<string, PriceHistory>();
+    const resultMap = new Map<string, PriceHistoryEntity>();
     records.forEach((record) => {
       const key = record.getUpsertKey();
       resultMap.set(key, record);

@@ -1,6 +1,6 @@
-import type { GasStation } from '@/database/entity/gas-station.entity';
-import type { PriceHistory } from '@/database/entity/price-history.entity';
-import type { Product } from '@/database/entity/product.entity';
+import type { GasStationEntity } from '@/database/entity/gas-station.entity';
+import type { PriceHistoryEntity} from '@/database/entity/price-history.entity';
+import type { ProductEntity } from '@/database/entity/product.entity';
 
 // Filtros de busca geral
 export interface SearchFilters {
@@ -14,7 +14,7 @@ export interface SearchFilters {
 
 // Resultado da busca geral
 export interface SearchResult {
-  results: GasStation[];
+  results: GasStationEntity[];
   total: number;
   limit: number;
   offset: number;
@@ -31,7 +31,7 @@ export interface NearbyStationsFilter {
 
 // Posto com distância calculada
 export type StationWithDistance = Omit<
-  GasStation,
+  GasStationEntity,
   | 'getDisplayName'
   | 'normalizeCnpj'
   | 'formatCnpj'
@@ -66,25 +66,19 @@ export interface StationsByProductFilter {
 // Resultado da busca por produto
 export interface StationsByProductResult {
   productName: string;
-  results: PriceHistory[];
+  results: PriceHistoryEntity[];
   total: number;
   limit: number;
   offset: number;
   orderBy: string;
 }
 
-// Filtros para histórico de preços
-export interface PriceHistoryFilter {
-  produto?: string;
-  startDate?: Date;
-  endDate?: Date;
-  limit?: number;
-}
+
 
 // Resultado do histórico de preços
 export interface PriceHistoryResult {
   stationId: string;
-  results: PriceHistory[];
+  results: PriceHistoryEntity[];
   total: number;
   limit: number;
   filters: {
@@ -94,13 +88,6 @@ export interface PriceHistoryResult {
   };
 }
 
-// Detalhes completos de um posto
-export interface StationDetail {
-  station: GasStation;
-  pricesByProduct: Record<string, PriceHistory[]>;
-  totalProducts: number;
-  lastUpdate: Date | null;
-}
 
 // Estatísticas por estado
 export interface StateStatistics {
@@ -151,7 +138,7 @@ export interface PriceAnalysis {
 // Interface para comparação entre postos
 export interface StationComparison {
   stations: Array<{
-    station: GasStation;
+    station: GasStationEntity;
     prices: Array<{
       produto: string;
       preco: number;
@@ -160,8 +147,8 @@ export interface StationComparison {
   }>;
   products: string[];
   summary: {
-    cheapest: Record<string, { station: GasStation; price: number }>;
-    expensive: Record<string, { station: GasStation; price: number }>;
+    cheapest: Record<string, { station: GasStationEntity; price: number }>;
+    expensive: Record<string, { station: GasStationEntity; price: number }>;
     average: Record<string, number>;
   };
 }
@@ -173,7 +160,7 @@ export interface PriceRanking {
   uf?: string;
   ranking: Array<{
     position: number;
-    station: GasStation;
+    station: GasStationEntity;
     price: number;
     data_coleta: Date;
   }>;

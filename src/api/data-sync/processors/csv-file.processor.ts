@@ -171,13 +171,13 @@ export class CsvProcessor {
 
         // Process product
         const product = EntityFactory.createProduct(row);
-        const prodKey = product.nome;
+        const prodKey = product.name;
         if (!productMap.has(prodKey)) {
           const existing = await this.findOrCreateEntity(
             queryRunner,
             ProductEntity,
             product,
-            { nome: product.nome },
+            { nome: product.name },
           );
           productMap.set(prodKey, existing);
         }
@@ -187,13 +187,13 @@ export class CsvProcessor {
           row,
           localizationMap.get(locKey)!,
         );
-        const gasKey = gasStation.cnpj;
+        const gasKey = gasStation.taxId;
         if (!gasStationMap.has(gasKey)) {
           const existing = await this.findOrCreateEntity(
             queryRunner,
             GasStationEntity,
             gasStation,
-            { cnpj: gasStation.cnpj },
+            { cnpj: gasStation.taxId },
           );
           gasStationMap.set(gasKey, existing);
         }
@@ -232,11 +232,11 @@ export class CsvProcessor {
 
   private getLocalizationQuery(localization: LocalizationEntity) {
     return {
-      uf: localization.uf,
-      municipio: localization.municipio,
-      endereco: localization.endereco,
-      bairro: localization.bairro,
-      cep: localization.cep,
+      uf: localization.state,
+      municipio: localization.city,
+      endereco: localization.address,
+      bairro: localization.neighborhood,
+      cep: localization.zipCode,
     };
   }
 
@@ -279,7 +279,7 @@ export class CsvProcessor {
         const key = PriceHistoryEntity.createUpsertKey(
           gasStation.id,
           product.id,
-          priceHistory.data_coleta,
+          priceHistory.collection_date,
         );
         const existing = existingMap.get(key);
 
@@ -295,7 +295,7 @@ export class CsvProcessor {
 
           if (needsUpdate) {
             priceHistory.id = existing.id;
-            priceHistory.criadoEm = existing.criadoEm; // Preservar data de criação original
+            priceHistory.createdAt = existing.createdAt; // Preservar data de criação original
             toUpdate.push(priceHistory);
           } else {
             // Registro idêntico ou mais antigo, pular
@@ -344,13 +344,13 @@ export class CsvProcessor {
     newRecord: PriceHistoryEntity,
   ): boolean {
     // Se os preços são iguais, não há necessidade de atualizar
-    if (existing.preco_venda == newRecord.preco_venda) {
+    if (existing.price == newRecord.price) {
       return false;
     }
 
     // Se a data de coleta é mais antiga que a existente, não atualizar
-    const existingDate = new Date(existing.data_coleta);
-    const newDate = new Date(newRecord.data_coleta);
+    const existingDate = new Date(existing.collection_date);
+    const newDate = new Date(newRecord.collection_date);
 
     if (newDate < existingDate) {
       this.logger.debug(
@@ -362,7 +362,7 @@ export class CsvProcessor {
     // Se chegou até aqui, o registro deve ser atualizado
     // (preço diferente E data igual)
     this.logger.debug(
-      `🔄 Atualização necessária - preço: ${existing.preco_venda} → ${newRecord.preco_venda}`,
+      `🔄 Atualização necessária - preço: ${existing.price} → ${newRecord.price}`,
     );
     return true;
   }

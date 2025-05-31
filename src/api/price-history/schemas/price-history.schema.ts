@@ -41,8 +41,15 @@ const priceHistoryQuerySchema = z
       path: ['startDate'],
     },
   );
+const latestPricesQuerySchema = z.object({
+  periodo: z.enum(['semana', 'mes']).default('mes').optional(),
+  produtos: z.string().optional().transform((val) => 
+    val ? val.split(',').map(p => p.trim().toUpperCase()) : ['GLP', 'GASOLINA', 'DIESEL']
+  ),
+});
 
+type LatestPricesQuerySchema = z.infer<typeof latestPricesQuerySchema>;
 type PriceHistorySchema = z.infer<typeof priceHistorySchema>;
 type PriceHistoryQuerySchema = z.infer<typeof priceHistoryQuerySchema>;
-export { priceHistorySchema, priceHistoryQuerySchema };
-export type { PriceHistorySchema, PriceHistoryQuerySchema };
+export { priceHistorySchema, latestPricesQuerySchema,priceHistoryQuerySchema };
+export type { LatestPricesQuerySchema,PriceHistorySchema, PriceHistoryQuerySchema };

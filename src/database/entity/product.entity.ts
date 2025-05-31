@@ -9,35 +9,35 @@ import {
 } from 'typeorm';
 import { PriceHistoryEntity } from './price-history.entity';
 
-@Entity('produto')
-@Index(['nome'], { unique: true })
-@Index(['categoria'])
-@Index(['ativo'])
+@Entity('product')
+@Index(['name'], { unique: true })
+@Index(['category'])
+@Index(['isActive'])
 export class ProductEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column({ type: 'varchar', length: 100, nullable: false, unique: true })
-  nome: string;
+  name: string;
 
   @Column({ type: 'varchar', length: 50, nullable: false, default: 'COMBUSTÍVEL' })
-  categoria: string; // COMBUSTÍVEL, GLP, LUBRIFICANTE, etc.
+  category: string; // COMBUSTÍVEL, GLP, LUBRIFICANTE, etc.
 
   @Column({ type: 'varchar', length: 20, nullable: false, default: 'litro' })
-  unidade_medida: string;
+  unitOfMeasure: string;
 
   @Column({ type: 'boolean', default: true })
-  ativo: boolean;
+  isActive: boolean;
 
   @CreateDateColumn()
-  criadoEm: Date;
+  createdAt: Date;
 
   @UpdateDateColumn()
-  atualizadoEm: Date;
+  updatedAt: Date;
 
   // Relacionamentos
-  @OneToMany(() => PriceHistoryEntity, (priceHistory) => priceHistory.produto)
-  historicoPrecos: PriceHistoryEntity[];
+  @OneToMany(() => PriceHistoryEntity, (priceHistory) => priceHistory.product)
+  priceHistory: PriceHistoryEntity[];
 
   // Métodos de negócio
   static normalizeName(nome: string): string {
@@ -99,22 +99,22 @@ export class ProductEntity {
   }
 
   getDisplayName(): string {
-    return `${this.nome} (${this.unidade_medida})`;
+    return `${this.name} (${this.unitOfMeasure})`;
   }
 
   isLiquid(): boolean {
-    return this.unidade_medida.toLowerCase().includes('litro');
+    return this.unitOfMeasure.toLowerCase().includes('litro');
   }
 
   isGas(): boolean {
-    return this.unidade_medida.includes('m³') || this.unidade_medida.includes('kg');
+    return this.unitOfMeasure.includes('m³') || this.unitOfMeasure.includes('kg');
   }
 
   isValid(): boolean {
     return !!(
-      this.nome?.trim() && 
-      this.categoria?.trim() && 
-      this.unidade_medida?.trim()
+      this.name?.trim() && 
+      this.category?.trim() && 
+      this.unitOfMeasure?.trim()
     );
   }
 }

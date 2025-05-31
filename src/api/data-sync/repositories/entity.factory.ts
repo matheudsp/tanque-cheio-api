@@ -8,25 +8,25 @@ import { DataUtils } from '../utils/data-utils';
 export class EntityFactory {
   static createLocalization(row: CsvRow): LocalizationEntity {
     const localization = new LocalizationEntity();
-    localization.uf = DataUtils.cleanString(row.ESTADO);
-    localization.municipio = DataUtils.cleanString(row.MUNICÍPIO);
-    localization.endereco = DataUtils.cleanString(row.ENDEREÇO) || null;
-    localization.numero = DataUtils.cleanString(row.NÚMERO) || null;
-    localization.complemento = DataUtils.cleanString(row.COMPLEMENTO) || null;
-    localization.bairro = DataUtils.cleanString(row.BAIRRO) || null;
-    localization.cep = DataUtils.normalizeCep(row.CEP);
+    localization.state = DataUtils.cleanString(row.ESTADO);
+    localization.city = DataUtils.cleanString(row.MUNICÍPIO);
+    localization.address = DataUtils.cleanString(row.ENDEREÇO) || null;
+    localization.number = DataUtils.cleanString(row.NÚMERO) || null;
+    localization.complement = DataUtils.cleanString(row.COMPLEMENTO) || null;
+    localization.neighborhood = DataUtils.cleanString(row.BAIRRO) || null;
+    localization.zipCode = DataUtils.normalizeCep(row.CEP);
     return localization;
   }
 
   static createProduct(row: CsvRow): ProductEntity {
     const product = new ProductEntity();
     const produtoNome = DataUtils.cleanString(row.PRODUTO);
-    product.nome = ProductEntity.normalizeName(produtoNome);
-    product.categoria = ProductEntity.determineCategory(produtoNome);
-    product.unidade_medida =
+    product.name = ProductEntity.normalizeName(produtoNome);
+    product.category = ProductEntity.determineCategory(produtoNome);
+    product.unitOfMeasure =
       DataUtils.cleanString(row['UNIDADE DE MEDIDA']) ||
       ProductEntity.determineUnit(produtoNome);
-    product.ativo = true;
+    product.isActive = true;
     return product;
   }
 
@@ -35,13 +35,13 @@ export class EntityFactory {
     localization: LocalizationEntity,
   ): GasStationEntity {
     const gasStation = new GasStationEntity();
-    gasStation.nome_razao = DataUtils.cleanString(row.RAZÃO);
-    gasStation.nome_fantasia = DataUtils.cleanString(row.FANTASIA) || null;
-    gasStation.bandeira = DataUtils.cleanString(row.BANDEIRA) || null;
-    gasStation.cnpj = DataUtils.normalizeCnpj(row.CNPJ);
-    gasStation.ativo = true;
-    gasStation.localizacao = localization;
-    gasStation.localizacao_id = localization.id;
+    gasStation.legal_name = DataUtils.cleanString(row.RAZÃO);
+    gasStation.trade_name = DataUtils.cleanString(row.FANTASIA) || null;
+    gasStation.brand= DataUtils.cleanString(row.BANDEIRA) || null;
+    gasStation.taxId = DataUtils.normalizeCnpj(row.CNPJ);
+    gasStation.isActive = true;
+    gasStation.localization = localization;
+    gasStation.localization_id = localization.id;
     return gasStation;
   }
 
@@ -51,13 +51,13 @@ export class EntityFactory {
     product: ProductEntity,
   ): PriceHistoryEntity {
     const priceHistory = new PriceHistoryEntity();
-    priceHistory.posto = gasStation;
-    priceHistory.produto = product;
-    priceHistory.posto_id = gasStation.id;
-    priceHistory.produto_id = product.id;
-    priceHistory.data_coleta = DataUtils.parseDate(row['DATA DA COLETA']);
-    priceHistory.preco_venda = DataUtils.parsePrice(row['PREÇO DE REVENDA']);
-    priceHistory.ativo = true;
+    priceHistory.gas_station = gasStation;
+    priceHistory.product = product;
+    priceHistory.gas_station_id = gasStation.id;
+    priceHistory.product_id = product.id;
+    priceHistory.collection_date = DataUtils.parseDate(row['DATA DA COLETA']);
+    priceHistory.price = DataUtils.parsePrice(row['PREÇO DE REVENDA']);
+    priceHistory.isActive = true;
     return priceHistory;
   }
 }

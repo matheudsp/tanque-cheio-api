@@ -22,7 +22,7 @@ import { JwtModule } from '@nestjs/jwt';
     CacheModule.registerAsync(cacheRedisModuleConfig),
     JwtModule.register({
       secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: process.env.JWT_EXPIRES_IN },
+      signOptions: { expiresIn: '30d' },
       global: true,
     }),
     TypeOrmModule.forRoot(databaseConfig),

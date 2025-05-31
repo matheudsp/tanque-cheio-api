@@ -10,34 +10,34 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { GasStationEntity } from './gas-station.entity';
-@Entity('localizacao')
-@Index(['uf', 'municipio'])
-@Index(['cep'])
-@Index(['uf', 'municipio', 'endereco']) // Para busca otimizada
+@Entity('localization')
+@Index(['state', 'city'])
+@Index(['zipCode'])
+@Index(['state', 'city', 'address']) // Para busca otimizada
 export class LocalizationEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column({ type: 'varchar', length: 50, nullable: false })
-  uf: string; // Sempre 2 caracteres (SP, RJ, etc.)
+  state: string;
 
   @Column({ type: 'varchar', length: 200, nullable: false })
-  municipio: string;
+  city: string;
 
   @Column({ type: 'text', nullable: true })
-  endereco?: string | null;
+  address?: string | null;
 
   @Column({ type: 'varchar', length: 25, nullable: true })
-  numero?: string | null;
+  number?: string | null;
 
   @Column({ type: 'varchar', length: 200, nullable: true })
-  complemento?: string | null;
+  complement?: string | null;
 
   @Column({ type: 'varchar', length: 200, nullable: true })
-  bairro?: string | null;
+  neighborhood?: string | null;
 
   @Column({ type: 'varchar', length: 10, nullable: true })
-  cep?: string | null; // Formato: 12345-678
+  zipCode?: string | null; // Formato: 12345-678
 
   @Column({ type: 'decimal', precision: 11, scale: 8, nullable: true })
   latitude?: number | null;
@@ -46,48 +46,52 @@ export class LocalizationEntity {
   longitude?: number | null;
 
   @CreateDateColumn()
-  criadoEm: Date;
+  createdAt: Date;
 
   @UpdateDateColumn()
-  atualizadoEm: Date;
+  updatedAt: Date;
 
-  @OneToMany(() => GasStationEntity, (gasStation) => gasStation.localizacao)
-  postos: GasStationEntity[];
+  @OneToMany(() => GasStationEntity, (gasStation) => gasStation.localization)
+  gas_station: GasStationEntity[];
 
   // Métodos de negócio
   getLocationKey(): string {
     const parts = [
-      this.uf?.trim().toUpperCase(),
-      this.municipio?.trim().toUpperCase(),
-      this.endereco?.trim().toUpperCase(),
-      this.numero?.trim(),
-      this.bairro?.trim().toUpperCase(),
-      this.normalizeCep()
-    ].filter(part => part && part.length > 0);
-    
+      this.state?.trim().toUpperCase(),
+      this.city?.trim().toUpperCase(),
+      this.address?.trim().toUpperCase(),
+      this.number?.trim(),
+      this.neighborhood?.trim().toUpperCase(),
+      this.normalizeCep(),
+    ].filter((part) => part && part.length > 0);
+
     return parts.join('|');
   }
 
   isSimilarTo(other: LocalizationEntity): boolean {
     const normalize = (str?: string) => str?.trim().toUpperCase() || '';
-    
+
     // Verifica se UF e município são iguais (obrigatório)
-    if (normalize(this.uf) !== normalize(other.uf) || 
-        normalize(this.municipio) !== normalize(other.municipio)) {
+    if (
+      normalize(this.state) !== normalize(other.state) ||
+      normalize(this.city) !== normalize(other.city)
+    ) {
       return false;
     }
 
     // Se ambos têm endereço, compara endereços
-    if (this.endereco && other.endereco) {
-      const enderecoSimilar = normalize(this.endereco) === normalize(other.endereco);
-      const numeroSimilar = normalize(this.numero!) === normalize(other.numero!);
+    if (this.address && other.address) {
+      const enderecoSimilar =
+        normalize(this.address) === normalize(other.address);
+      const numeroSimilar =
+        normalize(this.number!) === normalize(other.number!);
       const cepSimilar = this.normalizeCep() === other.normalizeCep();
-      
+
       return enderecoSimilar && (numeroSimilar || cepSimilar);
     }
 
     // Se pelo menos um tem CEP, compara CEPs
-    if (this.cep || other.cep) {
+    if (this.zipCode || other.zipCode) {
       return this.normalizeCep() === other.normalizeCep();
     }
 
@@ -96,28 +100,20 @@ export class LocalizationEntity {
 
   getFullAddress(): string {
     const parts = [
-      this.endereco,
-      this.numero,
-      this.complemento,
-      this.bairro,
-      this.municipio,
-      this.uf,
-      this.cep
+      this.address,
+      this.number,
+      this.complement,
+      this.neighborhood,
+      this.city,
+      this.state,
+      this.zipCode,
     ].filter(Boolean);
-    
+
     return parts.join(', ');
   }
 
   private normalizeCep(): string {
-    return this.cep?.replace(/[^\d]/g, '') || '';
-  }
-
-  formatCep(): string {
-    const cleaned = this.normalizeCep();
-    if (cleaned.length === 8) {
-      return `${cleaned.substr(0, 5)}-${cleaned.substr(5)}`;
-    }
-    return cleaned;
+    return this.zipCode?.replace(/[^\d]/g, '') || '';
   }
 
   static normalizeUf(uf: string): string {
@@ -129,10 +125,6 @@ export class LocalizationEntity {
   }
 
   isValid(): boolean {
-    return !!(
-      this.uf?.trim() && 
-      this.municipio?.trim() &&
-      this.uf.length === 2
-    );
+    return !!(this.state?.trim() && this.city?.trim());
   }
 }

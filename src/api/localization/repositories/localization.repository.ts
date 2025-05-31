@@ -12,7 +12,7 @@ export class LocalizationRepository {
 
   async findAll(): Promise<LocalizationEntity[] | null> {
     return this.repo.find({
-      order: { uf: 'ASC', municipio: 'ASC' },
+      order: { state: 'ASC', city: 'ASC' },
     });
   }
 
@@ -24,8 +24,8 @@ export class LocalizationRepository {
 
   async findByUf(uf: string): Promise<LocalizationEntity[] | null> {
     return this.repo.find({
-      where: { uf: uf.toUpperCase() },
-      order: { municipio: 'ASC' },
+      where: { state: uf.toUpperCase() },
+      order: { city: 'ASC' },
     });
   }
 }

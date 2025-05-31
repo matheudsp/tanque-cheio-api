@@ -12,20 +12,20 @@ export class ProductRepository {
 
   async findAll(): Promise<ProductEntity[] | null> {
     return this.repo.find({
-      where: { ativo: true },
-      order: { nome: 'ASC' },
+      where: { isActive: true },
+      order: { name: 'ASC' },
     });
   }
 
   async findById(id: string): Promise<ProductEntity | null> {
     return this.repo.findOne({
-      where: { id, ativo: true },
+      where: { id, isActive: true },
     });
   }
 
   async findByName(name: string): Promise<ProductEntity | null> {
     return this.repo.findOne({
-      where: { nome: name, ativo: true },
+      where: { name: name, isActive: true },
     });
   }
 
@@ -35,11 +35,11 @@ export class ProductRepository {
   async searchByName(name: string): Promise<ProductEntity[] | null> {
     return this.repo
       .createQueryBuilder('prod')
-      .where('prod.ativo = :ativo', { ativo: true })
-      .andWhere('UPPER(prod.nome) ILIKE UPPER(:name)', {
+      .where('prod.isActive = :isActive', { isActive: true })
+      .andWhere('UPPER(prod.name) ILIKE UPPER(:name)', {
         name: `%${name}%`,
       })
-      .orderBy('prod.nome', 'ASC')
+      .orderBy('prod.name', 'ASC')
       .getMany();
   }
 
@@ -49,20 +49,20 @@ export class ProductRepository {
   async getProductsWithStats(): Promise<ProductEntity[] | null> {
     return this.repo
       .createQueryBuilder('prod')
-      .leftJoin('prod.historicoPrecos', 'hp')
+      .leftJoin('prod.priceHistory', 'hp')
       .select([
         'prod.id',
-        'prod.nome',
-        'prod.categoria',
+        'prod.name',
+        'prod.category',
         'COUNT(hp.id) as total_prices',
-        'AVG(hp.preco_venda) as preco_medio',
-        'MIN(hp.preco_venda) as preco_minimo',
-        'MAX(hp.preco_venda) as preco_maximo',
+        'AVG(hp.price) as medium_price',
+        'MIN(hp.price) as min_price',
+        'MAX(hp.price) as max_price',
       ])
-      .where('prod.ativo = :ativo', { ativo: true })
-      .andWhere('hp.ativo = :ativo', { ativo: true })
-      .groupBy('prod.id, prod.nome, prod.categoria')
-      .orderBy('prod.nome', 'ASC')
+      .where('prod.isActive = :isActive', { isActive: true })
+      .andWhere('hp.isActive = :isActive', { isActive: true })
+      .groupBy('prod.id, prod.name, prod.category')
+      .orderBy('prod.name', 'ASC')
       .getRawMany();
   }
 
@@ -71,7 +71,7 @@ export class ProductRepository {
    */
   async count(): Promise<number> {
     return this.repo.count({
-      where: { ativo: true },
+      where: { isActive: true },
     });
   }
 }

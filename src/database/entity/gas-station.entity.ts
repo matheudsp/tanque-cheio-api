@@ -13,68 +13,60 @@ import { LocalizationEntity } from './localization.entity';
 
 import { PriceHistoryEntity } from './price-history.entity';
 
-@Entity('posto_gasolina')
-@Index(['cnpj'], { unique: true })
-@Index(['localizacao_id'])
-@Index(['nome_razao', 'cnpj']) // Para busca por RAZAO e CNPJ
-@Index(['ativo'])
+@Entity('gas_station')
+@Index(['taxId'], { unique: true })
+@Index(['localization_id'])
+@Index(['legal_name', 'taxId']) // Para busca por RAZAO e CNPJ
+@Index(['isActive'])
 export class GasStationEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column({ type: 'varchar', length: 200, nullable: false })
-  nome_razao: string;
+  legal_name: string;
 
   @Column({ type: 'varchar', length: 300, nullable: true })
-  nome_fantasia?: string | null;
+  trade_name?: string | null;
 
   @Column({ type: 'varchar', length: 100, nullable: true })
-  bandeira?: string | null;
+  brand?: string | null;
 
   @Column({ type: 'varchar', length: 50, nullable: false, unique: true })
-  cnpj: string; // Formato: 12.345.678/0001-90
+  taxId: string; // Formato: 12.345.678/0001-90
 
   @Column({ type: 'boolean', default: true })
-  ativo: boolean;
+  isActive: boolean;
 
   @CreateDateColumn()
-  criadoEm: Date;
+  createdAt: Date;
 
   @UpdateDateColumn()
-  atualizadoEm: Date;
+  updatedAt: Date;
 
   // Relacionamentos
-  @ManyToOne(() => LocalizationEntity, (localizacao) => localizacao.postos, {
+  @ManyToOne(() => LocalizationEntity, (localization) => localization.gas_station, {
     nullable: false,
     onDelete: 'RESTRICT',
   })
-  @JoinColumn({ name: 'localizacao_id' })
-  localizacao: LocalizationEntity;  
+  @JoinColumn({ name: 'localization_id' })
+  localization: LocalizationEntity;  
 
   @Column({ type: 'uuid', nullable: false })
-  localizacao_id: string;
+  localization_id: string;
 
-  @OneToMany(() => PriceHistoryEntity, (priceHistory) => priceHistory.posto)
-  historicoPrecos: PriceHistoryEntity[];
+  @OneToMany(() => PriceHistoryEntity, (priceHistory) => priceHistory.gas_station)
+  priceHistory: PriceHistoryEntity[];
 
   // Métodos de negócio
   getDisplayName(): string {
-    if (this.nome_fantasia && this.nome_fantasia !== this.nome_razao) {
-      return `${this.nome_fantasia} (${this.nome_razao})`;
+    if (this.trade_name && this.trade_name !== this.legal_name) {
+      return `${this.trade_name} (${this.legal_name})`;
     }
-    return this.nome_razao;
+    return this.legal_name;
   }
 
   normalizeCnpj(): string {
-    return this.cnpj?.replace(/[^\d]/g, '') || '';
-  }
-
-  formatCnpj(): string {
-    const cleaned = this.normalizeCnpj();
-    if (cleaned.length === 14) {
-      return `${cleaned.substr(0, 2)}.${cleaned.substr(2, 3)}.${cleaned.substr(5, 3)}/${cleaned.substr(8, 4)}-${cleaned.substr(12)}`;
-    }
-    return cleaned;
+    return this.taxId?.replace(/[^\d]/g, '') || '';
   }
 
   getUpsertKey(): string {
@@ -122,21 +114,12 @@ export class GasStationEntity {
 
   isValid(): boolean {
     return !!(
-      this.nome_razao?.trim() &&
-      this.cnpj?.trim() &&
-      this.localizacao_id &&
-      GasStationEntity.validateCnpj(this.cnpj)
+      this.legal_name?.trim() &&
+      this.taxId?.trim() &&
+      this.localization_id &&
+      GasStationEntity.validateCnpj(this.taxId)
     );
   }
 
-  getFullInfo(): string {
-    const parts = [
-      this.getDisplayName(),
-      this.formatCnpj(),
-      this.bandeira,
-      this.localizacao?.getFullAddress(),
-    ].filter(Boolean);
-
-    return parts.join(' - ');
-  }
+ 
 }

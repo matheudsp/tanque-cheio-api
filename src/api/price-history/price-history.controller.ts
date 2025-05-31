@@ -12,7 +12,11 @@ import {
 import { PriceHistoryService } from './price-history.service';
 import { CacheRequestInterceptor } from '@/common/interceptor/cache-request/cache-request.interceptor';
 import { RoleGuard } from '@/common/guards/role/role.guard';
-import { PriceHistoryQueryDto, GasStationPriceHistory } from './dtos/price-history.dto';
+import { 
+  PriceHistoryQueryDto, 
+  GasStationPriceHistory,
+  PriceChartQueryDto 
+} from './dtos/price-history.dto';
 import { Response } from 'express';
 import { OpenApiResponses } from '@/common/decorators/openapi.decorator';
 
@@ -24,28 +28,25 @@ import { OpenApiResponses } from '@/common/decorators/openapi.decorator';
 export class PriceHistoryController {
   constructor(private readonly service: PriceHistoryService) {}
 
-  @Get()
-  @ApiOperation({ summary: 'Get Price History by Product ID' })
+  @Get('station/:stationId/dashboard')
+  @ApiOperation({ 
+    summary: 'Get Station Dashboard Data',
+    description: 'Retorna os últimos preços de todos os produtos e dados para dashboard'
+  })
   @OpenApiResponses([200, 400, 401, 403, 404, 500])
-  async index(@Query() q: PriceHistoryQueryDto, @Res() res: Response) {
-    const r = await this.service.index(q);
-    res.status(r.statusCode).send(r);
-  }
-
-  @Get('station/:stationId')
-  @ApiOperation({ summary: 'Get Price History by Gas Station ID' })
-  @OpenApiResponses([200, 400, 401, 403, 404, 500])
-  async getByStation(
+  async getStationDashboard(
     @Param('stationId') stationId: string,
-    @Query() q: GasStationPriceHistory,
     @Res() res: Response
   ) {
-    const r = await this.service.getByStation(stationId, q);
+    const r = await this.service.getStationDashboard(stationId);
     res.status(r.statusCode).send(r);
   }
 
   @Get('station/:stationId/latest')
-  @ApiOperation({ summary: 'Get Latest Prices by Gas Station ID' })
+  @ApiOperation({ 
+    summary: 'Get Latest Prices by Gas Station',
+    description: 'Retorna os preços mais recentes de cada combustível do posto'
+  })
   @OpenApiResponses([200, 400, 401, 403, 404, 500])
   async getLatestPrices(
     @Param('stationId') stationId: string,
@@ -55,17 +56,65 @@ export class PriceHistoryController {
     res.status(r.statusCode).send(r);
   }
 
+  @Get('station/:stationId/chart/:productName')
+  @ApiOperation({ 
+    summary: 'Get Price Chart Data',
+    description: 'Retorna dados formatados para gráfico de variação de preços'
+  })
+  @OpenApiResponses([200, 400, 401, 403, 404, 500])
+  async getPriceChart(
+    @Param('stationId') stationId: string,
+    @Param('productName') productName: string,
+    @Query() query: PriceChartQueryDto,
+    @Res() res: Response
+  ) {
+    const r = await this.service.getPriceChart(stationId, productName, query);
+    res.status(r.statusCode).send(r);
+  }
+
+  @Get('station/:stationId/summary')
+  @ApiOperation({ 
+    summary: 'Get Price Summary',
+    description: 'Retorna resumo estatístico dos preços do posto'
+  })
+  @OpenApiResponses([200, 400, 401, 403, 404, 500])
+  async getPriceSummary(
+    @Param('stationId') stationId: string,
+    @Query() query: { periodo?: 'semana' | 'mes' | 'trimestre' },
+    @Res() res: Response
+  ) {
+    const r = await this.service.getPriceSummary(stationId, query.periodo);
+    res.status(r.statusCode).send(r);
+  }
+
   @Get('station/:stationId/product/:productName')
-  @ApiOperation({ summary: 'Get Price History by Station and Product' })
+  @ApiOperation({ 
+    summary: 'Get Price History by Station and Product',
+    description: 'Histórico detalhado de preços por produto'
+  })
   @OpenApiResponses([200, 400, 401, 403, 404, 500])
   async getByStationAndProduct(
     @Param('stationId') stationId: string,
     @Param('productName') productName: string,
-    @Query() q: { periodo?: 'semana' | 'mes'; limite?: number },
+    @Query() query: GasStationPriceHistory,
     @Res() res: Response
   ) {
-    const r = await this.service.getByStationAndProduct(stationId, productName, q);
+    const r = await this.service.getByStationAndProduct(stationId, productName, query);
     res.status(r.statusCode).send(r);
   }
 
+  @Get('station/:stationId/trends')
+  @ApiOperation({ 
+    summary: 'Get Price Trends',
+    description: 'Análise de tendências de preços'
+  })
+  @OpenApiResponses([200, 400, 401, 403, 404, 500])
+  async getPriceTrends(
+    @Param('stationId') stationId: string,
+    @Query() query: { periodo?: 'mes' | 'trimestre' },
+    @Res() res: Response
+  ) {
+    const r = await this.service.getPriceTrends(stationId, query.periodo);
+    res.status(r.statusCode).send(r);
+  }
 }

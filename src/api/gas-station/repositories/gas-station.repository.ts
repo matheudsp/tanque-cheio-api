@@ -113,10 +113,10 @@ export class GasStationRepository {
   ): Promise<GasStationEntity[]> {
     const queryBuilder = this.repo
       .createQueryBuilder('gs')
-      .leftJoinAndSelect('gs.localizacao', 'loc')
-      .leftJoinAndSelect('gs.historicoPrecos', 'hp')
-      .leftJoinAndSelect('hp.produto', 'prod')
-      .where('gs.ativo = :ativo', { ativo: true })
+      .leftJoinAndSelect('gs.localization', 'loc')
+      .leftJoinAndSelect('gs.priceHistory', 'hp')
+      .leftJoinAndSelect('hp.product', 'prod')
+      .where('gs.isActive = :ativo', { ativo: true })
       .andWhere('loc.latitude IS NOT NULL')
       .andWhere('loc.longitude IS NOT NULL')
       .andWhere('loc.latitude != :emptyLat', { emptyLat: '' })
@@ -124,8 +124,8 @@ export class GasStationRepository {
 
     // Filtro por produto se especificado
     if (produto) {
-      queryBuilder.andWhere('UPPER(prod.nome) ILIKE UPPER(:produto)', {
-        produto: `%${produto}%`,
+      queryBuilder.andWhere('UPPER(prod.name) ILIKE UPPER(:product)', {
+        product: `%${produto}%`,
       });
     }
 
@@ -145,23 +145,23 @@ export class GasStationRepository {
     );
 
     return await queryBuilder
-      .orderBy('gs.nome_razao', 'ASC')
+      .orderBy('gs.legal_name', 'ASC')
       .limit(limit)
       .getMany();
   }
    async getCountStations() {
     const totalStations = await this.repo
       .createQueryBuilder('gs')
-      .where('gs.ativo = :ativo', { ativo: true })
+      .where('gs.isActive = :ativo', { ativo: true })
       .getCount();
 
     const byState = await this.repo
       .createQueryBuilder('gs')
-      .leftJoin('gs.localizacao', 'loc')
-      .select('loc.uf', 'uf')
+      .leftJoin('gs.localization', 'loc')
+      .select('loc.state', 'uf')
       .addSelect('COUNT(*)', 'total')
-      .where('gs.ativo = :ativo', { ativo: true })
-      .groupBy('loc.uf')
+      .where('gs.isActive = :ativo', { ativo: true })
+      .groupBy('loc.state')
       .orderBy('total', 'DESC')
       .getRawMany();
 

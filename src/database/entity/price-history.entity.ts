@@ -11,107 +11,103 @@ import {
 import { GasStationEntity } from './gas-station.entity';
 import { ProductEntity } from './product.entity';
 
-@Entity('historico_precos')
-@Index(['posto_id', 'produto_id', 'data_coleta']) // Índice composto principal
-@Index(['data_coleta']) // Para consultas por período
-@Index(['posto_id']) // Para consultas por posto
-@Index(['produto_id']) // Para consultas por produto
-@Index(['posto_id', 'produto_id'], { unique: false }) // Para consultas de posto+produto
-@Index(['preco_venda']) // Para consultas de preço
-@Index(['data_coleta', 'produto_id']) // Para relatórios por período e produto
+@Entity('price_history')
+@Index(['gas_station_id', 'product_id', 'collection_date']) // Índice composto principal
+@Index(['collection_date']) // Para consultas por período
+@Index(['gas_station_id']) // Para consultas por posto
+@Index(['product_id']) // Para consultas por produto
+@Index(['gas_station_id', 'product_id'], { unique: false }) // Para consultas de posto+produto
+@Index(['price']) // Para consultas de preço
+@Index(['collection_date', 'product_id']) // Para relatórios por período e produto
 export class PriceHistoryEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
   @Column({ type: 'date', nullable: false })
-  data_coleta: Date;
+  collection_date: Date;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
-  preco_venda: number | null;
+  price: number | null;
 
   @Column({ type: 'boolean', default: true })
-  ativo: boolean;
+  isActive: boolean;
 
   @CreateDateColumn()
-  criadoEm: Date;
+  createdAt: Date;
 
   @UpdateDateColumn()
-  atualizadoEm: Date;
+  updatedAt: Date;
 
   // Relacionamentos
-  @ManyToOne(
-    () => GasStationEntity,
-    (gasStation) => gasStation.historicoPrecos,
-    {
-      nullable: false,
-      onDelete: 'CASCADE',
-    },
-  )
-  @JoinColumn({ name: 'posto_id' })
-  posto: GasStationEntity;
+  @ManyToOne(() => GasStationEntity, (gasStation) => gasStation.priceHistory, {
+    nullable: false,
+    onDelete: 'CASCADE',
+  })
+  @JoinColumn({ name: 'gas_station' })
+  gas_station: GasStationEntity;
   @Column({ type: 'uuid', nullable: false })
-  posto_id: string;
+  gas_station_id: string;
 
-  @ManyToOne(() => ProductEntity, (produto) => produto.historicoPrecos, {
+  @ManyToOne(() => ProductEntity, (produto) => produto.priceHistory, {
     nullable: false,
     onDelete: 'RESTRICT',
   })
-  @JoinColumn({ name: 'produto_id' })
-  produto: ProductEntity;
+  @JoinColumn({ name: 'product_id' })
+  product: ProductEntity;
   @Column({ type: 'uuid', nullable: false })
-  produto_id: string;
+  product_id: string;
 
   getUpsertKey(): string {
     // Garantir que data_coleta é uma instância de Date
     const date =
-      this.data_coleta instanceof Date
-        ? this.data_coleta
-        : new Date(this.data_coleta);
+      this.collection_date instanceof Date
+        ? this.collection_date
+        : new Date(this.collection_date);
 
     const dataStr = date.toISOString().split('T')[0];
-    return `${this.posto_id}|${this.produto_id}|${dataStr}`;
+    return `${this.gas_station_id}|${this.product_id}|${dataStr}`;
   }
 
   static createUpsertKey(
-    postoId: string,
-    produtoId: string,
-    dataColeta: Date,
+    gas_station_id: string,
+    product_id: string,
+    collection_date: Date,
   ): string {
     // Garantir que dataColeta é uma instância de Date
-    const date = dataColeta instanceof Date ? dataColeta : new Date(dataColeta);
+    const date = collection_date instanceof Date ? collection_date : new Date(collection_date);
 
     const dataStr = date.toISOString().split('T')[0];
-    return `${postoId}|${produtoId}|${dataStr}`;
+    return `${gas_station_id}|${product_id}|${dataStr}`;
   }
 
   isValid(): boolean {
     return !!(
-      this.posto_id &&
-      this.produto_id &&
-      this.data_coleta &&
-      this.preco_venda // Pelo menos um preço deve existir
+      this.gas_station_id &&
+      this.product_id &&
+      this.collection_date &&
+      this.price // Pelo menos um preço deve existir
     );
   }
 
   hasCompleteData(): boolean {
-    return !!this.preco_venda;
+    return !!this.price;
   }
 
   isSameDay(other: PriceHistoryEntity): boolean {
-    return this.data_coleta.toDateString() === other.data_coleta.toDateString();
+    return this.collection_date.toDateString() === other.collection_date.toDateString();
   }
 
   isMoreRecentThan(other: PriceHistoryEntity): boolean {
-    return this.data_coleta.getTime() > other.data_coleta.getTime();
+    return this.collection_date.getTime() > other.collection_date.getTime();
   }
 
   // Métodos para comparação de preços
   getPriceVariation(previousPrice?: PriceHistoryEntity): number | null {
-    if (!previousPrice || !this.preco_venda || !previousPrice.preco_venda) {
+    if (!previousPrice || !this.price || !previousPrice.price) {
       return null;
     }
 
-    return Number((this.preco_venda - previousPrice.preco_venda).toFixed(3));
+    return Number((this.price - previousPrice.price).toFixed(3));
   }
 
   getPriceVariationPercentage(
@@ -119,9 +115,9 @@ export class PriceHistoryEntity {
   ): number | null {
     if (
       !previousPrice ||
-      !this.preco_venda ||
-      !previousPrice.preco_venda ||
-      previousPrice.preco_venda === 0
+      !this.price ||
+      !previousPrice.price ||
+      previousPrice.price === 0
     ) {
       return null;
     }
@@ -129,17 +125,17 @@ export class PriceHistoryEntity {
     const variation = this.getPriceVariation(previousPrice);
     if (variation === null) return null;
 
-    return Number(((variation / previousPrice.preco_venda) * 100).toFixed(2));
+    return Number(((variation / previousPrice.price) * 100).toFixed(2));
   }
 
   getFormattedPrice(type: 'venda' | 'compra' = 'venda'): string {
-    const price = type === 'venda' && this.preco_venda;
+    const price = type === 'venda' && this.price;
     if (!price) return 'N/A';
 
     return `R$ ${price.toFixed(3).replace('.', ',')}`;
   }
 
   getFormattedDate(): string {
-    return this.data_coleta.toLocaleDateString('pt-BR');
+    return this.collection_date.toLocaleDateString('pt-BR');
   }
 }

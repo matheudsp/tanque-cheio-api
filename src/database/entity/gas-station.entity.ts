@@ -50,7 +50,6 @@ export class GasStationEntity {
   })
   @JoinColumn({ name: 'localization_id' })
   localization: LocalizationEntity;  
-
   @Column({ type: 'uuid', nullable: false })
   localization_id: string;
 

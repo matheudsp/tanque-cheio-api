@@ -43,7 +43,7 @@ export class PriceHistoryEntity {
     nullable: false,
     onDelete: 'CASCADE',
   })
-  @JoinColumn({ name: 'gas_station' })
+  @JoinColumn({ name: 'gas_station_id' })
   gas_station: GasStationEntity;
   @Column({ type: 'uuid', nullable: false })
   gas_station_id: string;

@@ -1,60 +1,53 @@
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { PriceHistoryRepository } from './repositories/price-history.repository';
 import { Inject, Injectable } from '@nestjs/common';
 import { Cache } from 'cache-manager';
+
+import { PriceHistoryRepository } from './repositories/price-history.repository';
 import { CacheRequestService } from '@/common/services/cache-request/cache-request.service';
-import { getErrorResponse } from '@/common/utils/lib';
-import { responseNotFound, responseOk } from '@/common/utils/response-api';
-import { seconds } from '@nestjs/throttler';
+import { zodErrorParse } from '@/common/utils/lib';
 import {
-  GasStationPriceHistory,
-  PriceChartQueryDto,
+  responseNotFound,
+  responseOk,
+  responseBadRequest,
+  responseInternalServerError,
+} from '@/common/utils/response-api';
+
+import {
+  LatestPricesResponseDto,
+  HistoryResponseDto,
+  PriceItemDto,
+  type PeriodQueryDto,
 } from './dtos/price-history.dto';
-
-interface PriceData {
-  date: string;
-  price: number | null;
-  variation?: number;
-  variationPercent?: number;
-}
-
-interface ProductLatestPrice {
-  productId: string;
-  productName: string;
-  price: number | null;
-  date: string;
-  variation?: number;
-  variationPercent?: number;
-  unit: string;
-}
-
-interface DashboardData {
-  latestPrices: ProductLatestPrice[];
-  totalProducts: number;
-  lastUpdated: string;
-  stationId: string;
-}
+import {
+  periodQuerySchema,
+  stationParamSchema,
+  type PeriodQueryType,
+} from './schemas/price-history.schema';
 
 @Injectable()
 export class PriceHistoryService {
   constructor(
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
-    private readonly cache: CacheRequestService,
-    private readonly repo: PriceHistoryRepository,
+    private readonly cacheService: CacheRequestService,
+    private readonly repository: PriceHistoryRepository,
   ) {}
 
   /**
-   * Dashboard completo do posto com últimos preços e estatísticas básicas
+   * Busca os últimos preços de todos os produtos do posto
    */
-  async getStationDashboard(stationId: string) {
+  async getLatestPrices(stationId: string) {
     try {
-      const key = this.cache.getCacheKey();
-      let data = await this.cacheManager.get<DashboardData>(key);
+      // Validação do parâmetro
+      stationParamSchema.parse({ stationId });
 
-      if (data) return responseOk({ data });
+      const cacheKey = this.cacheService.getCacheKey();
+      const cachedData = await this.cacheManager.get<LatestPricesResponseDto>(cacheKey);
 
-      const latestPrices =
-        await this.repo.getLatestPricesAllProducts(stationId);
+      if (cachedData) {
+        return responseOk({ data: cachedData });
+      }
+
+      const latestPrices = await this.repository.getLatestPrices(stationId);
 
       if (!latestPrices.length) {
         return responseNotFound({
@@ -62,301 +55,133 @@ export class PriceHistoryService {
         });
       }
 
-      // Calcular variações de preço
-      const enrichedPrices = await Promise.all(
-        latestPrices.map(async (current) => {
-          const previous = await this.repo.getPreviousPrice(
-            stationId,
-            current.product.id,
-            current.collection_date,
-          );
+      // Calcular variações usando método reutilizável
+      const prices = await this.calculatePriceVariations(latestPrices, stationId);
 
-          let variation = 0;
-          let variationPercent = 0;
-
-          if (previous && previous.price && current.price) {
-            variation = Number(
-              (current.price - previous.price).toFixed(3),
-            );
-            variationPercent = Number(
-              ((variation / previous.price) * 100).toFixed(2),
-            );
-          }
-
-          return {
-            productId: current.product.id,
-            productName: current.product.name,
-            price: current.price,
-            date: current.collection_date.toISOString().split('T')[0],
-            variation,
-            variationPercent,
-            unit: current.product.unitOfMeasure || 'L',
-          };
-        }),
-      );
-
-      const dashboardData: DashboardData = {
-        latestPrices: enrichedPrices,
-        totalProducts: enrichedPrices.length,
-        lastUpdated: new Date().toISOString(),
+      const response: LatestPricesResponseDto = {
         stationId,
+        prices,
+        totalProducts: prices.length,
+        updatedAt: new Date().toISOString(),
       };
 
-      await this.cacheManager.set(key, dashboardData, seconds(180)); // 3 minutes
-      return responseOk({ data: dashboardData });
+      // Cache por 2 minutos
+      await this.cacheManager.set(cacheKey, response, 120000);
+
+      return responseOk({ data: response });
     } catch (error) {
-      return getErrorResponse(error);
+      return this.handleError(error);
     }
   }
 
   /**
-   * Últimos preços simplificados - otimizado para carregamento rápido
+   * Busca histórico de preços por período
    */
-  async getLatestPrices(stationId: string) {
+  async getPriceHistory(stationId: string, query: PeriodQueryDto) {
     try {
-      const key = this.cache.getCacheKey();
-      let data = await this.cacheManager.get(key);
+      // Validações
+      stationParamSchema.parse({ stationId });
+      const parsed = periodQuerySchema.parse(query);
 
-      if (data) return responseOk({ data });
+      const cacheKey = this.cacheService.getCacheKey();
+      const cachedData = await this.cacheManager.get<HistoryResponseDto>(cacheKey);
 
-      const prices = await this.repo.getLatestPricesAllProducts(stationId);
-
-      if (!prices.length) {
-        return responseNotFound({
-          message: 'Nenhum preço encontrado',
-        });
+      if (cachedData) {
+        return responseOk({ data: cachedData });
       }
 
-      // Formato simplificado para resposta rápida
-      const simplified = prices.map((p) => ({
-        product: p.product.name,
-        price: p.price,
-        date: p.collection_date.toISOString().split('T')[0],
-        unit: p.product.unitOfMeasure || 'L',
-      }));
+      const startDate = new Date(parsed.startDate);
+      const endDate = new Date(parsed.endDate);
 
-      await this.cacheManager.set(key, simplified, seconds(120)); // 2 minutes
-      return responseOk({ data: simplified });
-    } catch (error) {
-      return getErrorResponse(error);
-    }
-  }
-
-  /**
-   * Dados formatados para gráfico de linha
-   */
-  async getPriceChart(
-    stationId: string,
-    productName: string,
-    query: PriceChartQueryDto,
-  ) {
-    try {
-      const key = this.cache.getCacheKey();
-      let data = await this.cacheManager.get(key);
-
-      if (data) return responseOk({ data });
-
-      const periodo = query.periodo || 'mes';
-      const limit = query.limit || 30;
-
-      // Calcular data de início
-      const endDate = new Date();
-      const startDate = new Date();
-
-      switch (periodo) {
-        case 'semana':
-          startDate.setDate(endDate.getDate() - 7);
-          break;
-        case 'mes':
-          startDate.setMonth(endDate.getMonth() - 1);
-          break;
-        case 'trimestre':
-          startDate.setMonth(endDate.getMonth() - 3);
-          break;
-        case 'semestre':
-          startDate.setMonth(endDate.getMonth() - 6);
-          break;
-        case 'ano':
-          startDate.setFullYear(endDate.getFullYear() - 1);
-          break;
-      }
-
-      const history = await this.repo.getPriceHistoryForChart(
+      const priceHistory = await this.repository.getPriceHistory(
         stationId,
-        productName,
         startDate,
         endDate,
-        limit,
+        parsed.product,
       );
 
-      if (!history.length) {
+      if (!priceHistory.length) {
+        const productFilter = parsed.product ? ` para o produto ${parsed.product}` : '';
         return responseNotFound({
-          message: `Sem dados para ${productName} no período selecionado`,
+          message: `Nenhum preço encontrado no período de ${parsed.startDate} a ${parsed.endDate}${productFilter}`,
         });
       }
 
-      // Formatar dados para gráfico
-      const chartData: PriceData[] = history
-        .map((item, index) => {
-          const previous = history[index + 1];
-          let variation = 0;
-          let variationPercent = 0;
+      // Calcular variações usando método reutilizável
+      const prices = await this.calculatePriceVariations(priceHistory, stationId);
 
-          if (previous && previous.price && item.price) {
-            variation = Number(
-              (item.price - previous.price).toFixed(3),
-            );
-            variationPercent = Number(
-              ((variation / previous.price) * 100).toFixed(2),
-            );
-          }
-
-          return {
-            date: item.collection_date.toISOString().split('T')[0],
-            price: item.price,
-            variation,
-            variationPercent,
-          };
-        })
-        .reverse(); // Reverter para ordem cronológica
-
-      const response = {
-        product: productName,
-        periodo,
-        data: chartData,
-        stats: {
-          min: Math.min(...chartData.map((d) => d.price!)),
-          max: Math.max(...chartData.map((d) => d.price!)),
-          avg: Number(
-            (
-              chartData.reduce((sum, d) => sum + d.price!, 0) / chartData.length
-            ).toFixed(3),
-          ),
-          trend: this.calculateTrend(chartData),
-        },
-      };
-
-      await this.cacheManager.set(key, response, seconds(300)); // 5 minutes
-      return responseOk({ data: response });
-    } catch (error) {
-      return getErrorResponse(error);
-    }
-  }
-
-  /**
-   * Resumo estatístico dos preços
-   */
-  async getPriceSummary(
-    stationId: string,
-    periodo: 'semana' | 'mes' | 'trimestre' = 'mes',
-  ) {
-    try {
-      const key = this.cache.getCacheKey();
-      let data = await this.cacheManager.get(key);
-
-      if (data) return responseOk({ data });
-
-      const summary = await this.repo.getPriceSummary(stationId, periodo);
-
-      await this.cacheManager.set(key, summary, seconds(600)); // 10 minutes
-      return responseOk({ data: summary });
-    } catch (error) {
-      return getErrorResponse(error);
-    }
-  }
-
-  /**
-   * Análise de tendências
-   */
-  async getPriceTrends(
-    stationId: string,
-    periodo: 'mes' | 'trimestre' = 'mes',
-  ) {
-    try {
-      const key = this.cache.getCacheKey();
-      let data = await this.cacheManager.get(key);
-
-      if (data) return responseOk({ data });
-
-      const trends = await this.repo.getPriceTrends(stationId, periodo);
-
-      await this.cacheManager.set(key, trends, seconds(900)); // 15 minutes
-      return responseOk({ data: trends });
-    } catch (error) {
-      return getErrorResponse(error);
-    }
-  }
-
-  /**
-   * Histórico detalhado por produto (mantido para compatibilidade)
-   */
-  async getByStationAndProduct(
-    stationId: string,
-    productName: string,
-    options: GasStationPriceHistory,
-  ) {
-    try {
-      const key = this.cache.getCacheKey();
-      let data = await this.cacheManager.get(key);
-
-      if (data) return responseOk({ data });
-
-      const periodo = options.periodo || 'mes';
-      const limit = options.limite || 50;
-
-      const now = new Date();
-      const startDate = new Date();
-
-      switch (periodo) {
-        case 'semana':
-          startDate.setDate(now.getDate() - 7);
-          break;
-        case 'mes':
-          startDate.setMonth(now.getMonth() - 1);
-          break;
-      }
-
-      const history = await this.repo.getPriceHistoryForChart(
+      const response: HistoryResponseDto = {
         stationId,
-        productName,
-        startDate,
-        now,
-        limit,
-      );
-
-      if (!history.length) {
-        return responseNotFound({
-          message: `Sem dados sobre ${productName} nesse período`,
-        });
-      }
-
-      const response = {
-        results: history,
-        total: history.length,
-        periodo,
-        produto: productName,
+        startDate: parsed.startDate,
+        endDate: parsed.endDate,
+        product: parsed.product,
+        prices,
+        total: prices.length,
+        queryTime: new Date().toISOString(),
       };
 
-      await this.cacheManager.set(key, response, seconds(300));
+      // Cache por 3 minutos
+      await this.cacheManager.set(cacheKey, response, 180000);
+
       return responseOk({ data: response });
     } catch (error) {
-      return getErrorResponse(error);
+      return this.handleError(error);
     }
   }
 
+  // ================ MÉTODOS AUXILIARES REUTILIZÁVEIS ================
+
   /**
-   * Calcula tendência simples dos preços
+   * Calcula variações de preço de forma reutilizável
    */
-  private calculateTrend(data: PriceData[]): 'up' | 'down' | 'stable' {
-    if (data.length < 2) return 'stable';
+  private async calculatePriceVariations(
+    priceList: any[],
+    stationId: string,
+  ): Promise<PriceItemDto[]> {
+    return await Promise.all(
+      priceList.map(async (current) => {
+        const previous = await this.repository.getPreviousPrice(
+          stationId,
+          current.product.id,
+          current.collection_date,
+        );
 
-    const first = data[0].price;
-    const last = data[data.length - 1].price;
-    const diff = last! - first!;
-    const threshold = first! * 0.02; // 2% threshold
+        let variation: number | undefined;
+        let variationPercent: number | undefined;
 
-    if (diff > threshold) return 'up';
-    if (diff < -threshold) return 'down';
-    return 'stable';
+        if (previous?.price && current.price) {
+          const rawVariation = current.price - previous.price;
+          variation = Number(rawVariation.toFixed(3));
+          variationPercent = Number(((rawVariation / previous.price) * 100).toFixed(2));
+        }
+
+        return {
+          id: current.id,
+          productId: current.product.id,
+          productName: current.product.name,
+          price: Number(current.price),
+          date: current.collection_date.toString(),
+          unit: current.product.unitOfMeasure || 'L',
+          variation,
+          variationPercent,
+        };
+      }),
+    );
+  }
+
+  /**
+   * Tratamento de erros padronizado e reutilizável
+   */
+  private handleError(error: any) {
+    const zodErr = zodErrorParse(error);
+    if (zodErr.isError) {
+      return responseBadRequest({
+        error: zodErr.errors,
+      });
+    }
+
+    return responseInternalServerError({
+      message: error?.message || 'Erro interno do servidor',
+    });
   }
 }

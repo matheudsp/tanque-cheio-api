@@ -1,4 +1,3 @@
-import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import {
   Controller,
   Get,
@@ -8,16 +7,25 @@ import {
   UseGuards,
   UseInterceptors,
 } from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiTags,
+  ApiResponse,
+  ApiParam,
+  ApiQuery,
+} from '@nestjs/swagger';
+import { Response } from 'express';
 
 import { PriceHistoryService } from './price-history.service';
 import { CacheRequestInterceptor } from '@/common/interceptor/cache-request/cache-request.interceptor';
 import { RoleGuard } from '@/common/guards/role/role.guard';
-import { 
-  PriceHistoryQueryDto, 
-  GasStationPriceHistory,
-  PriceChartQueryDto 
+
+import {
+  PeriodQueryDto,
+  LatestPricesResponseDto,
+  HistoryResponseDto,
 } from './dtos/price-history.dto';
-import { Response } from 'express';
 import { OpenApiResponses } from '@/common/decorators/openapi.decorator';
 
 @ApiTags('Price History')
@@ -26,95 +34,83 @@ import { OpenApiResponses } from '@/common/decorators/openapi.decorator';
 @UseInterceptors(CacheRequestInterceptor)
 @Controller({ version: ['1'], path: 'price-history' })
 export class PriceHistoryController {
-  constructor(private readonly service: PriceHistoryService) {}
+  constructor(private readonly priceHistoryService: PriceHistoryService) {}
 
-  @Get('station/:stationId/dashboard')
-  @ApiOperation({ 
-    summary: 'Get Station Dashboard Data',
-    description: 'Retorna os últimos preços de todos os produtos e dados para dashboard'
-  })
-  @OpenApiResponses([200, 400, 401, 403, 404, 500])
-  async getStationDashboard(
-    @Param('stationId') stationId: string,
-    @Res() res: Response
-  ) {
-    const r = await this.service.getStationDashboard(stationId);
-    res.status(r.statusCode).send(r);
-  }
-
+  /**
+   * Rota para buscar os últimos preços de todos os produtos do posto
+   */
   @Get('station/:stationId/latest')
-  @ApiOperation({ 
-    summary: 'Get Latest Prices by Gas Station',
-    description: 'Retorna os preços mais recentes de cada combustível do posto'
+  @ApiOperation({
+    summary: 'Obter preços mais recentes',
+    description: 'Retorna os preços mais recentes de todos os combustíveis do posto com variações calculadas',
+  })
+  @ApiParam({
+    name: 'stationId',
+    description: 'ID do posto de combustível',
+    type: 'string',
+    format: 'uuid',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Preços mais recentes retornados com sucesso',
+    type: LatestPricesResponseDto,
   })
   @OpenApiResponses([200, 400, 401, 403, 404, 500])
   async getLatestPrices(
     @Param('stationId') stationId: string,
-    @Res() res: Response
+    @Res() res: Response,
   ) {
-    const r = await this.service.getLatestPrices(stationId);
-    res.status(r.statusCode).send(r);
+    const result = await this.priceHistoryService.getLatestPrices(stationId);
+    return res.status(result.statusCode).send(result);
   }
 
-  @Get('station/:stationId/chart/:productName')
-  @ApiOperation({ 
-    summary: 'Get Price Chart Data',
-    description: 'Retorna dados formatados para gráfico de variação de preços'
+  /**
+   * Rota para buscar histórico de preços por período
+   */
+  @Get('station/:stationId/history')
+  @ApiOperation({
+    summary: 'Obter histórico de preços por período',
+    description: 'Retorna histórico de preços filtrado por período. Se produto não especificado, retorna todos os produtos.',
+  })
+  @ApiParam({
+    name: 'stationId',
+    description: 'ID do posto de combustível',
+    type: 'string',
+    format: 'uuid',
+  })
+  @ApiQuery({
+    name: 'startDate',
+    description: 'Data de início (YYYY-MM-DD)',
+    required: true,
+    type: 'string',
+    example: '2025-01-01',
+  })
+  @ApiQuery({
+    name: 'endDate',
+    description: 'Data de fim (YYYY-MM-DD)',
+    required: true,
+    type: 'string',
+    example: '2025-01-31',
+  })
+  @ApiQuery({
+    name: 'product',
+    description: 'Nome do produto para filtrar (opcional). Se não informado, retorna todos os produtos.',
+    required: false,
+    type: 'string',
+    example: 'GASOLINA',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Histórico de preços retornado com sucesso',
+    type: HistoryResponseDto,
   })
   @OpenApiResponses([200, 400, 401, 403, 404, 500])
-  async getPriceChart(
+  async getPriceHistory(
     @Param('stationId') stationId: string,
-    @Param('productName') productName: string,
-    @Query() query: PriceChartQueryDto,
-    @Res() res: Response
+    @Query() query: PeriodQueryDto,
+    @Res() res: Response,
   ) {
-    const r = await this.service.getPriceChart(stationId, productName, query);
-    res.status(r.statusCode).send(r);
-  }
-
-  @Get('station/:stationId/summary')
-  @ApiOperation({ 
-    summary: 'Get Price Summary',
-    description: 'Retorna resumo estatístico dos preços do posto'
-  })
-  @OpenApiResponses([200, 400, 401, 403, 404, 500])
-  async getPriceSummary(
-    @Param('stationId') stationId: string,
-    @Query() query: { periodo?: 'semana' | 'mes' | 'trimestre' },
-    @Res() res: Response
-  ) {
-    const r = await this.service.getPriceSummary(stationId, query.periodo);
-    res.status(r.statusCode).send(r);
-  }
-
-  @Get('station/:stationId/product/:productName')
-  @ApiOperation({ 
-    summary: 'Get Price History by Station and Product',
-    description: 'Histórico detalhado de preços por produto'
-  })
-  @OpenApiResponses([200, 400, 401, 403, 404, 500])
-  async getByStationAndProduct(
-    @Param('stationId') stationId: string,
-    @Param('productName') productName: string,
-    @Query() query: GasStationPriceHistory,
-    @Res() res: Response
-  ) {
-    const r = await this.service.getByStationAndProduct(stationId, productName, query);
-    res.status(r.statusCode).send(r);
-  }
-
-  @Get('station/:stationId/trends')
-  @ApiOperation({ 
-    summary: 'Get Price Trends',
-    description: 'Análise de tendências de preços'
-  })
-  @OpenApiResponses([200, 400, 401, 403, 404, 500])
-  async getPriceTrends(
-    @Param('stationId') stationId: string,
-    @Query() query: { periodo?: 'mes' | 'trimestre' },
-    @Res() res: Response
-  ) {
-    const r = await this.service.getPriceTrends(stationId, query.periodo);
-    res.status(r.statusCode).send(r);
+    const result = await this.priceHistoryService.getPriceHistory(stationId, query);
+    return res.status(result.statusCode).send(result);
   }
 }

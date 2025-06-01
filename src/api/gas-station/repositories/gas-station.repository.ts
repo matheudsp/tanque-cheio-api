@@ -168,7 +168,7 @@ export class GasStationRepository {
     return {
       totalStations,
       byState: byState.map(item => ({
-        uf: item.uf,
+        state: item.state,
         total: parseInt(item.total),
       })),
     };

@@ -12,7 +12,8 @@ export interface SearchFilters {
   offset?: number;
 }
 
-// Resultado da busca geral
+
+// Resultado da busca geral - usando posto simplificado
 export interface SearchResult {
   results: GasStationEntity[];
   total: number;
@@ -73,8 +74,6 @@ export interface StationsByProductResult {
   orderBy: string;
 }
 
-
-
 // Resultado do histórico de preços
 export interface PriceHistoryResult {
   stationId: string;
@@ -89,137 +88,6 @@ export interface PriceHistoryResult {
 }
 
 
-// Estatísticas por estado
-export interface StateStatistics {
-  uf: string;
-  total: number;
-}
 
-// Estatísticas por produto
-export interface ProductStatistics {
-  produto: string;
-  total: number;
-  preco_medio: number;
-  preco_minimo: number;
-  preco_maximo: number;
-}
 
-// Resultado das estatísticas gerais
-export interface StatisticsResult {
-  totalStations: number;
-  byState: StateStatistics[];
-  byProduct: ProductStatistics[];
-  lastUpdate: Date | null;
-}
 
-// Interface para estado com total de postos
-export interface StateWithStations {
-  uf: string;
-  totalStations: number;
-}
-
-// Interface para município com total de postos
-export interface CityWithStations {
-  municipio: string;
-  totalStations: number;
-}
-
-// Interface para resposta de análise de preços
-export interface PriceAnalysis {
-  produto: string;
-  preco_atual: number;
-  preco_anterior?: number;
-  variacao_absoluta?: number;
-  variacao_percentual?: number;
-  data_atual: Date;
-  data_anterior?: Date;
-}
-
-// Interface para comparação entre postos
-export interface StationComparison {
-  stations: Array<{
-    station: GasStationEntity;
-    prices: Array<{
-      produto: string;
-      preco: number;
-      data_coleta: Date;
-    }>;
-  }>;
-  products: string[];
-  summary: {
-    cheapest: Record<string, { station: GasStationEntity; price: number }>;
-    expensive: Record<string, { station: GasStationEntity; price: number }>;
-    average: Record<string, number>;
-  };
-}
-
-// Interface para ranking de preços
-export interface PriceRanking {
-  produto: string;
-  municipio?: string;
-  uf?: string;
-  ranking: Array<{
-    position: number;
-    station: GasStationEntity;
-    price: number;
-    data_coleta: Date;
-  }>;
-  statistics: {
-    total: number;
-    preco_medio: number;
-    preco_mediano: number;
-    desvio_padrao: number;
-  };
-}
-
-// Interface para tendências de preço
-export interface PriceTrend {
-  produto: string;
-  periodo: {
-    inicio: Date;
-    fim: Date;
-  };
-  dados: Array<{
-    data: Date;
-    preco_medio: number;
-    total_amostras: number;
-  }>;
-  tendencia: 'alta' | 'baixa' | 'estavel';
-  variacao_total: number;
-  variacao_percentual: number;
-}
-
-// Interface para alertas de preço
-export interface PriceAlert {
-  id: string;
-  posto_id: string;
-  produto: string;
-  tipo: 'preco_baixo' | 'preco_alto' | 'variacao_grande';
-  valor_atual: number;
-  valor_referencia: number;
-  diferenca: number;
-  data_detectado: Date;
-  ativo: boolean;
-}
-
-// Interface para métricas regionais
-export interface RegionalMetrics {
-  regiao: {
-    uf?: string;
-    municipio?: string;
-  };
-  produtos: Array<{
-    nome: string;
-    total_postos: number;
-    preco_medio: number;
-    preco_minimo: number;
-    preco_maximo: number;
-    desvio_padrao: number;
-    ultima_atualizacao: Date;
-  }>;
-  comparacao_nacional?: {
-    diferenca_media: number;
-    posicao_ranking: number;
-    total_regioes: number;
-  };
-}

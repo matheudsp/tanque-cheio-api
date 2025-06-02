@@ -7,8 +7,8 @@ import { Request } from 'express';
 export const throttler: ThrottlerOptions[] = [
   {
     name: 'short',
-    ttl: seconds(100000), // default: 10 seconds
-    limit: 2, // default: 100 requests
+    ttl: seconds(100), // default: 1 seconds
+    limit: 3, // default: 3 requests
   },
 ];
 

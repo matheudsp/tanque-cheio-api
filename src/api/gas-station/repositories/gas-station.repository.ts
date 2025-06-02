@@ -15,26 +15,38 @@ export class GasStationRepository {
   async filter(filters: SearchGasStationsQuerySchema) {
     const queryBuilder = this.repo
       .createQueryBuilder('gs')
-      .leftJoinAndSelect('gs.localizacao', 'loc')
-      .leftJoinAndSelect('gs.historicoPrecos', 'hp')
-      .leftJoinAndSelect('hp.produto', 'prod')
-      .where('gs.ativo = :ativo', { ativo: true });
+      .leftJoinAndSelect('gs.localization', 'loc')
+      .leftJoinAndSelect('gs.priceHistory', 'hp')
+      .leftJoinAndSelect('hp.product', 'prod')
+      .where('gs.isActive = :ativo', { ativo: true })
+      .select([
+        'gs.id',
+        'gs.taxId',
+        'gs.legal_name',
+        'gs.trade_name',
+        'gs.brand',
+        'gs.isActive',
+        'loc.city',
+        'loc.state',
+        'loc.latitude',
+        'loc.longitude',
+      ]);
 
-    if (filters.municipio) {
-      queryBuilder.andWhere('UPPER(loc.municipio) ILIKE UPPER(:municipio)', {
-        municipio: `%${filters.municipio}%`,
+    if (filters.city) {
+      queryBuilder.andWhere('UPPER(loc.city) ILIKE UPPER(:city)', {
+        city: `%${filters.city}%`,
       });
     }
 
-    if (filters.produto) {
-      queryBuilder.andWhere('UPPER(prod.nome) ILIKE UPPER(:produto)', {
-        produto: `%${filters.produto}%`,
+    if (filters.product) {
+      queryBuilder.andWhere('UPPER(prod.name) ILIKE UPPER(:product)', {
+        product: `%${filters.product}%`,
       });
     }
 
-    if (filters.bandeira) {
-      queryBuilder.andWhere('UPPER(gs.bandeira) ILIKE UPPER(:bandeira)', {
-        bandeira: `%${filters.bandeira}%`,
+    if (filters.brand) {
+      queryBuilder.andWhere('UPPER(gs.brand) ILIKE UPPER(:brand)', {
+        brand: `%${filters.brand}%`,
       });
     }
 
@@ -43,8 +55,8 @@ export class GasStationRepository {
 
     // Get results with pagination
     const results = await queryBuilder
-      .orderBy('gs.nome_razao', 'ASC')
-      .addOrderBy('gs.bandeira', 'ASC')
+      .orderBy('gs.legal_name', 'ASC')
+      .addOrderBy('gs.brand', 'ASC')
       .limit(filters.limit || 50)
       .offset(filters.offset || 0)
       .getMany();
@@ -55,24 +67,24 @@ export class GasStationRepository {
   async findById(id: string): Promise<GasStationEntity | null> {
     return await this.repo
       .createQueryBuilder('gs')
-      .leftJoinAndSelect('gs.localizacao', 'loc')
-      .leftJoinAndSelect('gs.historicoPrecos', 'hp')
-      .leftJoinAndSelect('hp.produto', 'prod')
+      .leftJoinAndSelect('gs.localization', 'loc')
+      .leftJoinAndSelect('gs.priceHistory', 'hp')
+      .leftJoinAndSelect('hp.product', 'prod')
       .where('gs.id = :id', { id })
-      .andWhere('gs.ativo = :ativo', { ativo: true })
+      .andWhere('gs.isActive = :isActive', { isActive: true })
       .getOne();
   }
 
-  async findByCnpj(cnpj: string): Promise<GasStationEntity | null> {
-    const normalizedCnpj = DataUtils.normalizeCnpj(cnpj);
+  async findByCnpj(taxId: string): Promise<GasStationEntity | null> {
+    const normalizedTaxId = DataUtils.normalizeCnpj(taxId);
     return await this.repo
       .createQueryBuilder('gs')
-      .leftJoinAndSelect('gs.localizacao', 'loc')
+      .leftJoinAndSelect('gs.localization', 'loc')
       .where(
-        "gs.cnpj = :cnpj OR REPLACE(REPLACE(REPLACE(gs.cnpj, '.', ''), '/', ''), '-', '') = :normalizedCnpj",
-        { cnpj, normalizedCnpj },
+        "gs.taxId = :taxId OR REPLACE(REPLACE(REPLACE(gs.taxId, '.', ''), '/', ''), '-', '') = :normalizedCnpj",
+        { taxId, normalizedTaxId },
       )
-      .andWhere('gs.ativo = :ativo', { ativo: true })
+      .andWhere('gs.isActive = :isActive', { isActive: true })
       .getOne();
   }
 
@@ -81,25 +93,25 @@ export class GasStationRepository {
   ): Promise<GasStationEntity[]> {
     return await this.repo
       .createQueryBuilder('gs')
-      .leftJoinAndSelect('gs.localizacao', 'loc')
-      .where('gs.localizacao_id = :localizacaoId', { localizationId })
-      .andWhere('gs.ativo = :ativo', { ativo: true })
-      .orderBy('gs.nome_razao', 'ASC')
+      .leftJoinAndSelect('gs.localization', 'loc')
+      .where('gs.isActive_id = :localizationId', { localizationId })
+      .andWhere('gs.isActive = :isActive', { isActive: true })
+      .orderBy('gs.legal_name', 'ASC')
       .getMany();
   }
 
   async searchByName(name: string): Promise<GasStationEntity[]> {
     return await this.repo
       .createQueryBuilder('gs')
-      .leftJoinAndSelect('gs.localizacao', 'loc')
+      .leftJoinAndSelect('gs.localization', 'loc')
       .where(
-        '(UPPER(gs.nome_razao) ILIKE UPPER(:name) OR UPPER(gs.nome_fantasia) ILIKE UPPER(:name))',
+        '(UPPER(gs.legal_name) ILIKE UPPER(:name) OR UPPER(gs.trade_name) ILIKE UPPER(:name))',
         {
           name: `%${name}%`,
         },
       )
-      .andWhere('gs.ativo = :ativo', { ativo: true })
-      .orderBy('gs.nome_razao', 'ASC')
+      .andWhere('gs.isActive = :isActive', { isActive: true })
+      .orderBy('gs.legal_name', 'ASC')
       .limit(100)
       .getMany();
   }
@@ -108,7 +120,7 @@ export class GasStationRepository {
     latitude: number,
     longitude: number,
     radius: number,
-    produto?: string,
+    product?: string,
     limit = 20,
   ): Promise<GasStationEntity[]> {
     const queryBuilder = this.repo
@@ -116,21 +128,21 @@ export class GasStationRepository {
       .leftJoinAndSelect('gs.localization', 'loc')
       .leftJoinAndSelect('gs.priceHistory', 'hp')
       .leftJoinAndSelect('hp.product', 'prod')
-      .where('gs.isActive = :ativo', { ativo: true })
+      .where('gs.isActive = :isActive', { isActive: true })
       .andWhere('loc.latitude IS NOT NULL')
       .andWhere('loc.longitude IS NOT NULL')
       .andWhere('loc.latitude != :emptyLat', { emptyLat: '' })
       .andWhere('loc.longitude != :emptyLon', { emptyLon: '' });
 
     // Filtro por produto se especificado
-    if (produto) {
+    if (product) {
       queryBuilder.andWhere('UPPER(prod.name) ILIKE UPPER(:product)', {
-        product: `%${produto}%`,
+        product: `%${product}%`,
       });
     }
 
     // Filtro por proximidade usando fórmula de distância
-    // Esta é uma aproximação simplificada para testes - para maior precisão, implementarei PostGIS 
+    // Esta é uma aproximação simplificada para testes - para maior precisão, implementarei PostGIS
     queryBuilder.andWhere(
       `(
         6371 * acos(
@@ -149,7 +161,7 @@ export class GasStationRepository {
       .limit(limit)
       .getMany();
   }
-   async getCountStations() {
+  async getCountStations() {
     const totalStations = await this.repo
       .createQueryBuilder('gs')
       .where('gs.isActive = :ativo', { ativo: true })
@@ -167,7 +179,7 @@ export class GasStationRepository {
 
     return {
       totalStations,
-      byState: byState.map(item => ({
+      byState: byState.map((item) => ({
         state: item.state,
         total: parseInt(item.total),
       })),

@@ -3,11 +3,11 @@ import { ApiProperty, ApiSchema } from '@nestjs/swagger';
 @ApiSchema({ name: 'Gas Station' })
 export class GasStationQueryDto {
   @ApiProperty({ required: false })
-  municipio?: string;
+  city?: string;
   @ApiProperty({ required: false })
-  produto?: string;
+  product?: string;
   @ApiProperty({ required: false })
-  bandeira?: string;
+  brand?: string;
   @ApiProperty({ required: false })
   limit?: number;
   @ApiProperty({ required: false })

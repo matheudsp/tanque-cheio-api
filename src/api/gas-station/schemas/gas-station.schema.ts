@@ -2,17 +2,17 @@ import { z } from 'zod';
 
 // Schema para busca geral de postos
 const searchGasStationsQuerySchema = z.object({
-  municipio: z
+  city: z
     .string()
-    .min(2, 'Município deve ter pelo menos 2 caracteres')
-    .max(100, 'Município deve ter no máximo 100 caracteres')
+    .min(2, 'Cidade/Município deve ter pelo menos 2 caracteres')
+    .max(100, 'Cidade/Município deve ter no máximo 100 caracteres')
     .optional(),
-  produto: z
+  product: z
     .string()
     .min(2, 'Produto deve ter pelo menos 2 caracteres')
     .max(100, 'Produto deve ter no máximo 100 caracteres')
     .optional(),
-  bandeira: z
+  brand: z
     .string()
     .min(2, 'Bandeira deve ter pelo menos 2 caracteres')
     .max(100, 'Bandeira deve ter no máximo 100 caracteres')
@@ -48,7 +48,7 @@ const getNearbyStationsSchema = z.object({
     .max(100, 'Raio não pode ser maior que 100km')
     .default(10)
     .optional(),
-  produto: z
+  product: z
     .string()
     .min(2, 'Produto deve ter pelo menos 2 caracteres')
     .max(100, 'Produto deve ter no máximo 100 caracteres')
@@ -65,7 +65,7 @@ const getNearbyStationsSchema = z.object({
 // Schema para histórico de preços
 const getPriceHistorySchema = z.object({
   stationId: z.string().uuid('ID do posto deve ser um UUID válido'),
-  produto: z
+  product: z
     .string()
     .min(2, 'Produto deve ter pelo menos 2 caracteres')
     .max(100, 'Produto deve ter no máximo 100 caracteres')
@@ -99,22 +99,22 @@ const downloadSpreadsheetSchema = z.object({
 
 // Schema para filtros avançados
 const advancedSearchSchema = z.object({
-  uf: z
+  state: z
     .string()
-    .length(2, 'UF deve ter exatamente 2 caracteres')
-    .toUpperCase()
+    .min(2, 'UF deve ter pelo menos 2 caracteres')
+    .max(100, 'UF deve ter no máximo 100 caracteres')
     .optional(),
-  municipio: z
+  city: z
     .string()
     .min(2, 'Município deve ter pelo menos 2 caracteres')
     .max(100, 'Município deve ter no máximo 100 caracteres')
     .optional(),
-  produto: z
+  product: z
     .string()
     .min(2, 'Produto deve ter pelo menos 2 caracteres')
     .max(100, 'Produto deve ter no máximo 100 caracteres')
     .optional(),
-  bandeira: z
+  brand: z
     .string()
     .min(2, 'Bandeira deve ter pelo menos 2 caracteres')
     .max(100, 'Bandeira deve ter no máximo 100 caracteres')

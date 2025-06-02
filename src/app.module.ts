@@ -1,7 +1,4 @@
 import { ApiModule } from '@/api/api.module';
-import { AppController } from '@/app.controller';
-import { AppService } from '@/app.service';
-
 import { ConfigModule } from '@nestjs/config';
 
 import { Module } from '@nestjs/common';
@@ -22,7 +19,7 @@ import { JwtModule } from '@nestjs/jwt';
     CacheModule.registerAsync(cacheRedisModuleConfig),
     JwtModule.register({
       secret: process.env.JWT_SECRET,
-      signOptions: { expiresIn: '30d' },
+      signOptions: { expiresIn: '30d' }, // default: 30 dias
       global: true,
     }),
     TypeOrmModule.forRoot(databaseConfig),

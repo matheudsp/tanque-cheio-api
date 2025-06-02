@@ -6,43 +6,43 @@ export class GasStationDto {
   id: string;
 
   @ApiProperty()
-  nome_razao: string;
+  legal_name: string;
 
   @ApiProperty({ required: false })
-  nome_fantasia?: string | null;
+  trade_name?: string | null;
 
   @ApiProperty({ required: false })
-  bandeira?: string | null;
+  brand?: string | null;
 
   @ApiProperty()
-  cnpj: string;
+  taxId: string;
 
   @ApiProperty()
-  ativo: boolean;
+  isActive: boolean;
 
   @ApiProperty()
-  criadoEm: Date;
+  createdAt: Date;
 
   @ApiProperty()
-  atualizadoEm: Date;
+  updatedAt: Date;
 
   @ApiProperty()
-  localizacao_id: string;
+  localization_id: string;
 }
 
 @ApiSchema({ name: 'Gas Station Query' })
 export class GasStationQueryDto {
   @ApiProperty({ required: false })
-  municipio?: string;
+  city?: string;
 
   @ApiProperty({ required: false })
-  produto?: string;
+  product?: string;
 
   @ApiProperty({ required: false })
-  bandeira?: string;
+  brand?: string;
 
   @ApiProperty({ required: false })
-  limite?: number;
+  limit?: number;
 
   @ApiProperty({ required: false })
   offset?: number;
@@ -60,9 +60,9 @@ export class NearbyStationsQueryDto {
   radius?: number;
 
   @ApiProperty({ required: false })
-  produto?: string;
+  product?: string;
 
   @ApiProperty({ required: false })
-  limite?: number;
+  limit?: number;
 }
 

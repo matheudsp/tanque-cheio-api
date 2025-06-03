@@ -12,6 +12,8 @@ import {
   throttlerModuleConfig,
 } from './common/utils/modules';
 import { JwtModule } from '@nestjs/jwt';
+import { APP_GUARD } from '@nestjs/core';
+import { RateLimiterGuard } from './common/guards/rate-limiter/rate-limiter.guard';
 
 @Module({
   imports: [
@@ -27,6 +29,11 @@ import { JwtModule } from '@nestjs/jwt';
     ApiModule,
   ],
   // controllers: [AppController],
-  // providers: [AppService],
+   providers: [
+    {
+      provide: APP_GUARD,
+      useClass: RateLimiterGuard,
+    },
+  ],
 })
 export class AppModule {}

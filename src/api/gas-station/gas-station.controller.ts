@@ -19,6 +19,7 @@ import {
   NearbyStationsQueryDto,
 } from './dtos/gas-station.dto';
 
+
 @ApiTags('Gas Stations')
 @ApiBearerAuth()
 @UseGuards(RoleGuard)
@@ -38,19 +39,15 @@ export class GasStationController {
     const result = await this.service.search(query);
     res.status(result.statusCode).send(result);
   }
-
-
-  
+ 
   @Get(':stationId')
   @ApiOperation({
     summary: 'Get Station by ID',
-    description:
-      'Get Station by ID',
+    description: 'Get Station by ID',
   })
   @OpenApiResponses([200, 400, 401, 403, 404, 500])
-  async find( @Param('stationId') stationId: string, @Res() res: Response) {
+  async find(@Param('stationId') stationId: string, @Res() res: Response) {
     const result = await this.service.findById(stationId);
     res.status(result.statusCode).send(result);
   }
-  
 }

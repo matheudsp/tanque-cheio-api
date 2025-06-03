@@ -76,13 +76,20 @@ tanque-cheio-api/
 3. **Configure as variáveis de ambiente:**
    - Crie um arquivo `.env` na raiz do projeto com base no `.env.example` fornecido
 
-4. **(NOT WORKING YET) Inicie os containers com Docker Compose:**
+4. ** Inicie os containers com Docker Compose:**
    ```bash
    docker-compose up -d
    ```
-
-5. **Acesse a aplicação:**
-   - A API estará disponível em `http://localhost:3000`
+5. ** Faça o seed para inicializar o app:**
+   ```bash
+   pnpm run seed
+   ```
+6. ** Inicie o app:**
+   ```bash
+   pnpm run build && pnpm run start
+   ```
+7. **Acesse a aplicação:**
+   - A API estará disponível em `http://localhost:3000` e `http://localhost:3000/docs` 
 
 ## 📌 Endpoints da API
 

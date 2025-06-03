@@ -16,7 +16,6 @@ import {
   SearchGasStationsQuerySchema,
 } from './schemas/gas-station.schema';
 import {
-  
   SearchResult,
   StationWithDistance,
 } from './interfaces/gas-station.interface';
@@ -38,18 +37,20 @@ export class GasStationService {
     try {
       const key = this.cache.getCacheKey();
       let data = await this.cacheManager.get(key);
+
       if (data) return responseOk({ data });
+
       const station = await this.repo.findById(stationId);
-      const fuelPricesData  =
+      const fuelPricesData =
         await this.priceHistoryRepo.getLatestPrices(stationId);
       data = {
         ...station,
-        fuelPrices:fuelPricesData,
+        fuelPrices: fuelPricesData,
       };
       if (!data) return responseNotFound({ message: 'Posto não encontrado' });
-      // await this.cacheManager.set(key, data, seconds(600));
-      await this.cacheManager.set(key, data, seconds(1));
-      
+      // cached for 15 min in redis
+      await this.cacheManager.set(key, data, seconds(900));
+
       return responseOk({ data });
     } catch (e) {
       return getErrorResponse(e);

@@ -20,10 +20,8 @@ import { GasStationEntity } from '@/database/entity/gas-station.entity';
       PermissionsEntity,])],
   controllers: [PriceHistoryController],
   providers: [
-     JwtService,
     CacheRequestService,
     PermissionsRepository,
-    JwtService,
     CacheRequestService,
     PriceHistoryService,
     PriceHistoryRepository,

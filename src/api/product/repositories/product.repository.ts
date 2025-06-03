@@ -23,55 +23,29 @@ export class ProductRepository {
     });
   }
 
-  async findByName(name: string): Promise<ProductEntity | null> {
-    return this.repo.findOne({
-      where: { name: name, isActive: true },
-    });
-  }
-
-  /**
-   * Search products by name
-   */
-  async searchByName(name: string): Promise<ProductEntity[] | null> {
-    return this.repo
-      .createQueryBuilder('prod')
-      .where('prod.isActive = :isActive', { isActive: true })
-      .andWhere('UPPER(prod.name) ILIKE UPPER(:name)', {
-        name: `%${name}%`,
-      })
-      .orderBy('prod.name', 'ASC')
-      .getMany();
-  }
 
   /**
    * Get products with price statistics
    */
-  async getProductsWithStats(): Promise<ProductEntity[] | null> {
+  async getProductsWithStats(){
     return this.repo
-      .createQueryBuilder('prod')
-      .leftJoin('prod.priceHistory', 'hp')
+      .createQueryBuilder('product')
+      .leftJoin('product.priceHistory', 'hp')
       .select([
-        'prod.id',
-        'prod.name',
-        'prod.category',
+        'product.id',
+        'product.name',
+        'product.category',
         'COUNT(hp.id) as total_prices',
         'AVG(hp.price) as medium_price',
         'MIN(hp.price) as min_price',
         'MAX(hp.price) as max_price',
       ])
-      .where('prod.isActive = :isActive', { isActive: true })
+      .where('product.isActive = :isActive', { isActive: true })
       .andWhere('hp.isActive = :isActive', { isActive: true })
-      .groupBy('prod.id, prod.name, prod.category')
-      .orderBy('prod.name', 'ASC')
+      .groupBy('product.id, product.name, product.category')
+      .orderBy('product.name', 'ASC')
       .getRawMany();
   }
 
-  /**
-   * Count total active products
-   */
-  async count(): Promise<number> {
-    return this.repo.count({
-      where: { isActive: true },
-    });
-  }
+ 
 }

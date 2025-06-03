@@ -286,7 +286,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\r\n  \"user_id\": \"01971cbe-e03f-7305-a4b9-7611f6d7eec2\",\r\n  \"role_id\": \"01971cbe-e22f-7564-9b16-f0408eefd769\"\r\n}",
+									"raw": "{\r\n  \"user_id\": \"0197374f-5cdf-77d2-912d-e78e7a0f4f17\",\r\n  \"role_id\": \"0197374f-5dd3-7455-8882-abf03e927a55\"\r\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -458,6 +458,146 @@
 				}
 			],
 			"id": "29364622-1182a69f-1d7e-4d2b-926f-e49391e25b09"
+		},
+		{
+			"name": "Health",
+			"item": [
+				{
+					"name": "Verify Api Health",
+					"id": "29364622-695ff757-2be6-4001-98a9-892bc0e92e26",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/health",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"health"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": null,
+									"disabled": true
+								},
+								{
+									"key": "offset",
+									"value": null,
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Database Verify",
+					"id": "29364622-4cd9c553-3d8d-41f0-8890-744180135686",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/health/database",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"health",
+								"database"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": null,
+									"disabled": true
+								},
+								{
+									"key": "offset",
+									"value": null,
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Simple Verification",
+					"id": "29364622-22deeb68-5df4-4ab4-8363-6bd2e3861301",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/health/simple",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"health",
+								"simple"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": null,
+									"disabled": true
+								},
+								{
+									"key": "offset",
+									"value": null,
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				}
+			],
+			"id": "29364622-da704475-6661-44f1-aba8-455e8030b609"
 		}
 	],
 	"auth": {

@@ -482,15 +482,13 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/v1/product/stats",
+							"raw": "{{baseUrl}}/api/health",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
-								"v1",
-								"product",
-								"stats"
+								"health"
 							],
 							"query": [
 								{

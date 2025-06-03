@@ -24,7 +24,6 @@ import { RoleGuard } from '@/common/guards/role/role.guard';
 import {
   PeriodQueryDto,
   LatestPricesResponseDto,
-  HistoryResponseDto,
 } from './dtos/price-history.dto';
 import { OpenApiResponses } from '@/common/decorators/openapi.decorator';
 
@@ -35,6 +34,7 @@ import { OpenApiResponses } from '@/common/decorators/openapi.decorator';
 @Controller({ version: ['1'], path: 'price-history' })
 export class PriceHistoryController {
   constructor(private readonly priceHistoryService: PriceHistoryService) {}
+
 
   /**
    * Rota para buscar os últimos preços de todos os produtos do posto
@@ -60,7 +60,7 @@ export class PriceHistoryController {
     @Param('stationId') stationId: string,
     @Res() res: Response,
   ) {
-    const result = await this.priceHistoryService.getLatestPrices(stationId);
+    const result = await this.priceHistoryService.getLatestFuelPrices(stationId);
     return res.status(result.statusCode).send(result);
   }
 
@@ -83,14 +83,14 @@ export class PriceHistoryController {
     description: 'Data de início (YYYY-MM-DD)',
     required: true,
     type: 'string',
-    example: '2025-01-01',
+    example: '2025-05-01',
   })
   @ApiQuery({
     name: 'endDate',
     description: 'Data de fim (YYYY-MM-DD)',
     required: true,
     type: 'string',
-    example: '2025-01-31',
+    example: '2025-05-30',
   })
   @ApiQuery({
     name: 'product',
@@ -102,7 +102,6 @@ export class PriceHistoryController {
   @ApiResponse({
     status: 200,
     description: 'Histórico de preços retornado com sucesso',
-    type: HistoryResponseDto,
   })
   @OpenApiResponses([200, 400, 401, 403, 404, 500])
   async getPriceHistory(

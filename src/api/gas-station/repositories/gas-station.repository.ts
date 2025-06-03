@@ -68,10 +68,20 @@ export class GasStationRepository {
     return await this.repo
       .createQueryBuilder('gs')
       .leftJoinAndSelect('gs.localization', 'loc')
-      .leftJoinAndSelect('gs.priceHistory', 'hp')
-      .leftJoinAndSelect('hp.product', 'prod')
       .where('gs.id = :id', { id })
       .andWhere('gs.isActive = :isActive', { isActive: true })
+      .select([
+        'gs.id',
+        'gs.taxId',
+        'gs.legal_name',
+        'gs.trade_name',
+        'gs.brand',
+        // 'gs.isActive',
+        'loc.city',
+        'loc.state',
+        'loc.latitude',
+        'loc.longitude',
+      ])
       .getOne();
   }
 

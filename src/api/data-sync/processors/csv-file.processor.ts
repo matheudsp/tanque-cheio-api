@@ -23,7 +23,8 @@ export class CsvProcessor {
     private gasStationRepo: Repository<GasStationEntity>,
     @InjectRepository(LocalizationEntity)
     private localizationRepo: Repository<LocalizationEntity>,
-    @InjectRepository(ProductEntity) private productRepo: Repository<ProductEntity>,
+    @InjectRepository(ProductEntity)
+    private productRepo: Repository<ProductEntity>,
     @InjectRepository(PriceHistoryEntity)
     private priceHistoryRepo: Repository<PriceHistoryEntity>,
   ) {}
@@ -177,7 +178,7 @@ export class CsvProcessor {
             queryRunner,
             ProductEntity,
             product,
-            { nome: product.name },
+            { name: product.name },
           );
           productMap.set(prodKey, existing);
         }
@@ -193,7 +194,7 @@ export class CsvProcessor {
             queryRunner,
             GasStationEntity,
             gasStation,
-            { cnpj: gasStation.taxId },
+            { taxId: gasStation.taxId },
           );
           gasStationMap.set(gasKey, existing);
         }
@@ -224,7 +225,7 @@ export class CsvProcessor {
       where: findCriteria,
     });
     if (existing) {
-      Object.assign(entity, { id: existing.id, criadoEm: existing.criadoEm });
+      Object.assign(entity, { id: existing.id, createdAt: existing.createdAt });
       return existing;
     }
     return await queryRunner.manager.save(entity);
@@ -232,11 +233,11 @@ export class CsvProcessor {
 
   private getLocalizationQuery(localization: LocalizationEntity) {
     return {
-      uf: localization.state,
-      municipio: localization.city,
-      endereco: localization.address,
-      bairro: localization.neighborhood,
-      cep: localization.zipCode,
+      state: localization.state,
+      city: localization.city,
+      address: localization.address,
+      neighborhood: localization.neighborhood,
+      zipCode: localization.zipCode,
     };
   }
 
@@ -256,9 +257,9 @@ export class CsvProcessor {
     // Build search criteria for batch lookup
     const searchCriteria = priceHistories.map(
       ({ row, gasStation, product }) => ({
-        posto_id: gasStation.id,
-        produto_id: product.id,
-        data_coleta: DataUtils.parseDate(row['DATA DA COLETA'])
+        gas_station_id: gasStation.id,
+        product_id: product.id,
+        collection_date: DataUtils.parseDate(row['DATA DA COLETA'])
           .toISOString()
           .split('T')[0],
       }),
@@ -369,9 +370,9 @@ export class CsvProcessor {
 
   private async findExistingPriceHistories(
     criteria: Array<{
-      posto_id: string;
-      produto_id: string;
-      data_coleta: string;
+      gas_station_id: string;
+      product_id: string;
+      collection_date: string;
     }>,
     queryRunner: any,
   ): Promise<Map<string, PriceHistoryEntity>> {
@@ -380,16 +381,16 @@ export class CsvProcessor {
     const conditions = criteria
       .map(
         (_, index) =>
-          `(ph.posto_id = :posto_id_${index} AND ph.produto_id = :produto_id_${index} AND DATE(ph.data_coleta) = :data_coleta_${index})`,
+          `(ph.gas_station_id = :gas_station_id_${index} AND ph.product_id = :product_id_${index} AND DATE(ph.collection_date) = :collection_date_${index})`,
       )
       .join(' OR ');
 
     const parameters = criteria.reduce(
       (params, c, index) => ({
         ...params,
-        [`posto_id_${index}`]: c.posto_id,
-        [`produto_id_${index}`]: c.produto_id,
-        [`data_coleta_${index}`]: c.data_coleta,
+        [`gas_station_id_${index}`]: c.gas_station_id,
+        [`product_id_${index}`]: c.product_id,
+        [`collection_date_${index}`]: c.collection_date,
       }),
       {},
     );

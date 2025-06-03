@@ -2,14 +2,14 @@ import { Controller, Get } from '@nestjs/common';
 import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { HealthService, HealthCheckResult } from './health.service';
 
-@ApiTags('Verificação da API')
+@ApiTags('Health')
 @Controller('health')
 export class HealthController {
   constructor(private readonly healthService: HealthService) {}
 
   @Get()
   @ApiOperation({ 
-    summary: 'Verificar saúde geral da API',
+    summary: 'Verify API Health',
     description: 'Retorna informações completas sobre o status da API, incluindo banco de dados, memória e uptime'
   })
   @ApiResponse({ 

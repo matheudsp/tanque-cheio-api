@@ -1,7 +1,11 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Repository, type SelectQueryBuilder } from 'typeorm';
 import { PriceHistoryEntity } from '@/database/entity/price-history.entity';
+import type {
+  FuelPriceDto,
+  PriceByProductDto,
+} from '../dtos/price-history.dto';
 
 @Injectable()
 export class PriceHistoryRepository {
@@ -13,41 +17,53 @@ export class PriceHistoryRepository {
   /**
    * Busca os últimos preços de todos os produtos do posto
    */
-  async getLatestPrices(stationId: string): Promise<PriceHistoryEntity[]> {
+  async getLatestPrices(stationId: string): Promise<FuelPriceDto[]> {
+    // Monta a subquery para pegar, por produto, a maior collection_date
+    const subQuery = (qb: SelectQueryBuilder<PriceHistoryEntity>) => {
+      return qb
+        .subQuery()
+        .select('MAX(hp2.collection_date)')
+        .from(PriceHistoryEntity, 'hp2')
+        .where('hp2.gas_station_id = hp.gas_station_id')
+        .andWhere('hp2.product_id = hp.product_id')
+        .andWhere('hp2.isActive = true')
+        .andWhere('hp2.price IS NOT NULL')
+        .getQuery();
+    };
+
+    // Na query principal, selecionamos só os campos que viram FuelPriceDto
     return await this.repository
       .createQueryBuilder('hp')
-      .leftJoinAndSelect('hp.product', 'prod')
+      .innerJoin('hp.product', 'prod')
+      .select([
+        'prod.name            AS name',
+        'hp.price             AS price',
+        'prod.unitOfMeasure   AS unit',
+        'hp.collection_date   AS lastUpdated',
+      ])
       .where('hp.gas_station_id = :stationId', { stationId })
       .andWhere('hp.isActive = :isActive', { isActive: true })
       .andWhere('hp.price IS NOT NULL')
-      .andWhere((qb) => {
-        const subQuery = qb
-          .subQuery()
-          .select('MAX(hp2.collection_date)')
-          .from(PriceHistoryEntity, 'hp2')
-          .where('hp2.gas_station_id = hp.gas_station_id')
-          .andWhere('hp2.product_id = hp.product_id')
-          .andWhere('hp2.isActive = true')
-          .andWhere('hp2.price IS NOT NULL')
-          .getQuery();
-        return `hp.collection_date = (${subQuery})`;
-      })
+      .andWhere(
+        `hp.collection_date = (${subQuery(this.repository.createQueryBuilder())})`,
+      )
       .orderBy('prod.name', 'ASC')
-      .getMany();
+      .getRawMany<FuelPriceDto>();
   }
 
   /**
-   * Busca histórico de preços por período (reutilizável)
+   * Busca histórico de preços por período
    */
-  async getPriceHistory(
+  async getPriceHistoryGrouped(
     stationId: string,
     startDate: Date,
     endDate: Date,
-    productName?: string,
-  ): Promise<PriceHistoryEntity[]> {
-    const query = this.repository
+    productNameFilter?: string,
+  ): Promise<PriceByProductDto[]> {
+    const qb = this.repository
       .createQueryBuilder('hp')
-      .leftJoinAndSelect('hp.product', 'prod')
+      .innerJoin('hp.product', 'prod')
+      // monta a condição de data e ativo:
       .where('hp.gas_station_id = :stationId', { stationId })
       .andWhere('hp.collection_date BETWEEN :startDate AND :endDate', {
         startDate,
@@ -56,35 +72,32 @@ export class PriceHistoryRepository {
       .andWhere('hp.isActive = :isActive', { isActive: true })
       .andWhere('hp.price IS NOT NULL');
 
-    if (productName) {
-      query.andWhere('UPPER(prod.name) ILIKE UPPER(:productName)', {
-        productName: `%${productName}%`,
+    if (productNameFilter) {
+      qb.andWhere('UPPER(prod.name) ILIKE UPPER(:productName)', {
+        productName: `%${productNameFilter}%`,
       });
     }
 
-    return await query
-      .orderBy('hp.collection_date', 'DESC')
-      .addOrderBy('prod.name', 'ASC')
-      .getMany();
-  }
-
-  /**
-   * Busca preço anterior para cálculo de variação (reutilizável)
-   */
-  async getPreviousPrice(
-    stationId: string,
-    productId: string,
-    currentDate: Date,
-  ): Promise<PriceHistoryEntity | null> {
-    return await this.repository
-      .createQueryBuilder('hp')
-      .where('hp.gas_station_id = :stationId', { stationId })
-      .andWhere('hp.product_id = :productId', { productId })
-      .andWhere('hp.collection_date < :currentDate', { currentDate })
-      .andWhere('hp.isActive = :isActive', { isActive: true })
-      .andWhere('hp.price IS NOT NULL')
-      .orderBy('hp.collection_date', 'DESC')
-      .limit(1)
-      .getOne();
+    // Seleciona o nome do produto e agrega todos os campos de preço em JSON
+    return qb
+      .select('prod.name', 'productName')
+      .addSelect(
+        `
+        JSON_AGG(
+          JSON_BUILD_OBJECT(
+            'id', hp.id,
+            'productId', prod.id,
+            'productName', prod.name,
+            'price', hp.price,
+            'date', TO_CHAR(hp.collection_date, 'YYYY-MM-DD'),
+            'unit', prod."unitOfMeasure"
+          )
+          ORDER BY hp.collection_date DESC
+        )`,
+        'prices',
+      )
+      .groupBy('prod.name')
+      .orderBy('prod.name', 'ASC')
+      .getRawMany<PriceByProductDto>();
   }
 }

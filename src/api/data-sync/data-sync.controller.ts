@@ -7,7 +7,7 @@ import { DownloadSpreadsheetDto } from './dtos/download-spreadsheet.dto';
 import { responseOk, responseBadRequest } from '@/common/utils/response-api';
 import { CsvProcessor } from './processors/csv-file.processor';
 
-@ApiTags('Sincronizar Dados')
+@ApiTags('Data Sync')
 @Controller({ path: 'data-sync', version: '1' })
 export class DataSyncController {
   private readonly logger = new Logger(DataSyncController.name);

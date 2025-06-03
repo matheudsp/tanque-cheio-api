@@ -55,56 +55,23 @@ const stationParamSchema = z.object({
   stationId: z.string().uuid('ID do posto deve ser um UUID válido'),
 });
 
-// ================ RESPONSE SCHEMAS ================
 
-const priceItemSchema = z.object({
-  id: z.string().uuid(),
-  productId: z.string().uuid(),
-  productName: z.string(),
-  price: z.number().positive('Preço deve ser positivo'),
-  date: z.string(),
-  unit: z.string().default('L'),
-  variation: z.number().optional(),
-  variationPercent: z.number().optional(),
-});
 
-const latestPricesResponseSchema = z.object({
-  stationId: z.string().uuid(),
-  prices: z.array(priceItemSchema),
-  totalProducts: z.number().int().positive(),
-  updatedAt: z.string(),
-});
-
-const historyResponseSchema = z.object({
-  stationId: z.string().uuid(),
-  startDate: z.string(),
-  endDate: z.string(),
-  product: z.string().optional(),
-  prices: z.array(priceItemSchema),
-  total: z.number().int(),
-  queryTime: z.string(),
-});
 
 // ================ TYPE EXPORTS ================
 
 type PeriodQueryType = z.infer<typeof periodQuerySchema>;
 type StationParamType = z.infer<typeof stationParamSchema>;
-type PriceItemType = z.infer<typeof priceItemSchema>;
-type LatestPricesResponseType = z.infer<typeof latestPricesResponseSchema>;
-type HistoryResponseType = z.infer<typeof historyResponseSchema>;
+
 
 export {
   periodQuerySchema,
   stationParamSchema,
-  priceItemSchema,
-  latestPricesResponseSchema,
-  historyResponseSchema,
+
 };
 
 export type {
   PeriodQueryType,
   StationParamType,
-  PriceItemType,
-  LatestPricesResponseType,
-  HistoryResponseType,
+
 };

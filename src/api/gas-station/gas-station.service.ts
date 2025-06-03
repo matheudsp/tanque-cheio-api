@@ -16,16 +16,11 @@ import {
   SearchGasStationsQuerySchema,
 } from './schemas/gas-station.schema';
 import {
-  SearchFilters,
+  
   SearchResult,
-  NearbyStationsFilter,
-  NearbyStationsResult,
-  PriceHistoryResult,
   StationWithDistance,
 } from './interfaces/gas-station.interface';
 import { GasStationRepository } from './repositories/gas-station.repository';
-import { LocalizationRepository } from '../localization/repositories/localization.repository';
-import { ProductRepository } from '../product/repositories/product.repository';
 import { PriceHistoryRepository } from '../price-history/repositories/price-history.repository';
 
 @Injectable()
@@ -37,42 +32,62 @@ export class GasStationService {
     private readonly cache: CacheRequestService,
     private readonly repo: GasStationRepository,
     private readonly priceHistoryRepo: PriceHistoryRepository,
-    private readonly productRepo: ProductRepository,
-    private readonly localizationRepo: LocalizationRepository,
   ) {}
+
+  async findById(stationId: string) {
+    try {
+      const key = this.cache.getCacheKey();
+      let data = await this.cacheManager.get(key);
+      if (data) return responseOk({ data });
+      const station = await this.repo.findById(stationId);
+      const fuelPricesData  =
+        await this.priceHistoryRepo.getLatestPrices(stationId);
+      data = {
+        ...station,
+        fuelPrices:fuelPricesData,
+      };
+      if (!data) return responseNotFound({ message: 'Posto não encontrado' });
+      // await this.cacheManager.set(key, data, seconds(600));
+      await this.cacheManager.set(key, data, seconds(1));
+      
+      return responseOk({ data });
+    } catch (e) {
+      return getErrorResponse(e);
+    }
+  }
 
   async search(filters: SearchGasStationsQuerySchema) {
     try {
-      const parsed = searchGasStationsQuerySchema.parse(filters);
+      searchGasStationsQuerySchema.parse({ filters });
       const key = this.cache.getCacheKey();
-      
+
       let data = await this.cacheManager.get(key);
       if (data) return responseOk({ data });
 
-      const { results, total } = await this.repo.filter(parsed);
-      
+      const { results, total } = await this.repo.filter(filters);
+
       const searchResult: SearchResult = {
         results,
         total,
-        limit: parsed.limit || 50,
-        offset: parsed.offset || 0,
+        limit: filters.limit || 50,
+        offset: filters.offset || 0,
       };
 
       await this.cacheManager.set(key, searchResult, seconds(300)); // 5 minutos
       return responseOk({ data: searchResult });
-    } catch (error) {
-      this.logger.error('Error searching gas stations:', error);
-      return getErrorResponse(error);
+    } catch (e) {
+      // this.logger.error('Error searching gas stations:', e);
+      return getErrorResponse(e);
     }
   }
- 
+
   /**
    * Obtém histórico de preços de um produto de um posto específico
    */
   // async getStationPriceHistory(stationId: string, produto?: string, limit = 50) {
   //   try {
   //     const key = this.cache.getCacheKey();
-      
+
   //     let data = await this.cacheManager.get(key);
   //     if (data) return responseOk({ data });
 
@@ -89,7 +104,7 @@ export class GasStationService {
   //       limit
   //     );
 
-  //     const result: PriceHistoryResult = {
+  //     const result= {
   //       stationId,
   //       results: priceHistory,
   //       total: priceHistory.length,
@@ -106,6 +121,4 @@ export class GasStationService {
   //     return getErrorResponse(error);
   //   }
   // }
-
-  
 }

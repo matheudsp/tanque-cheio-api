@@ -14,6 +14,7 @@ import { GasStationRepository } from './repositories/gas-station.repository';
 import { PriceHistoryRepository } from '../price-history/repositories/price-history.repository';
 import { ProductRepository } from '../product/repositories/product.repository';
 import { LocalizationRepository } from '../localization/repositories/localization.repository';
+import { PriceHistoryService } from '../price-history/price-history.service';
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { LocalizationRepository } from '../localization/repositories/localizatio
     PriceHistoryRepository,
     ProductRepository,
     LocalizationRepository,
+
   ],
   exports: [GasStationService, GasStationRepository],
 })

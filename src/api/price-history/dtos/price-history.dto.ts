@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString, IsDateString } from 'class-validator';
+import { Type } from 'class-transformer';
+import { IsOptional, IsString, IsDateString, ValidateNested, IsArray } from 'class-validator';
 
-// ================ QUERY DTOs ================
 
 export class PeriodQueryDto {
   @ApiProperty({ 
@@ -30,8 +30,6 @@ export class PeriodQueryDto {
   product?: string;
 }
 
-// ================ RESPONSE DTOs ================
-
 export class PriceItemDto {
   @ApiProperty({ description: 'ID do registro', example: 'uuid-price-id' })
   id: string;
@@ -58,6 +56,21 @@ export class PriceItemDto {
   variationPercent?: number;
 }
 
+export class FuelPriceDto {
+  @ApiProperty({ description: 'Nome do combustível', example: 'GASOLINA COMUM' })
+  name: string;
+
+  @ApiProperty({ description: 'Preço formatado', example: '6.49' })
+  price: number | null;
+
+  @ApiProperty({ description: 'Unidade com moeda', example: 'R$ / litro' })
+  unit: string;
+
+  @ApiProperty({ description: 'Data da última atualização (YYYY-MM-DD)', example: '2025-05-20' })
+  lastUpdated: string;
+}
+
+
 export class LatestPricesResponseDto {
   @ApiProperty({ description: 'ID do posto', example: 'uuid-station-id' })
   stationId: string;
@@ -72,25 +85,22 @@ export class LatestPricesResponseDto {
   updatedAt: string;
 }
 
-export class HistoryResponseDto {
-  @ApiProperty({ description: 'ID do posto', example: 'uuid-station-id' })
-  stationId: string;
+export class PriceByProductDto {
+  @ApiProperty({
+    description: 'Nome do tipo de combustível (por exemplo: GASOLINA COMUM)',
+    example: 'GASOLINA COMUM',
+  })
+  @IsString()
+  productName: string;
 
-  @ApiProperty({ description: 'Data de início do período', example: '2025-01-01' })
-  startDate: string;
-
-  @ApiProperty({ description: 'Data de fim do período', example: '2025-01-31' })
-  endDate: string;
-
-  @ApiProperty({ description: 'Produto filtrado (se aplicável)', example: 'GASOLINA', required: false })
-  product?: string;
-
-  @ApiProperty({ type: [PriceItemDto], description: 'Histórico de preços no período' })
+  @ApiProperty({
+    description: 'Lista de objetos representando cada registro de preço',
+    type: [PriceItemDto],
+  })
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => PriceItemDto)
   prices: PriceItemDto[];
-
-  @ApiProperty({ description: 'Total de registros encontrados', example: 45 })
-  total: number;
-
-  @ApiProperty({ description: 'Data/hora da consulta (ISO string)', example: '2025-01-31T10:30:00Z' })
-  queryTime: string;
 }
+
+

@@ -571,14 +571,14 @@
 						"method": "GET",
 						"header": [],
 						"url": {
-							"raw": "{{baseUrl}}/api/health/database",
+							"raw": "{{baseUrl}}/api/health/simple",
 							"host": [
 								"{{baseUrl}}"
 							],
 							"path": [
 								"api",
 								"health",
-								"database"
+								"simple"
 							],
 							"query": [
 								{

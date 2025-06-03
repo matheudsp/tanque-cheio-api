@@ -505,6 +505,96 @@
 						}
 					},
 					"response": []
+				},
+				{
+					"name": "Verify Api Health Copy",
+					"id": "29364622-4cd9c553-3d8d-41f0-8890-744180135686",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/health/database",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"health",
+								"database"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": null,
+									"disabled": true
+								},
+								{
+									"key": "offset",
+									"value": null,
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
+				},
+				{
+					"name": "Verify Api Health Copy 2",
+					"id": "29364622-22deeb68-5df4-4ab4-8363-6bd2e3861301",
+					"protocolProfileBehavior": {
+						"disableBodyPruning": true
+					},
+					"request": {
+						"auth": {
+							"type": "bearer",
+							"bearer": [
+								{
+									"key": "token",
+									"value": "{{jwtToken}}",
+									"type": "string"
+								}
+							]
+						},
+						"method": "GET",
+						"header": [],
+						"url": {
+							"raw": "{{baseUrl}}/api/health/database",
+							"host": [
+								"{{baseUrl}}"
+							],
+							"path": [
+								"api",
+								"health",
+								"database"
+							],
+							"query": [
+								{
+									"key": "limit",
+									"value": null,
+									"disabled": true
+								},
+								{
+									"key": "offset",
+									"value": null,
+									"disabled": true
+								}
+							]
+						}
+					},
+					"response": []
 				}
 			],
 			"id": "29364622-da704475-6661-44f1-aba8-455e8030b609"

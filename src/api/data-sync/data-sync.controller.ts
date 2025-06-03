@@ -1,14 +1,16 @@
-import { Body, Controller, HttpStatus, Logger, Post } from '@nestjs/common';
-import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Body, Controller, HttpStatus, Logger, Post, UseGuards } from '@nestjs/common';
+import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 
 import { DataSyncService } from './data-sync.service';
 import { OpenApiResponses } from '@/common/decorators/openapi.decorator';
 import { DownloadSpreadsheetDto } from './dtos/download-spreadsheet.dto';
 import { responseOk, responseBadRequest } from '@/common/utils/response-api';
 import { CsvProcessor } from './processors/csv-file.processor';
-
+import { RoleGuard } from '@/common/guards/role/role.guard';
 @ApiTags('Data Sync')
+@ApiBearerAuth()
 @Controller({ path: 'data-sync', version: '1' })
+@UseGuards(RoleGuard)
 export class DataSyncController {
   private readonly logger = new Logger(DataSyncController.name);
 

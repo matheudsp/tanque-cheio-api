@@ -12,10 +12,19 @@ import { FileDownloaderService } from './services/file-downloader.service';
 import { XlsxToCsvConverterService } from './services/xlsx-to-csv-converter.service';
 import { CsvProcessor } from './processors/csv-file.processor';
 import { CsvRowValidator } from './validators/csv-row.validator';
+import { PermissionsEntity } from '@/database/entity/permissions.entity';
+
+import { PermissionsRepository } from '../permissions/repositories/permissions.repository';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([GasStationEntity, ProductEntity, LocalizationEntity, PriceHistoryEntity]),
+    TypeOrmModule.forFeature([
+      GasStationEntity,
+      ProductEntity,
+      LocalizationEntity,
+      PriceHistoryEntity,
+      PermissionsEntity,
+    ]),
     HttpModule.register({
       timeout: 120000, // 2 minutes if the datasheet is a large file
       maxRedirects: 5,
@@ -24,6 +33,7 @@ import { CsvRowValidator } from './validators/csv-row.validator';
     }),
   ],
   providers: [
+    PermissionsRepository,
     DataSyncService,
     FileProcessorService,
     FileDownloaderService,
@@ -36,4 +46,3 @@ import { CsvRowValidator } from './validators/csv-row.validator';
   exports: [],
 })
 export class DataSyncModule {}
- 

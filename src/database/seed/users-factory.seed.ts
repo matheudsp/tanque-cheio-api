@@ -131,14 +131,7 @@ export const seedUsersFactory = async (db: DataSource) => {
         path: 'product',
         created_at: new Date(),
         updated_at: new Date(),
-      },
-      {
-        id: uuid(),
-        name: 'Health',
-        path: 'health',
-        created_at: new Date(),
-        updated_at: new Date(),
-      },
+      }
     ];
     const hasRoles: HasRolesEntity[] = [
       // Admin user

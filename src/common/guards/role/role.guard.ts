@@ -27,6 +27,7 @@ export class RoleGuard implements CanActivate {
     const { role_id } = this.jwt.decode(
       request.headers.authorization.split(' ')[1],
     );
+    
     const permissions = (await this.permissionRepo.findByRoleId(role_id))?.map(
       (p) => ({
         id: p.id,
@@ -38,15 +39,19 @@ export class RoleGuard implements CanActivate {
     const hasAllPermission = permissions?.some(
       (p) => p.allowedMethod.includes(Action.ALL) && p.path === '*',
     );
+    
     if (hasAllPermission) return true;
     if (!permissions.length) throw new ForbiddenException('Recurso Proibido');
+
     const hasPermission = permissions?.some((permission) => {
       const { allowedMethod, path } = permission;
       const isAllowedMethod = allowedMethod.includes(method);
+
       const isAllowedPath = `/${resourcesUrl}`.includes(path || '');
       return isAllowedMethod && isAllowedPath;
     });
     if (!hasPermission) throw new ForbiddenException('Recurso Proibido');
+  
     return true;
   }
 

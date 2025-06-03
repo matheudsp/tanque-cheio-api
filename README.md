@@ -1,70 +1,105 @@
-# Tanque Cheio - Fuel Price Collection System
+# Tanque Cheio API
 
-A robust backend system for collecting, processing, and managing fuel prices from Brazil's ANP (National Petroleum Agency) database. The system automatically downloads weekly Excel reports, processes data for Northeast region, and stores structured information about gas stations and fuel prices.
+Sistema backend para coleta, processamento e disponibilização de dados de preços de combustíveis no Brasil, com foco na região Nordeste, utilizando os relatórios semanais da ANP (Agência Nacional do Petróleo, Gás Natural e Biocombustíveis).
 
-Built using **NestJS**, **TypeORM**, **PostgreSQL**, and **Excel processing** capabilities, following **CLEAN Architecture** principles.
+## 📌 Visão Geral
 
----
+O Tanque Cheio API automatiza o processo de:
 
-## Features
+- Download dos relatórios semanais em formato Excel disponibilizados pela ANP
+- Processamento e transformação dos dados relevantes
+- Armazenamento estruturado em um banco de dados relacional
+- Exposição dos dados através de uma API RESTful para consumo por aplicações clientes
 
-### Automated Data Collection
-- Weekly automated download of ANP Excel reports
-- Scheduled processing every Monday at 6 AM
-- Manual processing capabilities for specific files
-- Smart URL generation based on current date patterns
+## 🚀 Tecnologias Utilizadas
 
-### Data Processing
-- Excel file parsing and validation
-- Northeast region filtering (9 states: CE, PE, BA, RN, PB, SE, AL, MA, PI)
-- Batch processing for optimal performance
-- Duplicate detection and prevention
+- **Node.js**
+- **NestJS**
+- **TypeORM**
+- **PostgreSQL**
+- **Docker & Docker Compose**
+- **pnpm**
+- **Prettier & ESLint**
 
-### Gas Station Management
-- Automatic gas station registration from ANP data
-- CNPJ-based station identification
-- Address normalization and geocoding preparation
-- Brand and location tracking
+## 📁 Estrutura de Pastas
 
-### Fuel Price Tracking
-- Multiple fuel types support (Gasoline, Ethanol, Diesel, CNG)
-- Historical price tracking
-- Survey date management
-- Price validation and normalization
-
-### Background Jobs
-- Automated weekly data collection using cron jobs
-- Asynchronous geocoding for station coordinates
-- Error handling and logging system
-
----
-
-## Architecture
-
-This project follows **CLEAN Architecture**:
+A estrutura do projeto é organizada da seguinte forma:
 
 ```
-
-src/
-├── domain/               # Core business logic (e.g. ranking service)
-├── application/          # Use-cases (create/update/query logic)
-├── infrastructure/       # DB entities and TypeORM implementations
-
+tanque-cheio-api/
+├── dataset/                # Armazena os arquivos CSV convertidos das planilhas(.XLSX)
+├── public/                 # Arquivos públicos acessíveis externamente
+├── src/                    # Código-fonte principal da aplicação
+│   ├── api/                # Módulos organizados por domínio (e.g., Preços, Postos de Combustíveis, Localização, Auth)
+│   ├── common/*            # Componentes reutilizáveis e utilitários
+│   ├── config/             # Componentes de configuração da aplicação
+│   ├── database/
+│   │     ├── entity/       # Esquema do banco de dados usando TypeORM
+│   │     └── seed/         # Ponto de partida para inicializar a aplicação
+│   ├── main.ts             # Ponto de entrada da aplicação
+│   └── app.module.ts       # Módulo raiz da aplicação
+├── temp/                   # Arquivos temporários durante o processamento das planilhas baixadas da ANP
+├── test/                   # Testes automatizados
+├── .env.example            # Exemplo de arquivo de variáveis de ambiente
+├── .gitignore              # Arquivos e pastas ignorados pelo Git
+├── .prettierrc             # Configuração do Prettier
+├── docker-compose.yml      # Configuração do Docker Compose
+├── Dockerfile              # Dockerfile para containerização da aplicação
+├── nest-cli.json           # Configuração do NestJS CLI
+├── package.json            # Dependências e scripts do projeto
+├── pnpm-lock.yaml          # Lockfile do pnpm
+├── tsconfig.build.json     # Configuração do TypeScript para build
+└── tsconfig.json           # Configuração principal do TypeScript
 ```
 
----
+## ⚙️ Configuração e Execução
 
-## Getting Started
+### Pré-requisitos
 
-### Prerequisites
+- Node.js (versão recomendada: 18.x)
+- pnpm (gerenciador de pacotes)
+- Docker & Docker Compose
 
-- Node.js (v18+)
-- PostgreSQL
-- pnpm (recommended) or npm
+### Passos para execução
 
-### Install dependencies
+1. **Clone o repositório:**
+   ```bash
+   git clone https://github.com/matheudsp/tanque-cheio-api.git
+   cd tanque-cheio-api
+   ```
+
+2. **Instale as dependências:**
+   ```bash
+   pnpm install
+   ```
+
+3. **Configure as variáveis de ambiente:**
+   - Crie um arquivo `.env` na raiz do projeto com base no `.env.example` fornecido
+
+4. **(NOT WORKING YET) Inicie os containers com Docker Compose:**
+   ```bash
+   docker-compose up -d
+   ```
+
+5. **Acesse a aplicação:**
+   - A API estará disponível em `http://localhost:3000`
+
+## 📌 Endpoints da API
+
+A documentação detalhada dos endpoints disponíveis pode ser encontrada no arquivo `postman.json` e importada no Postman.
+
+<!-- ## 🧪 Testes
+
+Para executar os testes automatizados:
 
 ```bash
-pnpm install
-```
+pnpm test
+``` -->
 
+## 🧑‍💻 Autor
+
+**Matheus Pereira** - [@matheudsp](https://github.com/matheudsp)
+
+## 📄 Licença
+
+Este projeto está licenciado sob a Licença MIT. Consulte o arquivo LICENSE para obter mais detalhes.

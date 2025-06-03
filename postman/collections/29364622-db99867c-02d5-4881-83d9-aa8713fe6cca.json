@@ -463,7 +463,7 @@
 			"name": "Health",
 			"item": [
 				{
-					"name": "Product Stats",
+					"name": "Verify Api Health",
 					"id": "29364622-695ff757-2be6-4001-98a9-892bc0e92e26",
 					"protocolProfileBehavior": {
 						"disableBodyPruning": true

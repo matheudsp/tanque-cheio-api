@@ -507,7 +507,7 @@
 					"response": []
 				},
 				{
-					"name": "Verify Api Health Copy",
+					"name": "Database Verify",
 					"id": "29364622-4cd9c553-3d8d-41f0-8890-744180135686",
 					"protocolProfileBehavior": {
 						"disableBodyPruning": true
@@ -552,7 +552,7 @@
 					"response": []
 				},
 				{
-					"name": "Verify Api Health Copy 2",
+					"name": "Simple Verification",
 					"id": "29364622-22deeb68-5df4-4ab4-8363-6bd2e3861301",
 					"protocolProfileBehavior": {
 						"disableBodyPruning": true

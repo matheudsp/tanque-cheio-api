@@ -15,6 +15,7 @@ import { CsvRowValidator } from './validators/csv-row.validator';
 import { PermissionsEntity } from '@/database/entity/permissions.entity';
 
 import { PermissionsRepository } from '../permissions/repositories/permissions.repository';
+import { DataSyncLogEntity } from '@/database/entity/data-sync-log.entity';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { PermissionsRepository } from '../permissions/repositories/permissions.r
       LocalizationEntity,
       PriceHistoryEntity,
       PermissionsEntity,
+      DataSyncLogEntity
     ]),
     HttpModule.register({
       timeout: 120000, // 2 minutes if the datasheet is a large file
@@ -38,9 +40,8 @@ import { PermissionsRepository } from '../permissions/repositories/permissions.r
     FileProcessorService,
     FileDownloaderService,
     XlsxToCsvConverterService,
-    DataSyncService,
     CsvProcessor,
-    CsvRowValidator,
+    CsvRowValidator
   ],
   controllers: [DataSyncController],
   exports: [],

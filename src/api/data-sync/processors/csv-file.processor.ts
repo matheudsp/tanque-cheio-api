@@ -13,6 +13,7 @@ import { EntityFactory } from '../repositories/entity.factory';
 import * as Papa from 'papaparse';
 import * as fs from 'fs';
 import * as path from 'path';
+import { DataSyncLogEntity } from '@/database/entity/data-sync-log.entity';
 
 @Injectable()
 export class CsvProcessor {
@@ -27,10 +28,22 @@ export class CsvProcessor {
     private productRepo: Repository<ProductEntity>,
     @InjectRepository(PriceHistoryEntity)
     private priceHistoryRepo: Repository<PriceHistoryEntity>,
+    @InjectRepository(DataSyncLogEntity)
+    private dataSyncLogRepo: Repository<DataSyncLogEntity>,
   ) {}
 
   async processFile(filePath: string): Promise<ProcessingResult> {
     const startTime = Date.now();
+    const logEntity = this.dataSyncLogRepo.create({
+      filename: path.basename(filePath),
+      log_data: {
+        status: 'iniciado',
+        start_time: new Date(),
+        file_path: filePath,
+      },
+    });
+    const savedLog = await this.dataSyncLogRepo.save(logEntity);
+
     const result: ProcessingResult = {
       totalProcessed: 0,
       totalInserted: 0,
@@ -49,18 +62,50 @@ export class CsvProcessor {
         `🧪Processando ${validRows.length} linhas válidas de ${rows.length}`,
       );
 
+      // update log with pogress
+      await this.updateLog(savedLog.id, {
+        ...savedLog.log_data,
+        status: 'processando',
+        total_rows: rows.length,
+        valid_rows: validRows.length,
+      });
+
       await this.processRowsInBatches(validRows, result);
 
       result.processingTimeSeconds = (Date.now() - startTime) / 1000;
+
+      // update final log
+      await this.updateLog(savedLog.id, {
+        ...savedLog.log_data,
+        status: 'finalizado',
+        end_time: new Date(),
+        result: result,
+      });
+
       return result;
     } catch (error) {
       this.logger.error('❌Processamento do arquivo falhou:', error);
       result.totalErrors++;
       result.errors.push({ row: -1, data: null, error: error.message });
+      // update log w errors
+      await this.updateLog(savedLog.id, {
+        ...savedLog.log_data,
+        status: 'erro',
+        end_time: new Date(),
+        error: error.message,
+        result: result,
+      });
       return result;
     }
   }
 
+  private async updateLog(logId: string, logData: any) {
+    try {
+      await this.dataSyncLogRepo.update(logId, { log_data: logData });
+    } catch (error) {
+      this.logger.warn('❌Erro ao atualizar log:', error);
+    }
+  }
   private readAndPreprocessFile(filePath: string): string {
     const fullPath = path.isAbsolute(filePath)
       ? filePath

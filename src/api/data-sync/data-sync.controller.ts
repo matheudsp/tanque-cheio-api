@@ -1,5 +1,17 @@
-import { Body, Controller, HttpStatus, Logger, Post, UseGuards } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  HttpStatus,
+  Logger,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 
 import { DataSyncService } from './data-sync.service';
 import { OpenApiResponses } from '@/common/decorators/openapi.decorator';
@@ -69,7 +81,7 @@ export class DataSyncController {
                 totalUpdated: { type: 'number' },
                 totalSkipped: { type: 'number' },
                 totalErrors: { type: 'number' },
-              }, 
+              },
             },
           },
         },
@@ -84,10 +96,6 @@ export class DataSyncController {
         body.url,
       );
       if (!downloadResult.success) {
-        // this.logger.warn(
-        //   'Falha no download ou conversão da planilha',
-        //   downloadResult.errors,
-        // );
         return responseBadRequest({
           error: 'Erro no download/conversão da planilha',
           message: `${downloadResult.errors}`,
@@ -130,8 +138,7 @@ export class DataSyncController {
         },
       });
     } catch (error) {
-      // this.logger.error('Erro no processamento da planilha:', error);
-      return responseBadRequest({ 
+      return responseBadRequest({
         error: 'Erro no processamento da planilha',
         message: error instanceof Error ? error.message : String(error),
       });

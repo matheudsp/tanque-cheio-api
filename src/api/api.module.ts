@@ -11,7 +11,6 @@ import { AuthModule } from './auth/auth.module';
 import { PermissionsModule } from './permissions/permissions.module';
 import { HasRolesModule } from './has-roles/has-roles.module';
 import { ResourcesModule } from './resources/resources.module';
-import { DataSyncLogModule } from './data-sync-log/data-sync-log.module';
 
 @Module({
   imports: [
@@ -27,7 +26,6 @@ import { DataSyncLogModule } from './data-sync-log/data-sync-log.module';
     PermissionsModule,
     HasRolesModule,
     ResourcesModule,
-    DataSyncLogModule,
   ],
   // controllers: [],
   providers: [],

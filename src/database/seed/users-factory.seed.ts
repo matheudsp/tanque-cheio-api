@@ -76,6 +76,13 @@ export const seedUsersFactory = async (db: DataSource) => {
       },
       {
         id: uuid(),
+        name: 'Localization Geocode',
+        path: 'localizations',
+        created_at: new Date(),
+        updated_at: new Date(),
+      },
+      {
+        id: uuid(),
         name: 'Has Roles Management',
         path: 'has-roles',
         created_at: new Date(),
@@ -127,8 +134,8 @@ export const seedUsersFactory = async (db: DataSource) => {
       },
       {
         id: uuid(),
-        name: 'Product',
-        path: 'product',
+        name: 'Product Management',
+        path: 'products',
         created_at: new Date(),
         updated_at: new Date(),
       }

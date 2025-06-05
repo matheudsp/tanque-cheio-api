@@ -13,11 +13,11 @@ import { CacheRequestInterceptor } from '@/common/interceptor/cache-request/cach
 import { OpenApiResponses } from '@/common/decorators/openapi.decorator';
 import { Response } from 'express';
 
-@ApiTags('Product')
+@ApiTags('Products')
 @ApiBearerAuth()
 @UseGuards(RoleGuard)
 @UseInterceptors(CacheRequestInterceptor)
-@Controller({ version: ['1'], path: 'product' })
+@Controller({ version: ['1'], path: 'products' })
 export class ProductController {
   constructor(private readonly productService: ProductService) {}
 

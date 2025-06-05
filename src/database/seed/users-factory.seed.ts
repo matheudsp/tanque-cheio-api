@@ -166,27 +166,27 @@ export const seedUsersFactory = async (db: DataSource) => {
       {
         id: uuid(),
         action: [Action.GET],
-        resource_id: resources[7].id, // Gas Stations
+        resource_id: resources[8].id, // Gas Stations
         role_id: roles[1].id, // guest role
       },
       {
         id: uuid(),
         action: [Action.GET],
-        resource_id: resources[8].id, // Price History
+        resource_id: resources[9].id, // Price History
         role_id: roles[1].id, // guest role
       },
       {
         id: uuid(),
         action: [Action.GET],
-        resource_id: resources[9].id, // Product
+        resource_id: resources[10].id, // Product
         role_id: roles[1].id, // guest role
       },
-      {
-        id: uuid(),
-        action: [Action.GET],
-        resource_id: resources[10].id, // Health
-        role_id: roles[1].id, // guest role
-      },
+      // {
+      //   id: uuid(),
+      //   action: [Action.GET],
+      //   resource_id: resources[11].id, // Health
+      //   role_id: roles[1].id, // guest role
+      // },
     ];
 
     try {

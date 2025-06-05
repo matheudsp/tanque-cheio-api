@@ -1,9 +1,6 @@
-import { LocalSignInDto, LocalSignInRolesDto } from './dtos/local.dto';
+import { LocalSignInDto } from './dtos/local.dto';
 import { compareHash, zodErrorParse } from '@/common/utils/lib';
-import {
-  localAuthSchema,
-  localAuthSchemaWithRole,
-} from './schemas/local.schema';
+import { localAuthSchema } from './schemas/local.schema';
 import {
   responseBadRequest,
   responseInternalServerError,
@@ -16,6 +13,7 @@ import { HasRoleRepository } from '@/api/has-roles/repositories/has-roles.reposi
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersRepository } from '@/api/users/repositories/users.repository';
+import { randomBytes } from 'crypto';
 
 @Injectable()
 export class LocalService {
@@ -28,64 +26,106 @@ export class LocalService {
   async localSignIn(data: LocalSignInDto) {
     try {
       const parsed = localAuthSchema.parse(data);
+      
       const user = await this.userRepo.findByEmail(parsed.email);
-      if (!user) return responseNotFound({ message: 'Usuário não encontrado' });
-      const hasRoles = (await this.hasRolesRepo.findByUserId(user.id)).map(
-        (value) => ({
-          id: value?.role?.id,
-          code: value?.role?.code,
-          name: value?.role?.name,
-        }),
-      );
+      if (!user) {
+        return responseNotFound({ message: 'Usuário não encontrado' });
+      }
+
       const isMatch = compareHash(parsed.password, user.password);
-      if (!isMatch)
+      if (!isMatch) {
         return responseBadRequest({ message: 'Credenciais inválidas' });
-      const payload = { user_id: user.id };
+      }
+
+      // Buscar roles do usuário
+      const userRole = await this.hasRolesRepo.findByUserId(user.id);
+      
+      const roleData = {
+        id: userRole?.role?.id,
+        code: userRole?.role?.code,
+        name: userRole?.role?.name,
+      };
+
+      // session ID único para prevenir session fixation
+      const sessionId = randomBytes(32).toString('hex');
+      
+      // Estruturação do payload JWT
+      const payload = { 
+        user_id: user.id, 
+        role_id: roleData.id,
+        session_id: sessionId,
+        iat: Math.floor(Date.now() / 1000)
+      };
+
       const accessToken = this.jwt.sign(payload, {
-        expiresIn: '24h', //3m
+        expiresIn: '8h', 
         secret: process.env.JWT_SECRET,
+        audience: 'api-client',
+        issuer: 'auth-service'
       });
+
       const { password, ...restUser } = user;
+
       return responseOk({
+        message: 'Login realizado com sucesso',
         data: {
           user: restUser,
-          has_roles: hasRoles,
+          role: roleData,
           access_token: accessToken,
+          expires_in: 28800, // 8 horas em segundos
         },
       });
+
     } catch (error) {
       const zodErr = zodErrorParse(error);
-      if (zodErr.isError) return responseBadRequest({ error: zodErr.errors });
+      if (zodErr.isError) {
+        return responseBadRequest({ error: zodErr.errors });
+      }
+      
+      console.error('Erro no login:', error);
+      
       return responseInternalServerError({
-        error: error.message || 'Erro do Servidor Interno',
+        error: 'Erro interno do servidor',
       });
     }
   }
 
-  async localSignInRole(data: LocalSignInRolesDto) {
+  async refreshToken(userId: string, currentSessionId: string) {
     try {
-      const parsed = localAuthSchemaWithRole.parse(data);
-      const [user, role] = await Promise.all([
-        this.userRepo.findById(parsed.user_id),
-        this.hasRolesRepo.findHasRoleUser(parsed.role_id, parsed.user_id),
-      ]);
-      if (!user || !role)
-        return responseUnauthorized({ message: 'Não autorizado' });
-      const payload = { user_id: user.id, role_id: role.role_id };
-      const accessToken = await this.jwt.signAsync(payload, {
-        expiresIn: '90d', //24h
+      const user = await this.userRepo.findById(userId);
+      if (!user) {
+        return responseUnauthorized({ message: 'Usuário não encontrado' });
+      }
+
+      const roleData = await this.hasRolesRepo.findByUserId(user.id);
+
+      const newSessionId = randomBytes(32).toString('hex');
+      
+      const payload = { 
+        user_id: user.id, 
+        role_id: roleData?.id,
+        session_id: newSessionId,
+        iat: Math.floor(Date.now() / 1000)
+      };
+
+      const accessToken = this.jwt.sign(payload, {
+        expiresIn: '8h',
         secret: process.env.JWT_SECRET,
+        audience: 'api-client',
+        issuer: 'auth-service'
       });
-      const { password, ...restUser } = user;
+
       return responseOk({
-        message: 'Sucesso no login',
-        data: { access_token: accessToken, user: restUser, role: role.role },
+        data: {
+          access_token: accessToken,
+          expires_in: 28800,
+        },
       });
+
     } catch (error) {
-      const zodErr = zodErrorParse(error);
-      if (zodErr.isError) return responseBadRequest({ error: zodErr.errors });
+      console.error('Erro no refresh token:', error);
       return responseInternalServerError({
-        error: error.message || 'Erro do Servidor Interno',
+        error: 'Erro interno do servidor',
       });
     }
   }

@@ -1,4 +1,7 @@
-import { HasRoleDto, HasRoleQueryDto } from '@/api/has-roles/dtos/has-roles.dto';
+import {
+  HasRoleDto,
+  HasRoleQueryDto,
+} from '@/api/has-roles/dtos/has-roles.dto';
 import {
   ResponseApi,
   responseBadRequest,
@@ -56,12 +59,15 @@ export class HasRolesService {
   async store(data: HasRoleDto): Promise<ResponseApi> {
     try {
       const parsed = hasRoleSchema.parse(data);
-      const checkDuplicate = await this.hasRoleRepo.findHasRoleUser(
-        parsed.role_id,
+      const existingUserRole = await this.hasRoleRepo.findByUserId(
         parsed.user_id,
       );
-      if (checkDuplicate)
-        return responseConflict({ message: 'Role already exists' });
+      if (existingUserRole) {
+        return responseConflict({
+          message: 'Role already exists. Only one role per user is allowed.',
+        });
+      }
+
       const newHasRole = await this.hasRoleRepo.store(parsed);
       return responseCreated({ data: newHasRole });
     } catch (error) {
@@ -76,14 +82,23 @@ export class HasRolesService {
   async update(id: string, data: HasRoleDto): Promise<ResponseApi> {
     try {
       const parsed = hasRoleSchema.parse(data);
-      const [existing, duplicate] = await Promise.all([
-        await this.hasRoleRepo.findById(id),
-        this.hasRoleRepo.findHasRoleUser(parsed.role_id, parsed.user_id),
-      ]);
+      const existing = await this.hasRoleRepo.findById(id);
+      if (!existing) {
+        return responseNotFound({ message: 'Role does not exist' });
+      }
+
       if (!existing)
         return responseNotFound({ message: 'Role does not exist' });
-      if (duplicate && duplicate.id !== existing.id)
-        return responseConflict({ message: 'Role already exist' });
+      
+      const existingUserRole = await this.hasRoleRepo.findByUserId(
+        parsed.user_id,
+      );
+      if (existingUserRole && existingUserRole.id !== existing.id) {
+        return responseConflict({
+          message:
+            'User already has a different role assigned. Only one role per user is allowed.',
+        });
+      }
       const updatedData = await this.hasRoleRepo.update(id, parsed);
       return responseOk({ data: updatedData, message: 'Updated successfully' });
     } catch (e) {

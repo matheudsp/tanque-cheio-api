@@ -3,6 +3,7 @@ import {
   CreateDateColumn,
   DeleteDateColumn,
   Entity,
+  Index,
   JoinColumn,
   ManyToOne,
   PrimaryColumn,
@@ -13,6 +14,7 @@ import { RolesEntity } from './roles.entity';
 import { UserEntity } from './user.entity';
 
 @Entity('has_roles')
+@Index('idx_unique_user_role', ['user_id'], { unique: true, where: 'deleted_at IS NULL' })
 export class HasRolesEntity {
   @PrimaryColumn({ length: 36 })
   id: string;

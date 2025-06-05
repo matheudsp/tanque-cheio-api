@@ -61,7 +61,7 @@ export class HasRoleRepository {
   }
 
   async findByUserId(user_id: string) {
-    return await this.repository.find({
+    return await this.repository.findOne({
       where: { user_id },
       relationLoadStrategy: 'join',
       relations: { role: true },

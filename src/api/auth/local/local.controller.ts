@@ -17,15 +17,5 @@ export class LocalController {
     res.status(r.statusCode).send(r);
   }
 
-  @Post('sign-in/role')
-  @ApiBearerAuth()
-  @ApiOperation({ summary: 'Local Sign In Role' })
-  @OpenApiResponses([200, 400, 404, 500])
-  async localSignInRole(
-    @Body() body: LocalSignInRolesDto,
-    @Res() res: Response,
-  ) {
-    const r = await this.service.localSignInRole(body);
-    res.status(r.statusCode).send(r);
-  }
+
 }

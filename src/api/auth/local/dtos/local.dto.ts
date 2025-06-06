@@ -14,4 +14,4 @@ export class LocalSignInRolesDto {
   user_id: string;
   @ApiProperty()
   role_id: string;
-}                                         
+}

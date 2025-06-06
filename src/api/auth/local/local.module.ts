@@ -7,12 +7,10 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserEntity } from '@/database/entity/user.entity';
 import { UsersRepository } from '@/api/users/repositories/users.repository';
-import { PermissionsRepository } from '@/api/permissions/repositories/permissions.repository';
-import { PermissionsEntity } from '@/database/entity/permissions.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([UserEntity, HasRolesEntity, PermissionsEntity])],
+  imports: [TypeOrmModule.forFeature([UserEntity, HasRolesEntity])],
   controllers: [LocalController],
-  providers: [LocalService, JwtService, UsersRepository, HasRoleRepository, PermissionsRepository],
+  providers: [LocalService, JwtService, UsersRepository, HasRoleRepository],
 })
 export class LocalModule {}

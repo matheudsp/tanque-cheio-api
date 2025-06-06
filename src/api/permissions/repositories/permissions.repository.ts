@@ -64,47 +64,6 @@ export class PermissionsRepository {
     return data;
   }
 
-  /**
-   * Verifica se um recurso existe no banco de dados pelo path
-   * Usado para determinar se uma rota é pública ou precisa de validação de permissões
-   */
-  async resourceExists(path: string): Promise<boolean> {
-    const normalize = (s: string) => s.replace(/^\/+|\/+$/g, '');
-    const normalizedPath = normalize(path.toLowerCase());
-    
-    const cacheKey = `resource:exists:${normalizedPath}`;
-    const cached = await this.cache.get<boolean>(cacheKey);
-    if (cached !== undefined && cached !== null) return cached;
-    
-    try {
-      // Busca todos os recursos únicos para verificar correspondência
-      const resources = await this.repository
-        .createQueryBuilder('permission')
-        .innerJoinAndSelect('permission.resource', 'resource')
-        .select(['resource.path'])
-        .distinct(true)
-        .getRawMany();
-
-      const exists = resources.some((resource) => {
-        const resourcePath = (resource.resource_path || '').toLowerCase();
-        const permNorm = normalize(resourcePath);
-        
-        // Verifica correspondência exata, hierárquica ou global
-        if (permNorm === '*') return true; // Recurso global
-        if (permNorm === normalizedPath) return true; // Correspondência exata
-        if (normalizedPath.startsWith(permNorm + '/')) return true; // Hierarquia
-        
-        const segments = normalizedPath.split('/');
-        return segments.includes(permNorm); // Segmento específico
-      });
-      
-      await this.cache.set(cacheKey, exists, seconds(60));
-      return exists;
-    } catch (error) {
-      console.error('Erro ao verificar existência do recurso:', error);
-      return false;
-    }
-  }
 
   async store(data: PermissionsCreateSchema) {
     return this.repository.save(

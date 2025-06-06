@@ -13,7 +13,6 @@ import { HasRoleRepository } from '@/api/has-roles/repositories/has-roles.reposi
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersRepository } from '@/api/users/repositories/users.repository';
-import { randomBytes } from 'crypto';
 
 @Injectable()
 export class LocalService {
@@ -34,26 +33,22 @@ export class LocalService {
 
       const isMatch = compareHash(parsed.password, user.password);
       if (!isMatch) {
-        return responseBadRequest({ message: 'Credenciais inválidas' });
+        return responseUnauthorized({ message: 'Credenciais inválidas' });
       }
 
       // Buscar roles do usuário
       const userRole = await this.hasRolesRepo.findByUserId(user.id);
       
       const roleData = {
-        id: userRole?.role?.id,
-        code: userRole?.role?.code,
-        name: userRole?.role?.name,
+        id: userRole?.role?.id || null,
+        code: userRole?.role?.code || null,
+        name: userRole?.role?.name || null,
       };
 
-      // session ID único para prevenir session fixation
-      const sessionId = randomBytes(32).toString('hex');
-      
       // Estruturação do payload JWT
       const payload = { 
         user_id: user.id, 
         role_id: roleData.id,
-        session_id: sessionId,
         iat: Math.floor(Date.now() / 1000)
       };
 
@@ -90,21 +85,24 @@ export class LocalService {
     }
   }
 
-  async refreshToken(userId: string, currentSessionId: string) {
+  async refreshToken(userId: string) {
     try {
       const user = await this.userRepo.findById(userId);
       if (!user) {
         return responseUnauthorized({ message: 'Usuário não encontrado' });
       }
 
-      const roleData = await this.hasRolesRepo.findByUserId(user.id);
-
-      const newSessionId = randomBytes(32).toString('hex');
+      const userRole = await this.hasRolesRepo.findByUserId(user.id);
       
+      const roleData = {
+        id: userRole?.role?.id || null,
+        code: userRole?.role?.code || null,
+        name: userRole?.role?.name || null,
+      };
+
       const payload = { 
         user_id: user.id, 
-        role_id: roleData?.id,
-        session_id: newSessionId,
+        role_id: roleData.id,
         iat: Math.floor(Date.now() / 1000)
       };
 
@@ -116,6 +114,7 @@ export class LocalService {
       });
 
       return responseOk({
+        message: 'Token renovado com sucesso',
         data: {
           access_token: accessToken,
           expires_in: 28800,

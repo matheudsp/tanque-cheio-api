@@ -1,9 +1,8 @@
 export interface JwtPayload {
   user_id: string;
-  role_id: string;
-  session_id: string; 
+  role_id: string | null;
   iat: number; // issued at
-  exp: number; // expiratiom
+  exp: number; // expiration
   aud: string; // audience
-  iss: string; // issue
+  iss: string; // issuer
 }

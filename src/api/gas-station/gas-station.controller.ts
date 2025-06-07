@@ -24,7 +24,6 @@ import { AuthGuard } from '@/common/guards/auth/auth.guard';
 @ApiTags('Gas Stations')
 @ApiBearerAuth()
 @UseGuards(RoleGuard)
-@UseGuards(AuthGuard)
 @UseInterceptors(CacheRequestInterceptor)
 @Controller({ version: ['1'], path: 'gas-stations' })
 export class GasStationController {

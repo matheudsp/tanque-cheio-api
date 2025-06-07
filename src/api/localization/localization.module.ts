@@ -8,18 +8,39 @@ import { LocalizationController } from './localization.controller';
 import { ConfigService } from '@nestjs/config';
 import { PermissionsRepository } from '../permissions/repositories/permissions.repository';
 import { PermissionsEntity } from '@/database/entity/permissions.entity';
-import { AuthGuard } from '@/common/guards/auth/auth.guard';
+import { JwtGuardService } from '@/common/services/jwt-auth/jwt-guard.service';
+import { PermissionsService } from '../permissions/permissions.service';
+import { ResourceRepository } from '../resources/repositories/resources.repository';
+import { RolesRepository } from '../roles/repositories/roles.repository';
+import { RolesEntity } from '@/database/entity/roles.entity';
+import { ResourceEntity } from '@/database/entity/resources.entity';
+import { CacheRequestService } from '@/common/services/cache-request/cache-request.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([LocalizationEntity, PermissionsEntity]),
+    TypeOrmModule.forFeature([
+      LocalizationEntity,
+      PermissionsEntity,
+      RolesEntity,
+      ResourceEntity,
+    ]),
     HttpModule.register({
       timeout: 10000, // 10 segundos de timeout
       maxRedirects: 5,
     }),
   ],
   controllers: [LocalizationController],
-  providers: [LocalizationService, LocalizationRepository, ConfigService, PermissionsRepository,AuthGuard],
+  providers: [
+    LocalizationService,
+    LocalizationRepository,
+    ConfigService,
+    CacheRequestService,
+    PermissionsRepository,
+    JwtGuardService,
+    PermissionsService,
+    ResourceRepository,
+    RolesRepository,
+  ],
   exports: [LocalizationRepository, LocalizationService],
 })
 export class LocalizationModule {}

@@ -11,6 +11,7 @@ import { ResourceRepository } from '../resources/repositories/resources.reposito
 import { RolesEntity } from '@/database/entity/roles.entity';
 import { RolesRepository } from '../roles/repositories/roles.repository';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { JwtGuardService } from '@/common/services/jwt-auth/jwt-guard.service';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
     PermissionsRepository,
     RolesRepository,
     ResourceRepository,
+    JwtGuardService,PermissionsService,ResourceRepository,RolesRepository
   ],
 })
 export class PermissionsModule {}

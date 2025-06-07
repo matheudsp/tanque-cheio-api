@@ -16,6 +16,13 @@ import { PermissionsEntity } from '@/database/entity/permissions.entity';
 
 import { PermissionsRepository } from '../permissions/repositories/permissions.repository';
 import { DataSyncLogEntity } from '@/database/entity/data-sync-log.entity';
+import { JwtGuardService } from '@/common/services/jwt-auth/jwt-guard.service';
+import { PermissionsService } from '../permissions/permissions.service';
+import { ResourceRepository } from '../resources/repositories/resources.repository';
+import { RolesRepository } from '../roles/repositories/roles.repository';
+import { CacheRequestService } from '@/common/services/cache-request/cache-request.service';
+import { ResourceEntity } from '@/database/entity/resources.entity';
+import { RolesEntity } from '@/database/entity/roles.entity';
 
 @Module({
   imports: [
@@ -25,7 +32,8 @@ import { DataSyncLogEntity } from '@/database/entity/data-sync-log.entity';
       LocalizationEntity,
       PriceHistoryEntity,
       PermissionsEntity,
-      DataSyncLogEntity
+      DataSyncLogEntity,
+      ResourceEntity,RolesEntity
     ]),
     HttpModule.register({
       timeout: 120000, // 2 minutes if the datasheet is a large file
@@ -41,7 +49,9 @@ import { DataSyncLogEntity } from '@/database/entity/data-sync-log.entity';
     FileDownloaderService,
     XlsxToCsvConverterService,
     CsvProcessor,
-    CsvRowValidator
+    CsvRowValidator,
+    CacheRequestService,
+    JwtGuardService,PermissionsService,ResourceRepository,RolesRepository
   ],
   controllers: [DataSyncController],
   exports: [],

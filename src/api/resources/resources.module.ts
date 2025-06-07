@@ -8,9 +8,13 @@ import { ResourceRepository } from './repositories/resources.repository';
 import { ResourcesController } from './resources.controller';
 import { ResourcesService } from './resources.service';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { JwtGuardService } from '@/common/services/jwt-auth/jwt-guard.service';
+import { PermissionsService } from '../permissions/permissions.service';
+import { RolesRepository } from '../roles/repositories/roles.repository';
+import { RolesEntity } from '@/database/entity/roles.entity';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([ResourceEntity, PermissionsEntity])],
+  imports: [TypeOrmModule.forFeature([ResourceEntity, PermissionsEntity, RolesEntity, ResourceEntity])],
   controllers: [ResourcesController],
   providers: [
     JwtService,
@@ -18,6 +22,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
     ResourcesService,
     ResourceRepository,
     PermissionsRepository,
+    JwtGuardService,PermissionsService,ResourceRepository,RolesRepository
   ],
 })
 export class ResourcesModule {}

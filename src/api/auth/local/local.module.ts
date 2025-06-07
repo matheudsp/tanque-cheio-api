@@ -7,11 +7,12 @@ import { Module } from '@nestjs/common';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserEntity } from '@/database/entity/user.entity';
 import { UsersRepository } from '@/api/users/repositories/users.repository';
-import { AuthGuard } from '@/common/guards/auth/auth.guard';
+import { JwtGuardService } from '@/common/services/jwt-auth/jwt-guard.service';
+
 
 @Module({
   imports: [TypeOrmModule.forFeature([UserEntity, HasRolesEntity])],
   controllers: [LocalController],
-  providers: [LocalService, JwtService, UsersRepository, HasRoleRepository, AuthGuard],
+  providers: [LocalService, JwtService, UsersRepository, HasRoleRepository, JwtGuardService],
 })
 export class LocalModule {}

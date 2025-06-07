@@ -16,6 +16,12 @@ import { ProductRepository } from '../product/repositories/product.repository';
 import { LocalizationRepository } from '../localization/repositories/localization.repository';
 import { PriceHistoryService } from '../price-history/price-history.service';
 import { AuthGuard } from '@/common/guards/auth/auth.guard';
+import { JwtGuardService } from '@/common/services/jwt-auth/jwt-guard.service';
+import { PermissionsService } from '../permissions/permissions.service';
+import { RolesRepository } from '../roles/repositories/roles.repository';
+import { RolesEntity } from '@/database/entity/roles.entity';
+import { ResourceRepository } from '../resources/repositories/resources.repository';
+import { ResourceEntity } from '@/database/entity/resources.entity';
 
 @Module({
   imports: [
@@ -25,19 +31,24 @@ import { AuthGuard } from '@/common/guards/auth/auth.guard';
       ProductEntity,
       LocalizationEntity,
       PermissionsEntity,
+      RolesEntity,
+      ResourceEntity
     ]),
   ],
   controllers: [GasStationController],
   providers: [
+    ResourceRepository,
     GasStationService,
     JwtService,
     CacheRequestService,
     PermissionsRepository,
+    RolesRepository,
     GasStationRepository,
     PriceHistoryRepository,
     ProductRepository,
     LocalizationRepository,
-    AuthGuard,
+    JwtGuardService,
+    PermissionsService,
   ],
   exports: [GasStationService, GasStationRepository],
 })

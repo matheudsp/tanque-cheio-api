@@ -8,6 +8,7 @@ import { LocalizationController } from './localization.controller';
 import { ConfigService } from '@nestjs/config';
 import { PermissionsRepository } from '../permissions/repositories/permissions.repository';
 import { PermissionsEntity } from '@/database/entity/permissions.entity';
+import { AuthGuard } from '@/common/guards/auth/auth.guard';
 
 @Module({
   imports: [
@@ -18,7 +19,7 @@ import { PermissionsEntity } from '@/database/entity/permissions.entity';
     }),
   ],
   controllers: [LocalizationController],
-  providers: [LocalizationService, LocalizationRepository, ConfigService, PermissionsRepository],
+  providers: [LocalizationService, LocalizationRepository, ConfigService, PermissionsRepository,AuthGuard],
   exports: [LocalizationRepository, LocalizationService],
 })
 export class LocalizationModule {}

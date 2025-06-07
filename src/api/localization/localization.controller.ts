@@ -12,6 +12,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { RoleGuard } from '@/common/guards/role/role.guard';
 import { OpenApiResponses } from '@/common/decorators/openapi.decorator';
 import { Response } from 'express';
+import { AuthGuard } from '@/common/guards/auth/auth.guard';
 
 class GeocodeBatchDto {
   ids: string[];
@@ -20,6 +21,7 @@ class GeocodeBatchDto {
 @ApiBearerAuth()
 @Controller({ version: ['1'], path: 'localizations' })
 @UseGuards(RoleGuard)
+@UseGuards(AuthGuard)
 export class LocalizationController {
   constructor(private readonly localizationService: LocalizationService) {}
 

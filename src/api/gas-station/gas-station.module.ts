@@ -15,6 +15,7 @@ import { PriceHistoryRepository } from '../price-history/repositories/price-hist
 import { ProductRepository } from '../product/repositories/product.repository';
 import { LocalizationRepository } from '../localization/repositories/localization.repository';
 import { PriceHistoryService } from '../price-history/price-history.service';
+import { AuthGuard } from '@/common/guards/auth/auth.guard';
 
 @Module({
   imports: [
@@ -36,7 +37,7 @@ import { PriceHistoryService } from '../price-history/price-history.service';
     PriceHistoryRepository,
     ProductRepository,
     LocalizationRepository,
-
+    AuthGuard,
   ],
   exports: [GasStationService, GasStationRepository],
 })

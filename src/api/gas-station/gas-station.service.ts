@@ -82,44 +82,5 @@ export class GasStationService {
     }
   }
 
-  /**
-   * Obtém histórico de preços de um produto de um posto específico
-   */
-  // async getStationPriceHistory(stationId: string, produto?: string, limit = 50) {
-  //   try {
-  //     const key = this.cache.getCacheKey();
 
-  //     let data = await this.cacheManager.get(key);
-  //     if (data) return responseOk({ data });
-
-  //     // Verificar se o posto existe
-  //     const station = await this.repo.findById(stationId);
-  //     if (!station) {
-  //       return responseNotFound({ message: 'Gas station not found' });
-  //     }
-
-  //     // Buscar histórico de preços
-  //     const priceHistory = await this.priceHistoryRepo.getPriceHistory(
-  //       stationId,
-  //       produto,
-  //       limit
-  //     );
-
-  //     const result= {
-  //       stationId,
-  //       results: priceHistory,
-  //       total: priceHistory.length,
-  //       limit,
-  //       filters: {
-  //         produto,
-  //       },
-  //     };
-
-  //     await this.cacheManager.set(key, result, seconds(600)); // 5 minutos
-  //     return responseOk({ data: result });
-  //   } catch (error) {
-  //     this.logger.error('Error getting price history:', error);
-  //     return getErrorResponse(error);
-  //   }
-  // }
 }

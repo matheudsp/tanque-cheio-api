@@ -18,7 +18,6 @@ import {
   GasStationQueryDto,
   NearbyStationsQueryDto,
 } from './dtos/gas-station.dto';
-import { AuthGuard } from '@/common/guards/auth/auth.guard';
 
 
 @ApiTags('Gas Stations')

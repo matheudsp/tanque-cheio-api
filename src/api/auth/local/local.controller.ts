@@ -6,6 +6,7 @@ import { Response, Request } from 'express';
 import { OpenApiResponses } from '@/common/decorators/openapi.decorator';
 import { AuthGuard } from '@/common/guards/auth/auth.guard';
 
+
 @ApiTags('Auth - Local')
 @Controller('auth/local')
 export class LocalController {
@@ -20,6 +21,7 @@ export class LocalController {
   }
 
   @Post('refresh-token')
+  @UseGuards(AuthGuard)
   @ApiOperation({ summary: 'Refresh Access Token' })
   @OpenApiResponses([200, 401, 500])
   async refreshToken(@Body() body: RefreshTokenDto, @Res() res: Response) {

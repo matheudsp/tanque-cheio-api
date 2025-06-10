@@ -1,15 +1,22 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { GasStationEntity } from '@/database/entity/gas-station.entity';
-import type { SearchGasStationsQuerySchema } from '../schemas/gas-station.schema';
-import { DataUtils } from '@/api/data-sync/utils/data-utils';
+import {
+  SearchGasStationsQuerySchema,
+  type GetNearbyStationsSchema,
+} from '../schemas/gas-station.schema';
+import { PriceHistoryRepository } from '@/api/price-history/repositories/price-history.repository';
+import type { NearbyParams } from '../interfaces/gas-station.interface';
 
 @Injectable()
 export class GasStationRepository {
+  private readonly logger = new Logger(GasStationRepository.name);
+
   constructor(
     @InjectRepository(GasStationEntity)
     private readonly repo: Repository<GasStationEntity>,
+    private readonly priceHistoryRepo: PriceHistoryRepository,
   ) {}
 
   async filter(filters: SearchGasStationsQuerySchema) {
@@ -28,8 +35,6 @@ export class GasStationRepository {
         'gs.isActive',
         'loc.city',
         'loc.state',
-        'loc.latitude',
-        'loc.longitude',
       ]);
 
     if (filters.city) {
@@ -76,14 +81,99 @@ export class GasStationRepository {
         'gs.legal_name',
         'gs.trade_name',
         'gs.brand',
-        // 'gs.isActive',
         'loc.city',
         'loc.state',
-        'loc.latitude',
-        'loc.longitude',
       ])
       .getOne();
   }
 
+  async nearby(params: GetNearbyStationsSchema) {
+  const { lat, lng, radius, limit, offset, product } = params;
 
+  const radiusInMeters = radius * 1000;
+
+  const qb = this.repo
+    .createQueryBuilder('gs')
+    .innerJoin('gs.localization', 'loc')            // uso de inner join para não trazer postos sem localização
+    .leftJoin('gs.priceHistory', 'hp')
+    .leftJoin('hp.product', 'prod')
+    .select([
+      'gs.id',
+      'gs.taxId',
+      'gs.legal_name',
+      'gs.trade_name',
+      'gs.brand',
+      'loc.city',
+      'loc.state',
+    ])
+    // calculate distance
+    .addSelect(`
+      ST_Distance(
+        loc.coordinates::geography,
+        ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography
+      )
+    `, 'distance')
+    
+    .where('gs.isActive = :isActive', { isActive: true })
+    // filter in radius distance
+    .andWhere(`
+      ST_DWithin(
+        loc.coordinates::geography,
+        ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography,
+        :radiusInMeters
+      )
+    `)
+
+    .andWhere(product
+      ? `UPPER(prod.name) ILIKE UPPER(:product)`
+      : '1=1',
+      product ? { product: `%${product}%` } : {}
+    )
+
+    .groupBy(`
+      gs.id,
+      gs.taxId,
+      gs.legal_name,
+      gs.trade_name,
+      gs.brand,
+      loc.city,
+      loc.state,
+      loc.coordinates
+    `)
+
+    .setParameters({ lat, lng, radiusInMeters });
+
+  const total = await qb.getCount();
+
+  // pagina e ordena por distância
+  const rawResults = await qb
+    .orderBy('distance', 'ASC')
+    .limit(limit)
+    .offset(offset)
+    .getRawMany();   
+
+  
+  const results = rawResults.map(r => ({
+    id:        r.gs_id,
+    taxId:     r.gs_taxId,
+    legal_name:r.gs_legal_name,
+    trade_name:r.gs_trade_name,
+    brand:     r.gs_brand,
+    localization: {
+      city:  r.loc_city,
+      state: r.loc_state,
+    },
+    distance: (Number(r.distance) / 1000).toFixed(1),
+  }));
+
+  return {
+    results,
+    total,
+    limit,
+    offset,
+    geo:    { lat, lng },
+    radius,
+    sortBy: params.sortBy,
+  };
+}
 }

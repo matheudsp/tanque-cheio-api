@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { LocalizationEntity } from '@/database/entity/localization.entity';
+import { LocalizationCreateSchema } from '../schemas/localization.schema';
 
 @Injectable()
 export class LocalizationRepository {
@@ -9,6 +10,17 @@ export class LocalizationRepository {
     @InjectRepository(LocalizationEntity)
     private readonly repo: Repository<LocalizationEntity>,
   ) {}
+
+  async update(id:string, data: LocalizationCreateSchema){
+    return this.repo.update(id,{
+      city: data.city,
+      complement: data.complement,
+      zipCode: data.zipCode,
+      state:data.state,
+      address: data.address,
+      // geom: data.geom 
+    })
+  }
 
   async findAll(): Promise<LocalizationEntity[] | null> {
     return this.repo.find({
@@ -31,7 +43,7 @@ export class LocalizationRepository {
 
   async findWithoutCoordinates(): Promise<LocalizationEntity[]> {
     return this.repo.find({
-      where: [{ latitude: undefined }, { longitude: undefined }],
+      // where: [{ latitude: undefined }, { longitude: undefined }],
       order: { state: 'ASC', city: 'ASC' },
     });
   }
@@ -42,8 +54,8 @@ export class LocalizationRepository {
     longitude: number,
   ): Promise<void> {
     await this.repo.update(id, {
-      latitude,
-      longitude,
+      // latitude,
+      // longitude,
     });
   }
 
@@ -56,8 +68,8 @@ export class LocalizationRepository {
     await this.repo.manager.transaction(async (manager) => {
       for (const update of updates) {
         await manager.update(LocalizationEntity, update.id, {
-          latitude: update.latitude,
-          longitude: update.longitude,
+          // latitude: update.latitude,
+          // longitude: update.longitude,
         });
       }
     });
@@ -65,7 +77,7 @@ export class LocalizationRepository {
 
   async countWithoutCoordinates(): Promise<number> {
     return this.repo.count({
-      where: [{ latitude: undefined }, { longitude: undefined }],
+      // where: [{ latitude: undefined }, { longitude: undefined }],
     });
   }
 

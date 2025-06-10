@@ -34,142 +34,71 @@ const searchGasStationsQuerySchema = z.object({
 
 // Schema para busca por proximidade
 const getNearbyStationsSchema = z.object({
-  latitude: z
-    .number()
+  lat: z
+    .coerce.number()
     .min(-90, 'Latitude deve estar entre -90 e 90')
-    .max(90, 'Latitude deve estar entre -90 e 90'),
-  longitude: z
-    .number()
+    .max(90, 'Latitude deve estar entre -90 e 90')
+    .refine((val) => !isNaN(val), 'Latitude deve ser um número válido'),
+  lng: z
+    .coerce.number()
     .min(-180, 'Longitude deve estar entre -180 e 180')
-    .max(180, 'Longitude deve estar entre -180 e 180'),
+    .max(180, 'Longitude deve estar entre -180 e 180')
+    .refine((val) => !isNaN(val), 'Longitude deve ser um número válido'),
   radius: z
-    .number()
-    .min(0.1, 'Raio deve ser pelo menos 0.1km')
-    .max(100, 'Raio não pode ser maior que 100km')
+    .coerce.number()
+    .int('Raio deve ser um número inteiro')
+    .min(1, 'Raio deve ser pelo menos 1 km')
+    .max(250, 'Raio não pode ser maior que 50 km'),
+  product: z
+    .string()
+    .min(2, 'Produto deve ter pelo menos 2 caracteres')
+    .max(100, 'Produto deve ter no máximo 100 caracteres')
+    .optional()
+    .transform((val) => val?.trim()),
+  sortBy: z
+    .enum(['distanceAsc','distanceDesc', 'priceAsc', 'priceDesc'])
+    .default('distanceAsc')
+    .optional(),
+  limit: z
+    .coerce.number()
+    .int('Limite deve ser um número inteiro')
+    .min(1, 'Limite deve ser pelo menos 1')
+    .max(10, 'Limite não pode ser maior que 10 para busca por proximidade')
     .default(10)
     .optional(),
-  product: z
-    .string()
-    .min(2, 'Produto deve ter pelo menos 2 caracteres')
-    .max(100, 'Produto deve ter no máximo 100 caracteres')
-    .optional(),
-  limit: z
-    .number()
-    .int('Limite deve ser um número inteiro')
-    .min(1, 'Limite deve ser pelo menos 1')
-    .max(100, 'Limite não pode ser maior que 100 para busca por proximidade')
-    .default(20)
-    .optional(),
-});
-
-// Schema para histórico de preços
-const getPriceHistorySchema = z.object({
-  stationId: z.string().uuid('ID do posto deve ser um UUID válido'),
-  product: z
-    .string()
-    .min(2, 'Produto deve ter pelo menos 2 caracteres')
-    .max(100, 'Produto deve ter no máximo 100 caracteres')
-    .optional(),
-  limit: z
-    .number()
-    .int('Limite deve ser um número inteiro')
-    .min(1, 'Limite deve ser pelo menos 1')
-    .max(500, 'Limite não pode ser maior que 500')
-    .default(50)
-    .optional(),
-  startDate: z
-    .string()
-    .datetime('Data de início deve estar no formato ISO')
-    .optional(),
-  endDate: z
-    .string()
-    .datetime('Data de fim deve estar no formato ISO')
-    .optional(),
-});
-
-// Schema para busca por ID
-const getStationByIdSchema = z.object({
-  id: z.string().uuid('ID deve ser um UUID válido'),
-});
-
-// Schema para download de planilha
-const downloadSpreadsheetSchema = z.object({
-  url: z.string().url('URL deve ser válida'),
-});
-
-// Schema para filtros avançados
-const advancedSearchSchema = z.object({
-  state: z
-    .string()
-    .min(2, 'UF deve ter pelo menos 2 caracteres')
-    .max(100, 'UF deve ter no máximo 100 caracteres')
-    .optional(),
-  city: z
-    .string()
-    .min(2, 'Município deve ter pelo menos 2 caracteres')
-    .max(100, 'Município deve ter no máximo 100 caracteres')
-    .optional(),
-  product: z
-    .string()
-    .min(2, 'Produto deve ter pelo menos 2 caracteres')
-    .max(100, 'Produto deve ter no máximo 100 caracteres')
-    .optional(),
-  brand: z
-    .string()
-    .min(2, 'Bandeira deve ter pelo menos 2 caracteres')
-    .max(100, 'Bandeira deve ter no máximo 100 caracteres')
-    .optional(),
-  orderBy: z
-    .enum(['name_asc', 'name_desc', 'price_asc', 'price_desc', 'date_desc'])
-    .default('name_asc')
-    .optional(),
-  priceMin: z
-    .number()
-    .min(0, 'Preço mínimo deve ser maior que 0')
-    .optional(),
-  priceMax: z
-    .number()
-    .min(0, 'Preço máximo deve ser maior que 0')
-    .optional(),
-  hasCurrentPrice: z.boolean().optional(),
-  limit: z
-    .number()
-    .int('Limite deve ser um número inteiro')
-    .min(1, 'Limite deve ser pelo menos 1')
-    .max(1000, 'Limite não pode ser maior que 1000')
-    .default(50)
-    .optional(),
   offset: z
-    .number()
+    .coerce.number()
     .int('Offset deve ser um número inteiro')
     .min(0, 'Offset deve ser pelo menos 0')
     .default(0)
     .optional(),
 });
 
-// Tipos TypeScript inferidos dos schemas
+
+// Schema para busca por ID
+const getStationByIdSchema = z.object({
+  id: z.string().uuid('ID deve ser um UUID válido'),
+});
+
+
+
 type SearchGasStationsQuerySchema = z.infer<typeof searchGasStationsQuerySchema>;
 type GetNearbyStationsSchema = z.infer<typeof getNearbyStationsSchema>;
-type GetPriceHistorySchema = z.infer<typeof getPriceHistorySchema>;
 type GetStationByIdSchema = z.infer<typeof getStationByIdSchema>;
-type DownloadSpreadsheetSchema = z.infer<typeof downloadSpreadsheetSchema>;
-type AdvancedSearchSchema = z.infer<typeof advancedSearchSchema>;
+
+
 
 // Exports
 export {
   searchGasStationsQuerySchema,
   getNearbyStationsSchema,
-  getPriceHistorySchema,
   getStationByIdSchema,
-  downloadSpreadsheetSchema,
-  advancedSearchSchema,
+
 };
 
 export type {
   SearchGasStationsQuerySchema,
   GetNearbyStationsSchema,
-  GetPriceHistorySchema,
+
   GetStationByIdSchema,
-  DownloadSpreadsheetSchema,
-  AdvancedSearchSchema,
 };

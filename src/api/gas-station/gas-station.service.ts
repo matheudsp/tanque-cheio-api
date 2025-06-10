@@ -7,17 +7,20 @@ import {
   responseOk,
   responseNotFound,
   responseInternalServerError,
+  responseBadRequest,
 } from '@/common/utils/response-api';
 import { getErrorResponse } from '@/common/utils/lib';
 import { CacheRequestService } from '@/common/services/cache-request/cache-request.service';
 
 import {
+  getNearbyStationsSchema,
   searchGasStationsQuerySchema,
   SearchGasStationsQuerySchema,
+  type GetNearbyStationsSchema,
 } from './schemas/gas-station.schema';
 import {
   SearchResult,
-  StationWithDistance,
+  type NearbyParams,
 } from './interfaces/gas-station.interface';
 import { GasStationRepository } from './repositories/gas-station.repository';
 import { PriceHistoryRepository } from '../price-history/repositories/price-history.repository';
@@ -82,5 +85,28 @@ export class GasStationService {
     }
   }
 
+  async findNearby(params: GetNearbyStationsSchema) {
+  try {
+    const parsed = getNearbyStationsSchema.parse(params);
+    
+    // const key = this.cache.getCacheKey();
+    // let cached = await this.cacheManager.get(key);
 
+    // if (cached) {
+    //   return responseOk({ data: cached });
+    // }
+
+
+     const result = await this.repo.nearby(parsed);
+    
+    // await this.cacheManager.set(key, nearbyResult, seconds(600));
+
+    return responseOk({ data: result });
+  } catch (e) {
+    this.logger.error('Error finding nearby stations:', e);
+    return getErrorResponse(e);
+  }
+}
+
+  
 }

@@ -4,11 +4,13 @@ import { ConfigService } from '@nestjs/config';
 import { firstValueFrom } from 'rxjs';
 import { LocalizationRepository } from './repositories/localization.repository';
 import { LocalizationEntity } from '@/database/entity/localization.entity';
-import { responseOk } from '@/common/utils/response-api';
+import { responseBadRequest, responseInternalServerError, responseOk } from '@/common/utils/response-api';
 import {
   GeocodingResponse,
   GeocodingResult,
 } from './interfaces/geocoding.interface';
+import { localizationCreateSchema, LocalizationCreateSchema } from './schemas/localization.schema';
+import { zodErrorParse } from '@/common/utils/lib';
 
 @Injectable()
 export class LocalizationService {
@@ -27,6 +29,20 @@ export class LocalizationService {
       throw new Error(
         'GOOGLE_MAPS_API_KEY não está definida nas variáveis de ambiente',
       );
+    }
+  }
+  async update(id:string, data: LocalizationCreateSchema){
+ try {
+      const parsed = localizationCreateSchema.parse(data);
+      
+      const updated = await this.localizationRepository.update(id, parsed);
+      return responseOk({ data: updated });
+    } catch (error) {
+      const zodErr = zodErrorParse(error);
+      if (zodErr.isError) return responseBadRequest({ error: zodErr.errors });
+      return responseInternalServerError({
+        message: error.message || 'Internal Server Error',
+      });
     }
   }
 

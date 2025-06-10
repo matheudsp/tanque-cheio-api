@@ -6,14 +6,15 @@ import {
   UpdateDateColumn,
   Index,
   OneToMany,
-  ManyToOne,
-  JoinColumn,
+  type Point,
 } from 'typeorm';
 import { GasStationEntity } from './gas-station.entity';
+
 @Entity('localization')
 @Index(['state', 'city'])
 @Index(['zipCode'])
-@Index(['state', 'city', 'address']) // Para busca otimizada
+
+@Index(['state', 'city', 'address'])
 export class LocalizationEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -37,14 +38,17 @@ export class LocalizationEntity {
   neighborhood?: string | null;
 
   @Column({ type: 'varchar', length: 10, nullable: true })
-  zipCode?: string | null; // Formato: 12345-678
+  zipCode?: string | null;
 
-  @Column({ type: 'decimal', precision: 11, scale: 8, nullable: true })
-  latitude?: number | null;
-
-  @Column({ type: 'decimal', precision: 11, scale: 8, nullable: true })
-  longitude?: number | null;
-
+  // Nova coluna para PostGIS
+    @Column({
+    type: 'geography',
+    spatialFeatureType: 'Point',
+    srid: 4326, // Padrão para coordenadas geográficas (WGS 84)
+    nullable: true,
+  })
+  coordinates: Point;
+  
   @CreateDateColumn()
   createdAt: Date;
 
@@ -68,35 +72,7 @@ export class LocalizationEntity {
     return parts.join('|');
   }
 
-  isSimilarTo(other: LocalizationEntity): boolean {
-    const normalize = (str?: string) => str?.trim().toUpperCase() || '';
-
-    // Verifica se UF e município são iguais (obrigatório)
-    if (
-      normalize(this.state) !== normalize(other.state) ||
-      normalize(this.city) !== normalize(other.city)
-    ) {
-      return false;
-    }
-
-    // Se ambos têm endereço, compara endereços
-    if (this.address && other.address) {
-      const enderecoSimilar =
-        normalize(this.address) === normalize(other.address);
-      const numeroSimilar =
-        normalize(this.number!) === normalize(other.number!);
-      const cepSimilar = this.normalizeCep() === other.normalizeCep();
-
-      return enderecoSimilar && (numeroSimilar || cepSimilar);
-    }
-
-    // Se pelo menos um tem CEP, compara CEPs
-    if (this.zipCode || other.zipCode) {
-      return this.normalizeCep() === other.normalizeCep();
-    }
-
-    return false;
-  }
+  
 
   getFullAddress(): string {
     const parts = [
@@ -116,15 +92,4 @@ export class LocalizationEntity {
     return this.zipCode?.replace(/[^\d]/g, '') || '';
   }
 
-  static normalizeUf(uf: string): string {
-    return uf?.trim().toUpperCase() || '';
-  }
-
-  static normalizeMunicipio(municipio: string): string {
-    return municipio?.trim().toUpperCase() || '';
-  }
-
-  isValid(): boolean {
-    return !!(this.state?.trim() && this.city?.trim());
-  }
 }

@@ -18,7 +18,7 @@ import {
   GasStationQueryDto,
   NearbyStationsQueryDto,
 } from './dtos/gas-station.dto';
-
+import type { GetNearbyStationsSchema } from './schemas/gas-station.schema';
 
 @ApiTags('Gas Stations')
 @ApiBearerAuth()
@@ -39,7 +39,7 @@ export class GasStationController {
     const result = await this.service.search(query);
     res.status(result.statusCode).send(result);
   }
- 
+
   @Get(':stationId')
   @ApiOperation({
     summary: 'Get Station by ID',
@@ -49,5 +49,17 @@ export class GasStationController {
   async find(@Param('stationId') stationId: string, @Res() res: Response) {
     const result = await this.service.findById(stationId);
     res.status(result.statusCode).send(result);
+  }
+
+  @Get('nearby')
+  @ApiOperation({ summary: 'Busca postos de gasolina por proximidade' })
+  async getNearbyStations(
+    @Query() query: GetNearbyStationsSchema,
+    @Res() res: Response,
+  ) {
+    
+    const result = await this.service.findNearby(query);
+
+    return res.status(result.statusCode).send(result)
   }
 }

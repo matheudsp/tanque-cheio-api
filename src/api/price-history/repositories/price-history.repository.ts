@@ -16,8 +16,10 @@ export class PriceHistoryRepository {
 
   /**
    * Busca os últimos preços de todos os produtos do posto
+   * @param stationId ID do posto de combustível
+   * @param productFilter Filtro opcional para buscar apenas um produto específico
    */
-  async getLatestPrices(stationId: string): Promise<FuelPriceDto[]> {
+  async getLatestPrices(stationId: string, productFilter?: string): Promise<FuelPriceDto[]> {
     // Monta a subquery para pegar, por produto, a maior collection_date
     const subQuery = (qb: SelectQueryBuilder<PriceHistoryEntity>) => {
       return qb
@@ -31,8 +33,8 @@ export class PriceHistoryRepository {
         .getQuery();
     };
 
-    // Na query principal, selecionamos só os campos que viram FuelPriceDto
-    return await this.repository
+    // Query principal
+    const qb = this.repository
       .createQueryBuilder('hp')
       .innerJoin('hp.product', 'prod')
       .select([
@@ -46,7 +48,16 @@ export class PriceHistoryRepository {
       .andWhere('hp.price IS NOT NULL')
       .andWhere(
         `hp.collection_date = (${subQuery(this.repository.createQueryBuilder())})`,
-      )
+      );
+
+    // Aplica filtro de produto se fornecido
+    if (productFilter && productFilter.trim()) {
+      qb.andWhere('UPPER(prod.name) ILIKE UPPER(:productFilter)', {
+        productFilter: `%${productFilter.trim()}%`,
+      });
+    }
+
+    return await qb
       .orderBy('prod.name', 'ASC')
       .getRawMany<FuelPriceDto>();
   }

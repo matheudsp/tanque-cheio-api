@@ -26,17 +26,17 @@ export const seedUsersFactory = async (db: DataSource) => {
     const users: UserEntity[] = [
       {
         id: uuid(),
-        name: 'Admin',
-        email: 'admin@mail.com',
+        name: process.env.SEEDER_NAME_ADMIN as string || 'Admin',
+        email: process.env.SEEDER_EMAIL_ADMIN as string || 'admin@mail.com',
         password: bcrypt.hashSync(
-          process.env.SEEDER_PASSWORD_ADMIN || 'password123',
+          process.env.SEEDER_PASSWORD_ADMIN as string || 'password123',
           parseInt(process.env.SALT_ROUNDS as string) || 12,
         ),
       },
       {
         id: uuid(),
-        name: 'Guest',
-        email: 'guest@mail.com',
+        name: process.env.SEEDER_NAME_USER as string || 'Guest',
+        email: process.env.SEEDER_EMAIL_USER as string || 'Guest@mail.com',
         password: bcrypt.hashSync(
           process.env.SEEDER_PASSWORD_USER || 'password123',
           parseInt(process.env.SALT_ROUNDS as string) || 12,

@@ -1,24 +1,39 @@
-
 services:
+  api:
+    build: . # Constrói a imagem a partir do Dockerfile na pasta atual
+    container_name: tanque-cheio-api
+    restart: unless-stopped
+    env_file:
+      - .env # Carrega as variáveis de ambiente do arquivo .env
+    ports:
+      - '${PORT}:${PORT}' # Mapeia a porta do host para a porta do contêiner
+    depends_on:
+      postgres:
+        condition: service_healthy # Condicional para inicalizar caso Postgres estiver saudável
+      redis:
+        condition: service_healthy # condicional para incializar caso Redis estiver saudável
+
   postgres:
-    image: postgis/postgis:16-3.5-alpine
+    image: postgis/postgis:15-3.5-alpine
+    container_name: tanque-cheio-postgres
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${DB_NAME:-nestjs_fuel_db}
-      POSTGRES_USER: ${DB_USERNAME:-nestjs_user}
-      POSTGRES_PASSWORD: ${DB_PASSWORD:-strong_password_here}
+      POSTGRES_DB: ${DB_NAME}
+      POSTGRES_USER: ${DB_USERNAME}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
     ports:
       - '5432:5432'
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-nestjs_user} -d ${DB_NAME:-nestjs_fuel_db}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME} -d ${DB_NAME}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
   redis:
     image: redis:7-alpine
+    container_name: tanque-cheio-redis
     restart: unless-stopped
     command: redis-server --appendonly yes
     ports:

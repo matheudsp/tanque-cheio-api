@@ -54,7 +54,7 @@
 							"response": []
 						},
 						{
-							"name": "Sign In Role",
+							"name": "Refresh Token",
 							"request": {
 								"auth": {
 									"type": "bearer",
@@ -70,7 +70,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\r\n  \"user_id\": \"0197374f-5cdf-77d2-912d-e78e7a0f4f17\",\r\n  \"role_id\": \"0197374f-5dd3-7455-8882-abf03e927a55\"\r\n}",
+									"raw": "{\r\n    \"refresh_token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMDE5NzM3NGYtNWJlYi03NDU5LWFjNWMtYmE0MjNmYjQyNjk1Iiwicm9sZV9pZCI6IjAxOTczNzRmLTVkZDMtNzQ1NS04ODgyLWE3YjY2MTQwYTcwMCIsInNlc3Npb25faWQiOiI2MTEyMmZiMWJhODIyNWJkZjUwNmVkNzk4N2VhYTk3YjEyMGQ5OGFhM2Y4OTA0ZjZhMjhkMzk4ZDhjOTljZjRmIiwiaWF0IjoxNzQ5NTE2MzY0LCJ0eXBlIjoicmVmcmVzaCIsImV4cCI6MTc1MjEwODM2NCwiYXVkIjoiYXBpLWNsaWVudCIsImlzcyI6ImF1dGgtc2VydmljZSJ9.I3nGsXq1JWBTi16KUG5T4cLVUh1kxxxwlXfvg7RZP8Q\"\r\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -78,7 +78,7 @@
 									}
 								},
 								"url": {
-									"raw": "{{baseUrl}}/api/auth/local/sign-in/role",
+									"raw": "{{baseUrl}}/api/auth/local/refresh-token",
 									"host": [
 										"{{baseUrl}}"
 									],
@@ -86,8 +86,37 @@
 										"api",
 										"auth",
 										"local",
-										"sign-in",
-										"role"
+										"refresh-token"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Logout",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwtToken}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/auth/local/logout",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"auth",
+										"local",
+										"logout"
 									]
 								}
 							},
@@ -248,7 +277,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\r\n  \"url\": \"https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/arquivos-lpc/2025/revendas_lpc_2025-05-25_2025-05-31.xlsx\"\r\n}",
+									"raw": "{\r\n  \"url\": \"https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/arquivos-lpc/2025/revendas_lpc_2025-04-13_2025-04-19.xlsx\"\r\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -563,45 +592,6 @@
 								}
 							},
 							"response": []
-						},
-						{
-							"name": "Update A Resource",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{jwtToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "PUT",
-								"header": [],
-								"body": {
-									"mode": "raw",
-									"raw": "{\r\n  \"name\": \"string\",\r\n  \"path\": \"string\"\r\n}",
-									"options": {
-										"raw": {
-											"language": "json"
-										}
-									}
-								},
-								"url": {
-									"raw": "{{baseUrl}}/api/v1/resources/{{resourceId}}",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"api",
-										"v1",
-										"resources",
-										"{{resourceId}}"
-									]
-								}
-							},
-							"response": []
 						}
 					]
 				},
@@ -751,36 +741,6 @@
 										}
 									}
 								},
-								"url": {
-									"raw": "{{baseUrl}}/api/v1/roles/{{roleId}}",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"api",
-										"v1",
-										"roles",
-										"{{roleId}}"
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "Delete A Role",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{jwtToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "DELETE",
-								"header": [],
 								"url": {
 									"raw": "{{baseUrl}}/api/v1/roles/{{roleId}}",
 									"host": [
@@ -1040,7 +1000,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/api/v1/permissions?role_id&page&limit",
+									"raw": "{{baseUrl}}/api/v1/permissions?role_id=0197374f-5dd3-7455-8882-a7b66140a700&page&limit",
 									"host": [
 										"{{baseUrl}}"
 									],
@@ -1052,7 +1012,7 @@
 									"query": [
 										{
 											"key": "role_id",
-											"value": null,
+											"value": "0197374f-5dd3-7455-8882-a7b66140a700",
 											"description": "required"
 										},
 										{
@@ -1087,7 +1047,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\r\n  \"role_id\": \"string\",\r\n  \"resource_id\": \"string\",\r\n  \"action\": [\r\n    \"GET\",\r\n    \"POST\",\r\n    \"PUT\",\r\n    \"DELETE\",\r\n    \"PATCH\"\r\n  ]\r\n}",
+									"raw": "{\r\n    \"role_id\": \"0197374f-5dd3-7455-8882-abf03e927a55\",\r\n    \"resource_id\": \"975d3232-0efb-42d6-8bb9-604e4c0c0439\",\r\n    \"action\": [\r\n        \"POST\"\r\n    ]\r\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -1162,36 +1122,6 @@
 										}
 									}
 								},
-								"url": {
-									"raw": "{{baseUrl}}/api/v1/permissions/{{permissionId}}",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"api",
-										"v1",
-										"permissions",
-										"{{permissionId}}"
-									]
-								}
-							},
-							"response": []
-						},
-						{
-							"name": "Delete A Permission",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{jwtToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "DELETE",
-								"header": [],
 								"url": {
 									"raw": "{{baseUrl}}/api/v1/permissions/{{permissionId}}",
 									"host": [
@@ -1337,39 +1267,47 @@
 										}
 									},
 									"response": []
-								},
-								{
-									"name": "Geocode Stats",
-									"request": {
-										"auth": {
-											"type": "bearer",
-											"bearer": [
-												{
-													"key": "token",
-													"value": "{{jwtToken}}",
-													"type": "string"
-												}
-											]
-										},
-										"method": "GET",
-										"header": [],
-										"url": {
-											"raw": "{{baseUrl}}/api/v1/localizations/geocode/stats",
-											"host": [
-												"{{baseUrl}}"
-											],
-											"path": [
-												"api",
-												"v1",
-												"localizations",
-												"geocode",
-												"stats"
-											]
-										}
-									},
-									"response": []
 								}
 							]
+						},
+						{
+							"name": "Update A Localization",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwtToken}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "PUT",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"coordinates\": {\r\n        \"type\": \"Point\",\r\n        \"coordinates\": [\r\n           -7.17434199307057, -41.476313734233955\r\n        ]\r\n    }\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/localizations/{{localizationId}}",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"localizations",
+										"{{localizationId}}"
+									]
+								}
+							},
+							"response": []
 						}
 					]
 				}
@@ -1487,14 +1425,15 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/api/v1/gas-stations?city=FLORIANO&product=GASOLINA COMUM&brand=BRANCA",
+									"raw": "{{baseUrl}}/api/v1/gas-stations/search?city=FLORIANO&brand=IPIRANGA",
 									"host": [
 										"{{baseUrl}}"
 									],
 									"path": [
 										"api",
 										"v1",
-										"gas-stations"
+										"gas-stations",
+										"search"
 									],
 									"query": [
 										{
@@ -1503,20 +1442,68 @@
 										},
 										{
 											"key": "product",
-											"value": "GASOLINA COMUM"
+											"value": "GASOLINA COMUM",
+											"disabled": true
 										},
 										{
 											"key": "brand",
-											"value": "BRANCA"
+											"value": "IPIRANGA"
 										},
 										{
 											"key": "limit",
-											"value": null,
+											"value": "",
 											"disabled": true
 										},
 										{
 											"key": "offset",
-											"value": null,
+											"value": "",
+											"disabled": true
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get All Gas Station",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwtToken}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/gas-stations/all",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"gas-stations",
+										"all"
+									],
+									"query": [
+										{
+											"key": "product",
+											"value": "GASOLINA COMUM",
+											"disabled": true
+										},
+										{
+											"key": "limit",
+											"value": "",
+											"disabled": true
+										},
+										{
+											"key": "offset",
+											"value": "",
 											"disabled": true
 										}
 									]
@@ -1565,6 +1552,111 @@
 								}
 							},
 							"response": []
+						},
+						{
+							"name": "Get Station Price Chart",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwtToken}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/gas-stations/{{stationId}}/price-history",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"gas-stations",
+										"{{stationId}}",
+										"price-history"
+									],
+									"query": [
+										{
+											"key": "limit",
+											"value": null,
+											"disabled": true
+										},
+										{
+											"key": "offset",
+											"value": null,
+											"disabled": true
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Get Station Nearby",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwtToken}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/gas-stations/nearby?limit=10&lat=-6.770616820162108&lng=-43.03112947771905&radius=999&sortBy=priceAsc",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"gas-stations",
+										"nearby"
+									],
+									"query": [
+										{
+											"key": "limit",
+											"value": "10"
+										},
+										{
+											"key": "offset",
+											"value": "",
+											"disabled": true
+										},
+										{
+											"key": "lat",
+											"value": "-6.770616820162108"
+										},
+										{
+											"key": "lng",
+											"value": "-43.03112947771905"
+										},
+										{
+											"key": "radius",
+											"value": "999"
+										},
+										{
+											"key": "sortBy",
+											"value": "priceAsc"
+										},
+										{
+											"key": "product",
+											"value": "GASOLINA COMUM",
+											"disabled": true
+										}
+									]
+								}
+							},
+							"response": []
 						}
 					],
 					"description": "The `/collections` endpoints let you manage your [collections](https://learning.postman.com/docs/sending-requests/intro-to-collections/)."
@@ -1588,14 +1680,14 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/api/v1/product/stats",
+									"raw": "{{baseUrl}}/api/v1/products/stats",
 									"host": [
 										"{{baseUrl}}"
 									],
 									"path": [
 										"api",
 										"v1",
-										"product",
+										"products",
 										"stats"
 									],
 									"query": [
@@ -1630,14 +1722,14 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/api/v1/product",
+									"raw": "{{baseUrl}}/api/v1/products",
 									"host": [
 										"{{baseUrl}}"
 									],
 									"path": [
 										"api",
 										"v1",
-										"product"
+										"products"
 									],
 									"query": [
 										{
@@ -1671,14 +1763,14 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/api/v1/product/{{productId}}",
+									"raw": "{{baseUrl}}/api/v1/products/{{productId}}",
 									"host": [
 										"{{baseUrl}}"
 									],
 									"path": [
 										"api",
 										"v1",
-										"product",
+										"products",
 										"{{productId}}"
 									],
 									"query": [

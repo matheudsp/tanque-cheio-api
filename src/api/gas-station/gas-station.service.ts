@@ -24,6 +24,7 @@ import {
 } from './interfaces/gas-station.interface';
 import { GasStationRepository } from './repositories/gas-station.repository';
 import { PriceHistoryRepository } from '../price-history/repositories/price-history.repository';
+import type { PriceHistoryQueryDto } from './dtos/gas-station.dto';
 
 @Injectable()
 export class GasStationService {
@@ -36,6 +37,24 @@ export class GasStationService {
     private readonly priceHistoryRepo: PriceHistoryRepository,
   ) {}
 
+  async all(){
+    try {
+      const key = this.cache.getCacheKey();
+      // let data = await this.cacheManager.get(key);
+
+      // if (data) return responseOk({ data });
+
+      let data = await this.repo.all();
+      if (!data) return responseNotFound({ message: 'Nenhum posto encontrado' });
+
+      // cached for 15 min in redis
+      // await this.cacheManager.set(key, data, seconds(900));
+
+      return responseOk({ data });
+    } catch (e) {
+      return getErrorResponse(e);
+    }
+  }
   async findById(stationId: string) {
     try {
       const key = this.cache.getCacheKey();
@@ -56,6 +75,40 @@ export class GasStationService {
 
       return responseOk({ data });
     } catch (e) {
+      return getErrorResponse(e);
+    }
+  }
+
+
+   async getPriceHistoryForChart(stationId: string, query: PriceHistoryQueryDto) {
+    try {
+      
+
+      // Valida se o posto existe antes de prosseguir
+      const stationExists = await this.repo.findById(stationId);
+      if (!stationExists) {
+        return responseNotFound({ message: 'Posto não encontrado' });
+      }
+
+      // Define o período padrão (últimos 30 dias) se não for fornecido
+      const endDate = query.endDate ? new Date(query.endDate) : new Date();
+      const startDate = query.startDate
+        ? new Date(query.startDate)
+        : new Date(new Date().setDate(endDate.getDate() - 30));
+
+      // Busca o histórico de preços agrupado usando o método que já existe
+      const priceHistoryData =
+        await this.priceHistoryRepo.getPriceHistoryGrouped(
+          stationId,
+          startDate,
+          endDate,
+          query.product, // Passa o filtro de produto, se houver
+        );
+      
+      return responseOk({ data: priceHistoryData });
+
+    } catch (e) {
+      this.logger.error(`Erro ao buscar histórico de preços para o posto ${stationId}:`, e);
       return getErrorResponse(e);
     }
   }

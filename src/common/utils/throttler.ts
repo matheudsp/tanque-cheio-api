@@ -7,13 +7,13 @@ import { Request } from 'express';
 export const throttler: ThrottlerOptions[] = [
   {
     name: 'short',
-    ttl: seconds(60), // 1 minuto
-    limit: 10, // 10 requests por minuto
+    ttl: seconds(1), 
+    limit: 3, 
   },
   {
     name: 'medium',
-    ttl: seconds(300), // 5 minutos
-    limit: 50, // 50 requests por 5 minutos
+    ttl: seconds(10), 
+    limit: 20, 
   },       
 ];
 

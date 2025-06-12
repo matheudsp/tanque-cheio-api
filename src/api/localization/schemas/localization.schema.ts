@@ -51,21 +51,21 @@ const localizationCreateSchema = z.object({
 
   // latitude e longitude: usamos z.coerce.number() para transformar string numérica automaticamente.
   // Se vier valor inválido (ex: texto não numérico), a validação irá falhar.
-  latitude: z.coerce
-    .number({ invalid_type_error: 'latitude deve ser um número' })
-    .refine((val) => val >= -90 && val <= 90, {
-      message: 'latitude deve estar entre -90 e 90',
-    })
-    .optional()
-    .nullable(),
+  // latitude: z.coerce
+  //   .number({ invalid_type_error: 'latitude deve ser um número' })
+  //   .refine((val) => val >= -90 && val <= 90, {
+  //     message: 'latitude deve estar entre -90 e 90',
+  //   })
+  //   .optional()
+  //   .nullable(),
 
-  longitude: z.coerce
-    .number({ invalid_type_error: 'longitude deve ser um número' })
-    .refine((val) => val >= -180 && val <= 180, {
-      message: 'longitude deve estar entre -180 e 180',
-    })
-    .optional()
-    .nullable(),
+  // longitude: z.coerce
+  //   .number({ invalid_type_error: 'longitude deve ser um número' })
+  //   .refine((val) => val >= -180 && val <= 180, {
+  //     message: 'longitude deve estar entre -180 e 180',
+  //   })
+  //   .optional()
+  //   .nullable(),
   coordinates: z.object({
     type: z.literal('Point'),
     coordinates: z.tuple([

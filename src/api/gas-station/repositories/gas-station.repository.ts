@@ -19,6 +19,57 @@ export class GasStationRepository {
     private readonly priceHistoryRepo: PriceHistoryRepository,
   ) {}
 
+   async all() {
+
+    const rawStations = await this.repo
+      .createQueryBuilder('gs')
+      .innerJoin('gs.localization', 'loc')
+      .where('gs.isActive = :isActive', { isActive: true })
+      .andWhere('loc.coordinates IS NOT NULL')
+      .select([
+        'gs.id AS id',
+        'gs.taxId AS taxId',
+        'gs.legal_name AS legal_name',
+        'gs.trade_name AS trade_name',
+        'gs.brand AS brand',
+        'loc.city AS city',
+        'loc.state AS state',
+        // Transforma a coluna de coordenadas em uma string no formato GeoJSON.
+        'ST_AsGeoJSON(loc.coordinates) AS coordinates', 
+      ])
+      .orderBy('gs.legal_name', 'ASC')
+      .addOrderBy('gs.brand', 'ASC')
+      .getRawMany();
+
+    this.logger.log(`Encontrados ${rawStations.length} postos. Buscando preços para cada um...`);
+
+    // 2. Para cada posto, busca os preços mais recentes.
+    const results = await Promise.all(
+      rawStations.map(async (station) => {
+        const latestPrices = await this.priceHistoryRepo.getLatestPrices(station.id);
+
+        // 3. Monta o objeto final para cada posto.
+        return {
+          id: station.id,
+          taxId: station.taxId,
+          legal_name: station.legal_name,
+          trade_name: station.trade_name,
+          brand: station.brand,
+          localization: {
+            city: station.city,
+            state: station.state,
+            // Converte a string GeoJSON em um objeto JavaScript.
+            coordinates: station.coordinates ? JSON.parse(station.coordinates) : null,
+          },
+          fuelPrices: latestPrices,
+        };
+      }),
+    );
+
+    
+    return results;
+  }
+
   async filter(filters: SearchGasStationsQuerySchema) {
     const queryBuilder = this.repo
       .createQueryBuilder('gs')
@@ -88,7 +139,7 @@ export class GasStationRepository {
   }
 
   async nearby(params: GetNearbyStationsSchema) {
-    const { lat, lng, radius, limit = 10, offset = 0, product, sortBy = 'distanceAsc' } = params;
+    const { lat, lng, radius, limit = 50, offset = 0, product, sortBy = 'distanceAsc' } = params;
 
     const radiusInMeters = radius * 1000;
 
@@ -103,6 +154,7 @@ export class GasStationRepository {
         'gs.brand',
         'loc.city',
         'loc.state',
+        'loc.coordinates',
       ])
       // Calcula a distância
       .addSelect(`
@@ -224,6 +276,7 @@ export class GasStationRepository {
           localization: {
             city: r.loc_city,
             state: r.loc_state,
+            coordinates: r.loc_coordinates,
           },
           distance: (Number(r.distance) / 1000).toFixed(1),
           fuelPrices: latestPrices, 

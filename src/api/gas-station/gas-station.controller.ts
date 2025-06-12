@@ -3,6 +3,7 @@ import {
   Controller,
   Get,
   Param,
+  ParseUUIDPipe,
   Query,
   Res,
   UseGuards,
@@ -16,7 +17,7 @@ import { RoleGuard } from '@/common/guards/role/role.guard';
 import { OpenApiResponses } from '@/common/decorators/openapi.decorator';
 import {
   GasStationQueryDto,
-  NearbyStationsQueryDto,
+  type PriceHistoryQueryDto,
 } from './dtos/gas-station.dto';
 import type { GetNearbyStationsSchema } from './schemas/gas-station.schema';
 
@@ -28,7 +29,19 @@ import type { GetNearbyStationsSchema } from './schemas/gas-station.schema';
 export class GasStationController {
   constructor(private readonly service: GasStationService) {}
 
-  @Get()
+  @Get('all')
+  @ApiOperation({
+    summary: 'All gas stations',
+    description:
+      'Get all gas stations with pagination support. Use filters to narrow down results.',
+  })
+  @OpenApiResponses([200, 400, 401, 403, 404, 500])
+  async all(@Res() res: Response) {
+    const result = await this.service.all();
+    res.status(result.statusCode).send(result);
+  }
+
+  @Get('search')
   @ApiOperation({
     summary: 'Search gas stations with filters',
     description:
@@ -50,7 +63,22 @@ export class GasStationController {
     const result = await this.service.findById(stationId);
     res.status(result.statusCode).send(result);
   }
-
+  
+ @Get(':id/price-history')
+  @ApiOperation({
+    summary: 'Get price history for a gas station (for charts)',
+    description: 'Returns price history for a specific gas station, grouped by product. Ideal for creating charts.',
+  })
+  @OpenApiResponses([200, 400, 401, 403, 404, 500])
+  async getPriceHistory(
+    @Param('id') id: string,
+    @Query() query: PriceHistoryQueryDto,
+    @Res() res: Response,
+  ) {
+    const result = await this.service.getPriceHistoryForChart(id, query);
+    return res.status(result.statusCode).send(result);
+  }
+  
   @Get('nearby')
   @ApiOperation({ summary: 'Busca postos de gasolina por proximidade' })
   async getNearbyStations(

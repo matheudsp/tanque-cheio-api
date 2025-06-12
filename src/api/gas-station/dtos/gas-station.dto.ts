@@ -1,5 +1,21 @@
-import type { FuelPriceDto } from '@/api/price-history/dtos/price-history.dto';
 import { ApiProperty, ApiSchema } from '@nestjs/swagger';
+import { IsDateString, IsOptional } from 'class-validator';
+
+export class PriceHistoryQueryDto {
+  @ApiProperty({ required: false, description: 'Data inicial do período (YYYY-MM-DD)' })
+  @IsOptional()
+  @IsDateString({}, { message: 'A data inicial deve estar no formato YYYY-MM-DD' })
+  startDate?: string;
+
+  @ApiProperty({ required: false, description: 'Data final do período (YYYY-MM-DD)' })
+  @IsOptional()
+  @IsDateString({}, { message: 'A data final deve estar no formato YYYY-MM-DD' })
+  endDate?: string;
+
+  @ApiProperty({ required: false, description: 'Filtra o histórico por um nome de produto específico' })
+  @IsOptional()
+  product?: string;
+}
 
 @ApiSchema({ name: 'Gas Station' })
 export class GasStationDto {

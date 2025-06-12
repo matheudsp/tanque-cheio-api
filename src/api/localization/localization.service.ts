@@ -36,6 +36,7 @@ export class LocalizationService {
       const parsed = localizationCreateSchema.parse(data);
       
       const updated = await this.localizationRepository.update(id, parsed);
+      
       return responseOk({ data: updated });
     } catch (error) {
       const zodErr = zodErrorParse(error);

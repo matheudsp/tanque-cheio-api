@@ -128,7 +128,7 @@ export class CsvProcessor {
     if (headerIndex === -1) {
       throw new Error('❌CSV cabeçaçlho não encontrado');
     }
-
+ 
     return lines
       .slice(headerIndex)
       .filter((line) => line.trim() && !line.match(/^,+$/))
@@ -150,7 +150,7 @@ export class CsvProcessor {
   private async processRowsInBatches(
     rows: CsvRow[],
     result: ProcessingResult,
-    batchSize = 100,
+    batchSize = 1000,
   ): Promise<void> {
     for (let i = 0; i < rows.length; i += batchSize) {
       const batch = rows.slice(i, i + batchSize);
@@ -201,7 +201,7 @@ export class CsvProcessor {
     }> = [];
 
     for (const row of batch) {
-      try {
+      try { 
         // Process localization
         const localization = EntityFactory.createLocalization(row);
         const locKey = localization.getLocationKey();
@@ -360,13 +360,13 @@ export class CsvProcessor {
     }
 
     if (toInsert.length > 0) {
-      await queryRunner.manager.save(toInsert, { chunk: 100 });
+      await queryRunner.manager.save(toInsert, { chunk: 1000 });
       result.totalInserted += toInsert.length;
       this.logger.log(`✅ ${toInsert.length} registros inseridos`);
     }
 
     if (toUpdate.length > 0) {
-      await queryRunner.manager.save(toUpdate, { chunk: 100 });
+      await queryRunner.manager.save(toUpdate, { chunk: 1000 });
       result.totalUpdated += toUpdate.length;
       this.logger.log(`🔄 ${toUpdate.length} registros atualizados`);
     }

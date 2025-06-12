@@ -153,6 +153,19 @@ export class XlsxToCsvConverterService {
               }
             }
           }
+           // Tratamento para CEP para garantir a formatação correta
+          else if (headerName === 'CEP' && cellValue !== '') {
+            // Remove qualquer caractere que não seja um dígito
+            const numericCep = cellValue.replace(/\D/g, '');
+
+            // Garante que o CEP tenha 8 dígitos, preenchendo com zeros à esquerda
+            const paddedCep = numericCep.padStart(8, '0');
+
+            // Aplica a formatação XXXXX-XXX se a string tiver 8 dígitos
+            if (paddedCep.length === 8) {
+              cellValue = `${paddedCep.slice(0, 5)}-${paddedCep.slice(5)}`;
+            }
+          }
 
           if (cellValue !== '') {
             hasData = true;

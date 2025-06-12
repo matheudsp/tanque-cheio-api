@@ -11,15 +11,21 @@ export class LocalizationRepository {
     private readonly repo: Repository<LocalizationEntity>,
   ) {}
 
-  async update(id:string, data: LocalizationCreateSchema){
-    return this.repo.update(id,{
+  async update(id: string, data: LocalizationCreateSchema) {
+    return this.repo.update(id, {
       city: data.city,
       complement: data.complement,
       zipCode: data.zipCode,
-      state:data.state,
+      state: data.state,
       address: data.address,
-      // geom: data.geom 
-    })
+      coordinates: {
+        type: 'Point',
+        coordinates: [
+          data.coordinates.coordinates[1], // eixo Y (Latitude)
+          data.coordinates.coordinates[0], // eixo X (Longitude)
+        ],
+      },
+    });
   }
 
   async findAll(): Promise<LocalizationEntity[] | null> {

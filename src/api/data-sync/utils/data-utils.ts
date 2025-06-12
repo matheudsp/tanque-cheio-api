@@ -7,17 +7,29 @@ export class DataUtils {
 
   static normalizeCnpj(cnpj: string): string {
     if (!cnpj) throw new Error('CNPJ é obrigatório');
+
     const cleaned = cnpj.replace(/[^\d]/g, '');
     if (cleaned.length !== 14) throw new Error(`CNPJ inválido ${cnpj}`);
-    return `${cleaned.substring(0, 2)}.${cleaned.substring(2, 5)}.${cleaned.substring(8, 5)}/${cleaned.substring(12, 8)}-${cleaned.substring(12)}`;
-  }
 
+    return `${cleaned.substring(0, 2)}.${cleaned.substring(2, 5)}.${cleaned.substring(5, 8)}/${cleaned.substring(8, 12)}-${cleaned.substring(12)}`;
+  }
   static normalizeCep(cep: string): string | null {
-    if (!cep) return null;
-    const cleaned = cep.replace(/[^\d]/g, '');
-    return cleaned.length === 8
-      ? `${cleaned.substring(0, 5)}-${cleaned.substring(5)}`
-      : null;
+    const trimmedCep = DataUtils.cleanString(cep);
+    if (!trimmedCep) {
+      return null;
+    }
+
+    const cleaned = trimmedCep.replace(/[^\d]/g, '');
+
+    if (cleaned.length !== 8) {
+      console.warn(
+        `[DataUtils] CEP com formato inválido foi descartado: "${cep}". Requer 8 dígitos numéricos.`,
+      );
+      return null;
+    }
+
+    
+    return `${cleaned.substring(0, 5)}-${cleaned.substring(5)}`;
   }
 
   static parseDate(dateStr: string): Date {

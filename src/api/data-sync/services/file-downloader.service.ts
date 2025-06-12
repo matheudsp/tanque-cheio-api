@@ -4,6 +4,7 @@ import { firstValueFrom } from 'rxjs';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { randomUUID } from 'crypto';
+import * as https from 'https'; 
 
 export interface FileDownloadResult {
   success: boolean;
@@ -18,7 +19,9 @@ export interface FileDownloadResult {
 export class FileDownloaderService {
   private readonly logger = new Logger(FileDownloaderService.name);
   private readonly tempDir = path.join(process.cwd(), 'temp');
-
+  private readonly httpsAgent = new https.Agent({
+    rejectUnauthorized: false,
+  });
   constructor(private readonly httpService: HttpService) {
     this.ensureTempDirectory();
   }
@@ -40,18 +43,24 @@ export class FileDownloaderService {
         this.httpService.get(url, {
           responseType: 'arraybuffer',
           headers: {
-            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
-            'Accept': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,*/*',
+            'User-Agent':
+              'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
+            Accept:
+              'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,application/vnd.ms-excel,*/*',
           },
-        })
+          httpsAgent: this.httpsAgent,
+        }),
       );
 
       if (!response.data) {
         throw new Error('❌Nenhum dado recebido do servidor.');
       }
 
-      const contentType = response.headers['content-type'] || 'application/octet-stream';
-      const fileExtension = this.getFileExtensionFromUrl(url) || this.getExtensionFromContentType(contentType);
+      const contentType =
+        response.headers['content-type'] || 'application/octet-stream';
+      const fileExtension =
+        this.getFileExtensionFromUrl(url) ||
+        this.getExtensionFromContentType(contentType);
       const fileName = `download_${randomUUID()}${fileExtension}`;
       const filePath = path.join(this.tempDir, fileName);
 
@@ -60,7 +69,9 @@ export class FileDownloaderService {
       const stats = await fs.stat(filePath);
       const fileSize = stats.size;
 
-      this.logger.log(`⬇️Arquivo baixado com sucesso: ${fileName} (${fileSize} bytes)`);
+      this.logger.log(
+        `⬇️Arquivo baixado com sucesso: ${fileName} (${fileSize} bytes)`,
+      );
 
       return {
         success: true,
@@ -90,7 +101,8 @@ export class FileDownloaderService {
 
   private getExtensionFromContentType(contentType: string): string {
     const typeMap: Record<string, string> = {
-      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': '.xlsx',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet':
+        '.xlsx',
       'application/vnd.ms-excel': '.xls',
       'text/csv': '.csv',
       'application/csv': '.csv',
@@ -104,13 +116,15 @@ export class FileDownloaderService {
       await fs.unlink(filePath);
       this.logger.log(`♻️Arquivo temporário deletado: ${filePath}`);
     } catch (error) {
-      this.logger.warn(`❌Falha ao deletar arquivo temporário ${filePath}: ${error.message}`);
+      this.logger.warn(
+        `❌Falha ao deletar arquivo temporário ${filePath}: ${error.message}`,
+      );
     }
   }
 
   async cleanupTempFiles(filePaths: string[]): Promise<void> {
     await Promise.allSettled(
-      filePaths.map(filePath => this.deleteFile(filePath))
+      filePaths.map((filePath) => this.deleteFile(filePath)),
     );
   }
 }

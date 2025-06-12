@@ -48,7 +48,7 @@ const getNearbyStationsSchema = z.object({
     .coerce.number()
     .int('Raio deve ser um número inteiro')
     .min(1, 'Raio deve ser pelo menos 1 km')
-    .max(250, 'Raio não pode ser maior que 50 km'),
+    .max(1000, 'Raio não pode ser maior que 250 km'),
   product: z
     .string()
     .min(2, 'Produto deve ter pelo menos 2 caracteres')
@@ -64,7 +64,7 @@ const getNearbyStationsSchema = z.object({
     .int('Limite deve ser um número inteiro')
     .min(1, 'Limite deve ser pelo menos 1')
     .max(10, 'Limite não pode ser maior que 10 para busca por proximidade')
-    .default(10)
+    .default(50)
     .optional(),
   offset: z
     .coerce.number()

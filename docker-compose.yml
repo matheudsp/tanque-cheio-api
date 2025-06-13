@@ -1,12 +1,24 @@
 services:
-  api:
+  nginx:
+      image: nginx:alpine
+      container_name: tanque-cheio-nginx
+      restart: unless-stopped
+      ports:
+        - '80:80'
+      volumes:
+        - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      depends_on:
+        - app
+  app:
     build: . # Constrói a imagem a partir do Dockerfile na pasta atual
     container_name: tanque-cheio-api
     restart: unless-stopped
+    expose: 
+      - '3000' # Expõe a porta 3000 para o Nginx
     env_file:
       - .env # Carrega as variáveis de ambiente do arquivo .env
-    ports:
-      - '${PORT}:${PORT}' # Mapeia a porta do host para a porta do contêiner
+    # ports:
+    #   - '${PORT}:${PORT}' # Mapeia a porta do host para a porta do contêiner
     depends_on:
       postgres:
         condition: service_healthy # Condicional para inicalizar caso Postgres estiver saudável

@@ -1,0 +1,287 @@
+{
+  "name": "TANQUE CHEIO SEED DATABASE",
+  "nodes": [
+    {
+      "parameters": {
+        "jsCode": "const urls = [\n  'https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/arquivos-lpc/2025/revendas_lpc_2025-04-20_2025-04-26.xlsx',\n  'https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/arquivos-lpc/2025/revendas_lpc_2025-04-27_2025-05-03.xlsx',\n  'https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/arquivos-lpc/2025/revendas_lpc_2025-05-04_2025-05-10.xlsx',\n  'https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/arquivos-lpc/2025/revendas_lpc_2025-05-11_2025-05-17.xlsx',\n  'https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/arquivos-lpc/2025/revendas_lpc_2025-05-18_2025-05-24.xlsx',\n  'https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/arquivos-lpc/2025/revendas_lpc_2025-05-25_2025-05-31.xlsx',\n  'https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/arquivos-lpc/2025/revendas_lpc_2025-06-01_2025-06-07.xlsx'\n];\n\n// Pega o último índice que foi gravado na planilha.\nconst lastWrittenIndex = $input.first().json.lastIndex;\n\n// --> INÍCIO DA VERIFICAÇÃO <--\n// Checa se o índice já atingiu ou ultrapassou o tamanho da lista de URLs.\nif (lastWrittenIndex >= urls.length) {\n  // Se sim, para a execução do workflow retornando um array vazio.\n  console.log(`Fim do processo: Todas as ${urls.length} URLs já foram utilizadas.`);\n  return []; // Retornar um array vazio para o fluxo do n8n aqui.\n}\n// --> FIM DA VERIFICAÇÃO <--\n\n// Se a verificação passar, o processo continua normalmente.\n// O índice a ser usado é o próprio lastWrittenIndex.\nconst currentIndexToUse = lastWrittenIndex;\nconst currentUrl = urls[currentIndexToUse];\n\n// O próximo índice a ser gravado na planilha é simplesmente o último + 1.\nconst nextIndexToWrite = lastWrittenIndex + 1;\n\n// Retorna os dados para os próximos nós\nreturn {\n  currentIndex: currentIndexToUse,\n  url: currentUrl,\n  nextIndex: nextIndexToWrite\n};"
+      },
+      "name": "3. Selecionar URL da Vez",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3600,
+        -60
+      ],
+      "id": "ef8e3696-5a14-44c4-9c5a-a34769fd46c4",
+      "notes": "Pega o último índice, seleciona a URL correspondente em loop e calcula o próximo índice a ser gravado."
+    },
+    {
+      "parameters": {
+        "documentId": {
+          "__rl": true,
+          "value": "1w2a72U6GSGMbM3e4WgB-rspwMXfQlA4hlsUlVCWgo1I",
+          "mode": ""
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Controle",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1w2a72U6GSGMbM3e4WgB-rspwMXfQlA4hlsUlVCWgo1I/edit#gid=0"
+        },
+        "options": {}
+      },
+      "name": "1. Ler Coluna 'index'",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        3160,
+        -60
+      ],
+      "id": "07da82ee-75ef-4ed1-b3f1-a75da20f9c51",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "nG9c2s6OHXuuiN0g",
+          "name": "Google Sheets account"
+        }
+      },
+      "notes": "Lê todos os valores da coluna 'index' (A:A) para encontrar o último."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://137.184.48.203/api/auth/local/sign-in",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "{\n  \"email\": \"mdsp.personal@gmail.com\",\n  \"password\": \"2025tanquecheio\"\n}",
+        "options": {}
+      },
+      "name": "4. Fazer Login",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        3880,
+        -60
+      ],
+      "id": "5208cc37-b3e0-4c1a-a9a1-6192bcaec20c",
+      "notes": "Faz a requisição POST para obter o token de acesso."
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://137.184.48.203/api/v1/data-sync/download-spreadsheet",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Authorization",
+              "value": "=Bearer {{ $json.data.access_token }}"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"url\":\"{{ $('3. Selecionar URL da Vez').item.json.url }}\"\n} ",
+        "options": {}
+      },
+      "name": "5. Enviar Dados",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.1,
+      "position": [
+        4160,
+        -60
+      ],
+      "id": "7fdb6ddc-0b31-4323-b209-928a8be797be",
+      "notes": "Envia o POST para a API de download com o token Bearer e a URL da vez."
+    },
+    {
+      "parameters": {
+        "jsCode": "// Recebe todos os itens (linhas) do nó anterior\nconst items = $input.all();\n\n// Filtra para remover quaisquer linhas onde a coluna 'index' esteja vazia ou nula\nconst nonEmptyItems = items.filter(item => item.json.index != null && item.json.index !== '');\n\n// Verifica se a coluna está completamente vazia\nif (nonEmptyItems.length === 0) {\n  // Se estiver vazia, retorna 0 como o índice inicial\n  return [{ json: { lastIndex: 0 } }];\n}\n\n// Pega o último item da lista filtrada\nconst lastItem = nonEmptyItems[nonEmptyItems.length - 1];\n\n// Garante que o índice seja um número para o cálculo\nconst lastIndex = parseInt(lastItem.json.index, 10);\n\n// Retorna um novo objeto contendo apenas o último índice\nreturn [{ json: { lastIndex: isNaN(lastIndex) ? 0 : lastIndex } }];"
+      },
+      "name": "2. Obter Último Índice",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        3380,
+        -60
+      ],
+      "id": "4a232abc-51a6-491d-840e-afe6c0a4006d",
+      "notes": "Isola o último valor de índice da lista lida da planilha. Retorna 0 se a planilha estiver vazia."
+    },
+    {
+      "parameters": {
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "1w2a72U6GSGMbM3e4WgB-rspwMXfQlA4hlsUlVCWgo1I",
+          "mode": "list",
+          "cachedResultName": "TANQUECHEIOURLS",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1w2a72U6GSGMbM3e4WgB-rspwMXfQlA4hlsUlVCWgo1I/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Controle",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/1w2a72U6GSGMbM3e4WgB-rspwMXfQlA4hlsUlVCWgo1I/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "nextIndex": "={{ $('3. Selecionar URL da Vez').item.json.nextIndex + 1}}",
+            "url": "={{ $('3. Selecionar URL da Vez').item.json.url }}",
+            "index": "={{ $('3. Selecionar URL da Vez').item.json.currentIndex + 1  }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "index",
+              "displayName": "index",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "url",
+              "displayName": "url",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "nextIndex",
+              "displayName": "nextIndex",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "name": "6. Gravar Próximo Índice1",
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4,
+      "position": [
+        4420,
+        -80
+      ],
+      "id": "d60499a2-a0c8-4068-bee8-0e720c19ad90",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "nG9c2s6OHXuuiN0g",
+          "name": "Google Sheets account"
+        }
+      },
+      "notes": "Adiciona uma nova linha na planilha com o próximo índice a ser usado."
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "cronExpression",
+              "expression": "0 0 * * *"
+            }
+          ]
+        }
+      },
+      "name": "daily cron",
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        2940,
+        -60
+      ],
+      "id": "c2608301-e9b2-44a3-b798-45fbce69db78"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "3. Selecionar URL da Vez": {
+      "main": [
+        [
+          {
+            "node": "4. Fazer Login",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "1. Ler Coluna 'index'": {
+      "main": [
+        [
+          {
+            "node": "2. Obter Último Índice",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "4. Fazer Login": {
+      "main": [
+        [
+          {
+            "node": "5. Enviar Dados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "5. Enviar Dados": {
+      "main": [
+        [
+          {
+            "node": "6. Gravar Próximo Índice1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "2. Obter Último Índice": {
+      "main": [
+        [
+          {
+            "node": "3. Selecionar URL da Vez",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "daily cron": {
+      "main": [
+        [
+          {
+            "node": "1. Ler Coluna 'index'",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "2ded43fb-d38d-4dab-94d7-77ea4a997c78",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "1dfc1939a50a40b018139febef8abfb67e29d4eaee838d3ec9987cc42c70fc26"
+  },
+  "id": "3oNdCzabmfeAOKYj",
+  "tags": []
+}

@@ -132,8 +132,12 @@ export class GasStationRepository {
         'gs.legal_name',
         'gs.trade_name',
         'gs.brand',
+        'loc.address',
+        'loc.neighborhood',
+        'loc.zipCode',
         'loc.city',
         'loc.state',
+        'loc.coordinates'
       ])
       .getOne();
   }

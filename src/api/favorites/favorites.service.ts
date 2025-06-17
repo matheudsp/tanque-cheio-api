@@ -1,4 +1,3 @@
-// api/favorites/favorites.service.ts
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
@@ -13,12 +12,12 @@ import {
   responseBadRequest,
 } from '@/common/utils/response-api';
 import { zodErrorParse } from '@/common/utils/lib';
-import { CacheRequestService } from '@/common/services/cache-request/cache-request.service';
 import { FavoritesRepository } from './repositories/favorites.repository';
 import { InjectRepository } from '@nestjs/typeorm';
 import { GasStationEntity } from '@/database/entity/gas-station.entity';
+import { ProductEntity } from '@/database/entity/product.entity';
 import { Repository } from 'typeorm';
-import { favoriteCreateSchema } from './schemas/favorites.schema';
+import { favoriteCreateSchema, FavoriteCreateSchema } from './schemas/favorites.schema';
 
 @Injectable()
 export class FavoritesService {
@@ -26,8 +25,10 @@ export class FavoritesService {
 
   constructor(
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
-    @InjectRepository(GasStationEntity) private readonly stationRepo: Repository<GasStationEntity>,
-    private readonly cacheRequest: CacheRequestService,
+    @InjectRepository(GasStationEntity)
+    private readonly stationRepo: Repository<GasStationEntity>,
+    @InjectRepository(ProductEntity)
+    private readonly productRepo: Repository<ProductEntity>,
     private readonly favoritesRepo: FavoritesRepository,
   ) {}
 
@@ -38,56 +39,78 @@ export class FavoritesService {
   async getFavorites(userId: string): Promise<ResponseApi> {
     try {
       const cacheKey = this.getCacheKey(userId);
-      const cachedData = await this.cacheManager.get(cacheKey);
+      const cachedData = await this.cacheManager.get<any[]>(cacheKey);
       if (cachedData) {
         return responseOk({ data: cachedData });
       }
 
       const favorites = await this.favoritesRepo.findAllByUserId(userId);
-      await this.cacheManager.set(cacheKey, favorites, seconds(60)); // Cache por 1 minuto
+      // Mapeia os dados para uma resposta mais amigável
+      const responseData = favorites.map((fav) => ({
+        stationId: fav.station.id,
+        stationName: fav.station.getDisplayName(),
+        localization: fav.station.localization,
+        productId: fav.product.id,
+        productName: fav.product.name,
+        favoritedAt: fav.favoritedAt,
+      }));
 
-      return responseOk({ data: favorites });
+      await this.cacheManager.set(cacheKey, responseData, seconds(60));
+
+      return responseOk({ data: responseData });
     } catch (e) {
-      this.logger.error(`Error in getFavorites: ${e.message}`);
+      this.logger.error(`Error in getFavorites: ${e.message}`, e.stack);
       return responseInternalServerError();
     }
   }
 
-  async addFavorite(userId: string, data: { stationId: string }): Promise<ResponseApi> {
+  async addFavorite(userId: string, data: FavoriteCreateSchema): Promise<ResponseApi> {
     try {
-      const parsed = favoriteCreateSchema.parse(data);
-      const { stationId } = parsed;
-      
-      const [station, alreadyExists] = await Promise.all([
+      const { stationId, productId } = favoriteCreateSchema.parse(data);
+
+      const [station, product, alreadyExists] = await Promise.all([
         this.stationRepo.findOneBy({ id: stationId }),
-        this.favoritesRepo.findOne(userId, stationId),
+        this.productRepo.findOneBy({ id: productId }),
+        this.favoritesRepo.findOne(userId, stationId, productId),
       ]);
 
       if (!station) {
         return responseNotFound({ message: 'Gas station not found' });
       }
+      if (!product) {
+        return responseNotFound({ message: 'Product not found' });
+      }
       if (alreadyExists) {
-        return responseConflict({ message: 'Station is already a favorite' });
+        return responseConflict({
+          message: 'This station/product combination is already a favorite',
+        });
       }
 
-      await this.favoritesRepo.store(userId, stationId);
-      
-      // Invalida o cache para que a próxima busca reflita a adição
+      await this.favoritesRepo.store(userId, stationId, productId);
+
       await this.cacheManager.del(this.getCacheKey(userId));
 
-      return responseCreated({ message: 'Station added to favorites' });
+      return responseCreated({ message: 'Favorite added successfully' });
     } catch (e) {
       const zodErr = zodErrorParse(e);
       if (zodErr.isError) return responseBadRequest({ error: zodErr.errors });
 
-      this.logger.error(`Error in addFavorite: ${e.message}`);
+      this.logger.error(`Error in addFavorite: ${e.message}`, e.stack);
       return responseInternalServerError();
     }
   }
 
-  async removeFavorite(userId: string, stationId: string): Promise<ResponseApi> {
+  async removeFavorite(
+    userId: string,
+    stationId: string,
+    productId: string,
+  ): Promise<ResponseApi> {
     try {
-      const wasRemoved = await this.favoritesRepo.destroy(userId, stationId);
+      const wasRemoved = await this.favoritesRepo.destroy(
+        userId,
+        stationId,
+        productId,
+      );
 
       if (!wasRemoved) {
         return responseNotFound({ message: 'Favorite not found' });
@@ -95,9 +118,9 @@ export class FavoritesService {
 
       await this.cacheManager.del(this.getCacheKey(userId));
 
-      return responseOk({ message: 'Station removed from favorites' });
+      return responseOk({ message: 'Favorite removed successfully' });
     } catch (e) {
-      this.logger.error(`Error in removeFavorite: ${e.message}`);
+      this.logger.error(`Error in removeFavorite: ${e.message}`, e.stack);
       return responseInternalServerError();
     }
   }

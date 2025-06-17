@@ -18,6 +18,7 @@ import { FavoritesController } from './favorites.controller';
 import { FavoritesRepository } from './repositories/favorites.repository';
 import { FavoritesService } from './favorites.service';
 import { GasStationEntity } from '@/database/entity/gas-station.entity';
+import { ProductEntity } from '@/database/entity/product.entity';
 
 @Module({
   imports: [
@@ -27,7 +28,8 @@ import { GasStationEntity } from '@/database/entity/gas-station.entity';
       PermissionsEntity,
       ResourceEntity,
       RolesEntity,
-      GasStationEntity
+      GasStationEntity,
+      ProductEntity
     ]),
   ],
   controllers: [FavoritesController],

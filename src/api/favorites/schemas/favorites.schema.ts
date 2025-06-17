@@ -4,6 +4,7 @@ import { z } from 'zod';
 
 const favoriteCreateSchema = z.object({
   stationId: z.string().uuid({ message: 'Invalid Station ID format' }),
+  productId: z.string().uuid({ message: 'Invalid Product ID format' }),
 });
 
 

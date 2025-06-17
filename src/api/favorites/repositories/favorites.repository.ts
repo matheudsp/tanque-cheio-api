@@ -2,7 +2,6 @@ import { Injectable } from '@nestjs/common';
 import { UserFavoriteStationEntity } from '@/database/entity/user-favorite-station.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { GasStationEntity } from '@/database/entity/gas-station.entity';
 
 @Injectable()
 export class FavoritesRepository {
@@ -12,52 +11,58 @@ export class FavoritesRepository {
   ) {}
 
   /**
-   * Encontra todos os postos favoritos de um usuário específico.
+   * Encontra todos os favoritos de um usuário, incluindo posto e produto.
    * @param userId - O ID do usuário.
-   * @returns Uma lista de entidades de GasStation.
+   * @returns Uma lista de entidades de favoritos.
    */
-  async findAllByUserId(userId: string): Promise<GasStationEntity[]> {
-    const favorites = await this.repo.find({
+  async findAllByUserId(userId: string): Promise<UserFavoriteStationEntity[]> {
+    return this.repo.find({
       where: { userId },
-
-      relations: ['station', 'station.localization'],
+      relations: ['station', 'station.localization', 'product'],
     });
-
-    return favorites.map((fav) => fav.station);
   }
 
   /**
    * Verifica se uma relação de favorito já existe.
    * @param userId - O ID do usuário.
    * @param stationId - O ID do posto.
+   * @param productId - O ID do produto.
    */
   async findOne(
     userId: string,
     stationId: string,
+    productId: string,
   ): Promise<UserFavoriteStationEntity | null> {
-    return this.repo.findOne({ where: { userId, stationId } });
+    return this.repo.findOne({ where: { userId, stationId, productId } });
   }
 
   /**
-   * Adiciona um novo posto aos favoritos de um usuário.
+   * Adiciona um novo favorito (posto + produto) para um usuário.
    * @param userId - O ID do usuário.
    * @param stationId - O ID do posto.
+   * @param productId - O ID do produto.
    */
   async store(
     userId: string,
     stationId: string,
+    productId: string,
   ): Promise<UserFavoriteStationEntity> {
-    const newFavorite = this.repo.create({ userId, stationId });
+    const newFavorite = this.repo.create({ userId, stationId, productId });
     return this.repo.save(newFavorite);
   }
 
   /**
-   * Remove um posto dos favoritos de um usuário.
+   * Remove um favorito de um usuário.
    * @param userId - O ID do usuário.
    * @param stationId - O ID do posto.
+   * @param productId - O ID do produto.
    */
-  async destroy(userId: string, stationId: string): Promise<boolean> {
-    const result = await this.repo.delete({ userId, stationId });
+  async destroy(
+    userId: string,
+    stationId: string,
+    productId: string,
+  ): Promise<boolean> {
+    const result = await this.repo.delete({ userId, stationId, productId });
     return !!result.affected && result.affected > 0;
   }
 }

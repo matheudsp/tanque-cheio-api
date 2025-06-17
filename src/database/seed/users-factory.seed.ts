@@ -26,17 +26,17 @@ export const seedUsersFactory = async (db: DataSource) => {
     const users: UserEntity[] = [
       {
         id: uuid(),
-        name: process.env.SEEDER_NAME_ADMIN as string || 'Admin',
-        email: process.env.SEEDER_EMAIL_ADMIN as string || 'admin@mail.com',
+        name: (process.env.SEEDER_NAME_ADMIN as string) || 'Admin',
+        email: (process.env.SEEDER_EMAIL_ADMIN as string) || 'admin@mail.com',
         password: bcrypt.hashSync(
-          process.env.SEEDER_PASSWORD_ADMIN as string || 'password123',
+          (process.env.SEEDER_PASSWORD_ADMIN as string) || 'password123',
           parseInt(process.env.SALT_ROUNDS as string) || 12,
         ),
       },
       {
         id: uuid(),
-        name: process.env.SEEDER_NAME_USER as string || 'Guest',
-        email: process.env.SEEDER_EMAIL_USER as string || 'Guest@mail.com',
+        name: (process.env.SEEDER_NAME_USER as string) || 'Guest',
+        email: (process.env.SEEDER_EMAIL_USER as string) || 'Guest@mail.com',
         password: bcrypt.hashSync(
           process.env.SEEDER_PASSWORD_USER || 'password123',
           parseInt(process.env.SALT_ROUNDS as string) || 12,
@@ -138,7 +138,14 @@ export const seedUsersFactory = async (db: DataSource) => {
         path: 'products',
         created_at: new Date(),
         updated_at: new Date(),
-      }
+      },
+      {
+        id: uuid(),
+        name: 'Favorites',
+        path: 'favorites',
+        created_at: new Date(),
+        updated_at: new Date(),
+      },
     ];
     const hasRoles: HasRolesEntity[] = [
       // Admin user
@@ -179,6 +186,12 @@ export const seedUsersFactory = async (db: DataSource) => {
         id: uuid(),
         action: [Action.GET],
         resource_id: resources[10].id, // Product
+        role_id: roles[1].id, // guest role
+      },
+      {
+        id: uuid(),
+        action: [Action.GET],
+        resource_id: resources[11].id, // Product
         role_id: roles[1].id, // guest role
       },
       // {

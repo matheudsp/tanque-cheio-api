@@ -12,6 +12,7 @@ import {
 import { LocalizationEntity } from './localization.entity';
 
 import { PriceHistoryEntity } from './price-history.entity';
+import { UserFavoriteStationEntity } from './user-favorite-station.entity';
 
 @Entity('gas_station')
 @Index(['taxId'], { unique: true })
@@ -38,23 +39,33 @@ export class GasStationEntity {
   isActive: boolean;
 
   @CreateDateColumn()
-  createdAt: Date;
+  created_at: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updated_at: Date;
 
   // Relacionamentos
-  @ManyToOne(() => LocalizationEntity, (localization) => localization.gas_station, {
-    nullable: false,
-    onDelete: 'RESTRICT',
-  })
+  @ManyToOne(
+    () => LocalizationEntity,
+    (localization) => localization.gas_station,
+    {
+      nullable: false,
+      onDelete: 'RESTRICT',
+    },
+  )
   @JoinColumn({ name: 'localization_id' })
-  localization: LocalizationEntity;  
+  localization: LocalizationEntity;
   @Column({ type: 'uuid', nullable: false })
   localization_id: string;
 
-  @OneToMany(() => PriceHistoryEntity, (priceHistory) => priceHistory.gas_station)
+  @OneToMany(
+    () => PriceHistoryEntity,
+    (priceHistory) => priceHistory.gas_station,
+  )
   priceHistory: PriceHistoryEntity[];
+
+  @OneToMany(() => UserFavoriteStationEntity, (favorite) => favorite.station)
+  favorited_by?: UserFavoriteStationEntity[];
 
   // Métodos de negócio
   getDisplayName(): string {
@@ -119,6 +130,4 @@ export class GasStationEntity {
       GasStationEntity.validateCnpj(this.taxId)
     );
   }
-
- 
 }

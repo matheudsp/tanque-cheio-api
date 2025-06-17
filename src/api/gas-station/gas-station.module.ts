@@ -14,8 +14,6 @@ import { GasStationRepository } from './repositories/gas-station.repository';
 import { PriceHistoryRepository } from '../price-history/repositories/price-history.repository';
 import { ProductRepository } from '../product/repositories/product.repository';
 import { LocalizationRepository } from '../localization/repositories/localization.repository';
-import { PriceHistoryService } from '../price-history/price-history.service';
-import { AuthGuard } from '@/common/guards/auth/auth.guard';
 import { JwtGuardService } from '@/common/services/jwt-auth/jwt-guard.service';
 import { PermissionsService } from '../permissions/permissions.service';
 import { RolesRepository } from '../roles/repositories/roles.repository';

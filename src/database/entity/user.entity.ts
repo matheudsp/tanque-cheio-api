@@ -9,6 +9,7 @@ import {
 } from 'typeorm';
 
 import { HasRolesEntity } from './has-roles.entity';
+import { UserFavoriteStationEntity } from './user-favorite-station.entity';
 
 @Entity('users')
 export class UserEntity {
@@ -32,4 +33,7 @@ export class UserEntity {
     onDelete: 'RESTRICT',
   })
   has_roles?: HasRolesEntity[];
+
+  @OneToMany(() => UserFavoriteStationEntity, (favorite) => favorite.user)
+  favorites?: UserFavoriteStationEntity[];
 }

@@ -11,6 +11,7 @@ import { AuthModule } from './auth/auth.module';
 import { PermissionsModule } from './permissions/permissions.module';
 import { HasRolesModule } from './has-roles/has-roles.module';
 import { ResourcesModule } from './resources/resources.module';
+import { FavoritesModule } from './favorites/favorites.module';
 
 @Module({
   imports: [
@@ -26,6 +27,7 @@ import { ResourcesModule } from './resources/resources.module';
     PermissionsModule,
     HasRolesModule,
     ResourcesModule,
+    FavoritesModule
   ],
   // controllers: [],
   providers: [],

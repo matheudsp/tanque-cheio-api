@@ -27,10 +27,12 @@ export class PriceHistoryService {
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
     private readonly cacheService: CacheRequestService,
     private readonly repository: PriceHistoryRepository,
+
+    
   ) {}
 
   /**
-   * Nova função para buscar preços formatados dos combustíveis
+   * função para buscar preços formatados dos combustíveis
    */
   async getLatestFuelPrices(stationId: string) {
     try {

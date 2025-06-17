@@ -63,6 +63,6 @@ export class FavoritesRepository {
     productId: string,
   ): Promise<boolean> {
     const result = await this.repo.delete({ userId, stationId, productId });
-    return !!result.affected && result.affected > 0;
+    return (result.affected ?? 0) > 0;
   }
 }

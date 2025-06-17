@@ -74,7 +74,10 @@ export class PriceHistoryEntity {
     collection_date: Date,
   ): string {
     // Garantir que dataColeta é uma instância de Date
-    const date = collection_date instanceof Date ? collection_date : new Date(collection_date);
+    const date =
+      collection_date instanceof Date
+        ? collection_date
+        : new Date(collection_date);
 
     const dataStr = date.toISOString().split('T')[0];
     return `${gas_station_id}|${product_id}|${dataStr}`;
@@ -94,7 +97,10 @@ export class PriceHistoryEntity {
   }
 
   isSameDay(other: PriceHistoryEntity): boolean {
-    return this.collection_date.toDateString() === other.collection_date.toDateString();
+    return (
+      this.collection_date.toDateString() ===
+      other.collection_date.toDateString()
+    );
   }
 
   isMoreRecentThan(other: PriceHistoryEntity): boolean {
@@ -126,6 +132,25 @@ export class PriceHistoryEntity {
     if (variation === null) return null;
 
     return Number(((variation / previousPrice.price) * 100).toFixed(2));
+  }
+
+  getTrend(
+    previousPrice?: PriceHistoryEntity,
+  ): 'UP' | 'DOWN' | 'STABLE' | null {
+    const variation = this.getPriceVariation(previousPrice);
+    if (variation === null) {
+      return null;
+    }
+
+    if (variation > 0) {
+      return 'UP';
+    }
+
+    if (variation < 0) {
+      return 'DOWN';
+    }
+
+    return 'STABLE';
   }
 
   getFormattedPrice(type: 'venda' | 'compra' = 'venda'): string {

@@ -19,6 +19,8 @@ import { FavoritesRepository } from './repositories/favorites.repository';
 import { FavoritesService } from './favorites.service';
 import { GasStationEntity } from '@/database/entity/gas-station.entity';
 import { ProductEntity } from '@/database/entity/product.entity';
+import { PriceHistoryRepository } from '../price-history/repositories/price-history.repository';
+import { PriceHistoryEntity } from '@/database/entity/price-history.entity';
 
 @Module({
   imports: [
@@ -29,7 +31,8 @@ import { ProductEntity } from '@/database/entity/product.entity';
       ResourceEntity,
       RolesEntity,
       GasStationEntity,
-      ProductEntity
+      ProductEntity,
+      PriceHistoryEntity
     ]),
   ],
   controllers: [FavoritesController],
@@ -42,6 +45,7 @@ import { ProductEntity } from '@/database/entity/product.entity';
     PermissionsRepository,
     JwtGuardService,
     PermissionsService,
+    PriceHistoryRepository,
     ResourceRepository,
     RolesRepository,
   ],

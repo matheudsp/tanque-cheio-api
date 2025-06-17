@@ -17,7 +17,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { GasStationEntity } from '@/database/entity/gas-station.entity';
 import { ProductEntity } from '@/database/entity/product.entity';
 import { Repository } from 'typeorm';
-import { favoriteCreateSchema, FavoriteCreateSchema } from './schemas/favorites.schema';
+import {
+  favoriteCreateSchema,
+  FavoriteCreateSchema,
+} from './schemas/favorites.schema';
+import { PriceHistoryRepository } from '../price-history/repositories/price-history.repository';
 
 @Injectable()
 export class FavoritesService {
@@ -30,6 +34,7 @@ export class FavoritesService {
     @InjectRepository(ProductEntity)
     private readonly productRepo: Repository<ProductEntity>,
     private readonly favoritesRepo: FavoritesRepository,
+    private readonly priceHistoryRepo: PriceHistoryRepository,
   ) {}
 
   private getCacheKey(userId: string): string {
@@ -39,21 +44,38 @@ export class FavoritesService {
   async getFavorites(userId: string): Promise<ResponseApi> {
     try {
       const cacheKey = this.getCacheKey(userId);
-      const cachedData = await this.cacheManager.get<any[]>(cacheKey);
+      const cachedData = await this.cacheManager.get(cacheKey);
       if (cachedData) {
         return responseOk({ data: cachedData });
       }
 
       const favorites = await this.favoritesRepo.findAllByUserId(userId);
-      // Mapeia os dados para uma resposta mais amigável
-      const responseData = favorites.map((fav) => ({
-        stationId: fav.station.id,
-        stationName: fav.station.getDisplayName(),
-        localization: fav.station.localization,
-        productId: fav.product.id,
-        productName: fav.product.name,
-        favoritedAt: fav.favoritedAt,
-      }));
+      const responseData = await Promise.all(
+        favorites.map(async (fav) => {
+          
+          const priceInfoArr = await this.priceHistoryRepo.getLatestPrices(
+            fav.station.id,
+            fav.product.name,
+          );
+          const priceInfo = priceInfoArr?.[0];
+
+          
+          return {
+            stationId: fav.station.id,
+            stationName: fav.station.getDisplayName(),
+            localization: fav.station.localization,
+            favoritedAt: fav.favoritedAt,
+            product: {
+              name: fav.product.name,
+              price: priceInfo?.price ?? null,
+              unit: priceInfo?.unit ? `R$ / ${priceInfo.unit}` : null,
+              lastUpdated: priceInfo?.lastUpdated ?? null,
+              percentageChange: priceInfo?.percentageChange ?? null,
+              trend: priceInfo?.trend ?? null,
+            },
+          };
+        }),
+      );
 
       await this.cacheManager.set(cacheKey, responseData, seconds(60));
 
@@ -64,7 +86,10 @@ export class FavoritesService {
     }
   }
 
-  async addFavorite(userId: string, data: FavoriteCreateSchema): Promise<ResponseApi> {
+  async addFavorite(
+    userId: string,
+    data: FavoriteCreateSchema,
+  ): Promise<ResponseApi> {
     try {
       const { stationId, productId } = favoriteCreateSchema.parse(data);
 

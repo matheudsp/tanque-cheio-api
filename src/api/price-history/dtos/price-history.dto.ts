@@ -1,29 +1,37 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { Type } from 'class-transformer';
-import { IsOptional, IsString, IsDateString, ValidateNested, IsArray } from 'class-validator';
-
+import {
+  IsOptional,
+  IsString,
+  IsDateString,
+  ValidateNested,
+  IsArray,
+} from 'class-validator';
 
 export class PeriodQueryDto {
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Data de início (YYYY-MM-DD)',
     example: '2025-01-01',
-    required: true 
+    required: true,
   })
-  @IsDateString({}, { message: 'Data de início deve estar no formato YYYY-MM-DD' })
+  @IsDateString(
+    {},
+    { message: 'Data de início deve estar no formato YYYY-MM-DD' },
+  )
   startDate: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Data de fim (YYYY-MM-DD)',
     example: '2025-01-31',
-    required: true 
+    required: true,
   })
   @IsDateString({}, { message: 'Data de fim deve estar no formato YYYY-MM-DD' })
   endDate: string;
 
-  @ApiProperty({ 
+  @ApiProperty({
     description: 'Nome do produto para filtrar (opcional)',
     example: 'GASOLINA',
-    required: false 
+    required: false,
   })
   @IsOptional()
   @IsString()
@@ -43,21 +51,36 @@ export class PriceItemDto {
   @ApiProperty({ description: 'Preço do combustível', example: 5.89 })
   price: number;
 
-  @ApiProperty({ description: 'Data da coleta (ISO string)', example: '2025-01-31T10:30:00Z' })
+  @ApiProperty({
+    description: 'Data da coleta (ISO string)',
+    example: '2025-01-31T10:30:00Z',
+  })
   date: string;
 
   @ApiProperty({ description: 'Unidade de medida', example: 'L' })
   unit: string;
 
-  @ApiProperty({ description: 'Variação em relação ao preço anterior', example: 0.05, required: false })
-  variation?: number;
+  @ApiProperty({
+    description:
+      'Tendência do preço em relação ao registro anterior (UP, DOWN, STABLE)',
+    example: 'DOWN',
+    required: false,
+  })
+  trend?: 'UP' | 'DOWN' | 'STABLE' | null;
 
-  @ApiProperty({ description: 'Variação percentual', example: 0.85, required: false })
-  variationPercent?: number;
+  @ApiProperty({
+    description: 'Variação percentual em relação ao preço anterior',
+    example: -1.5,
+    required: false,
+  })
+  percentageChange?: number | null;
 }
 
 export class FuelPriceDto {
-  @ApiProperty({ description: 'Nome do combustível', example: 'GASOLINA COMUM' })
+  @ApiProperty({
+    description: 'Nome do combustível',
+    example: 'GASOLINA COMUM',
+  })
   name: string;
 
   @ApiProperty({ description: 'Preço formatado', example: '6.49' })
@@ -66,22 +89,45 @@ export class FuelPriceDto {
   @ApiProperty({ description: 'Unidade com moeda', example: 'R$ / litro' })
   unit: string;
 
-  @ApiProperty({ description: 'Data da última atualização (YYYY-MM-DD)', example: '2025-05-20' })
+  @ApiProperty({
+    description: 'Data da última atualização (YYYY-MM-DD)',
+    example: '2025-05-20',
+  })
   lastUpdated: string;
-}
 
+  @ApiProperty({
+    description:
+      'Tendência do preço em relação ao registro anterior (UP, DOWN, STABLE)',
+    example: 'UP',
+    required: false,
+  })
+  trend?: 'UP' | 'DOWN' | 'STABLE' | null;
+
+  @ApiProperty({
+    description: 'Variação percentual em relação ao preço anterior',
+    example: 2.1,
+    required: false,
+  })
+  percentageChange?: number | null;
+}
 
 export class LatestPricesResponseDto {
   @ApiProperty({ description: 'ID do posto', example: 'uuid-station-id' })
   stationId: string;
 
-  @ApiProperty({ type: [PriceItemDto], description: 'Últimos preços de todos os produtos' })
+  @ApiProperty({
+    type: [PriceItemDto],
+    description: 'Últimos preços de todos os produtos',
+  })
   prices: PriceItemDto[];
 
   @ApiProperty({ description: 'Total de produtos encontrados', example: 3 })
   totalProducts: number;
 
-  @ApiProperty({ description: 'Data/hora da consulta (ISO string)', example: '2025-01-31T10:30:00Z' })
+  @ApiProperty({
+    description: 'Data/hora da consulta (ISO string)',
+    example: '2025-01-31T10:30:00Z',
+  })
   updatedAt: string;
 }
 
@@ -102,5 +148,3 @@ export class PriceByProductDto {
   @Type(() => PriceItemDto)
   prices: PriceItemDto[];
 }
-
-

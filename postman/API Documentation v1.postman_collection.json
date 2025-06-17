@@ -31,7 +31,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\r\n  \"email\": \"admin@mail.com\",\r\n  \"password\": \"password123\"\r\n}",
+									"raw": "{\r\n  \"email\": \"mdsp.personal@gmail.com\",\r\n  \"password\": \"2025tanquecheio\"\r\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -277,7 +277,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\r\n  \"url\": \"https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/arquivos-lpc/2025/revendas_lpc_2025-04-13_2025-04-19.xlsx\"\r\n}",
+									"raw": "{\r\n  \"url\": \"https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/arquivos-lpc/2025/revendas_lpc_2025-05-25_2025-05-31.xlsx\"\r\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -386,15 +386,14 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/api/v1/data-sync-log/logs",
+									"raw": "{{baseUrl}}/api/v1/data-sync-log",
 									"host": [
 										"{{baseUrl}}"
 									],
 									"path": [
 										"api",
 										"v1",
-										"data-sync-log",
-										"logs"
+										"data-sync-log"
 									]
 								}
 							},
@@ -1287,7 +1286,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\r\n    \"coordinates\": {\r\n        \"type\": \"Point\",\r\n        \"coordinates\": [\r\n           -7.17434199307057, -41.476313734233955\r\n        ]\r\n    }\r\n}",
+									"raw": "{\r\n    \"coordinates\": {\r\n        \"type\": \"Point\",\r\n        \"coordinates\": [\r\n            -6.776959538734574,\r\n            -43.033106186639635\r\n        ]\r\n    }\r\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -1367,7 +1366,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/api/v1/price-history/station/{{stationId}}/history?startDate=2025-05-01&endDate=2025-05-30",
+									"raw": "{{baseUrl}}/api/v1/price-history/station/{{stationId}}/history?endDate=2025-06-30&startDate=2025-04-02",
 									"host": [
 										"{{baseUrl}}"
 									],
@@ -1381,14 +1380,6 @@
 									],
 									"query": [
 										{
-											"key": "startDate",
-											"value": "2025-05-01"
-										},
-										{
-											"key": "endDate",
-											"value": "2025-05-30"
-										},
-										{
 											"key": "product",
 											"value": "GASOLINA COMUM",
 											"disabled": true
@@ -1397,6 +1388,14 @@
 											"key": "limit",
 											"value": "500",
 											"disabled": true
+										},
+										{
+											"key": "endDate",
+											"value": "2025-06-30"
+										},
+										{
+											"key": "startDate",
+											"value": "2025-04-02"
 										}
 									]
 								}
@@ -1783,6 +1782,148 @@
 											"key": "offset",
 											"value": null,
 											"disabled": true
+										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Favorites",
+					"item": [
+						{
+							"name": "Get All Favorites",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwtToken}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/favorites",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"favorites"
+									],
+									"query": [
+										{
+											"key": "limit",
+											"value": null,
+											"disabled": true
+										},
+										{
+											"key": "offset",
+											"value": null,
+											"disabled": true
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Add A Favorite",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwtToken}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"stationId\":\"ad21a863-8eda-432b-97f7-dfb9c1622624\",\r\n    \"productId\":\"0e36c0c2-6b36-4087-a785-ce85066575a8\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/favorites",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"favorites"
+									],
+									"query": [
+										{
+											"key": "limit",
+											"value": null,
+											"disabled": true
+										},
+										{
+											"key": "offset",
+											"value": null,
+											"disabled": true
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete A Favorite",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwtToken}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "DELETE",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/favorites/{{stationId}}?productId={{productId}}",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"favorites",
+										"{{stationId}}"
+									],
+									"query": [
+										{
+											"key": "limit",
+											"value": "",
+											"disabled": true
+										},
+										{
+											"key": "offset",
+											"value": "",
+											"disabled": true
+										},
+										{
+											"key": "productId",
+											"value": "{{productId}}"
 										}
 									]
 								}

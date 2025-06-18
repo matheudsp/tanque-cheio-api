@@ -78,6 +78,12 @@ export class PriceItemDto {
 
 export class FuelPriceDto {
   @ApiProperty({
+    description: 'Id do produto',
+    example: 'UUID',
+  })
+  id: string;
+
+  @ApiProperty({
     description: 'Nome do combustível',
     example: 'GASOLINA COMUM',
   })

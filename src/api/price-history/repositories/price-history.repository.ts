@@ -26,6 +26,8 @@ export class PriceHistoryRepository {
     const cteQuery = this.repository
       .createQueryBuilder('hp')
       .select([
+        // Adicionado o ID do produto na CTE
+        'hp.product_id AS "productId"',
         'hp.price AS price',
         'hp.collection_date AS "lastUpdated"',
         'prod.name AS name',
@@ -51,23 +53,25 @@ export class PriceHistoryRepository {
       .createQueryBuilder()
       .addCommonTableExpression(cteQuery, 'ranked_prices')
       .select([
+        
+        'rp."productId" AS "productId"',
         'rp.name AS name',
         'rp.price AS price',
         'rp.unit AS unit',
         `TO_CHAR(rp."lastUpdated", 'YYYY-MM-DD') AS "lastUpdated"`,
         // Calcula a variação percentual
         `CASE
-          WHEN rp."previousPrice" IS NOT NULL AND rp."previousPrice" > 0 THEN
-            ROUND(((rp.price - rp."previousPrice") / rp."previousPrice" * 100.0)::numeric, 2)
-          ELSE NULL
-        END AS "percentageChange"`,
+        WHEN rp."previousPrice" IS NOT NULL AND rp."previousPrice" > 0 THEN
+          ROUND(((rp.price - rp."previousPrice") / rp."previousPrice" * 100.0)::numeric, 2)
+        ELSE NULL
+      END AS "percentageChange"`,
         // Define a tendência
         `CASE
-          WHEN rp."previousPrice" IS NULL THEN NULL
-          WHEN rp.price > rp."previousPrice" THEN 'UP'
-          WHEN rp.price < rp."previousPrice" THEN 'DOWN'
-          ELSE 'STABLE'
-        END AS trend`,
+        WHEN rp."previousPrice" IS NULL THEN NULL
+        WHEN rp.price > rp."previousPrice" THEN 'UP'
+        WHEN rp.price < rp."previousPrice" THEN 'DOWN'
+        ELSE 'STABLE'
+      END AS trend`,
       ])
       .from('ranked_prices', 'rp')
       .where('rp.rn = 1') // Filtra apenas o preço mais recente de cada produto
@@ -85,11 +89,10 @@ export class PriceHistoryRepository {
     endDate: Date,
     productNameFilter?: string,
   ): Promise<PriceByProductDto[]> {
-    
     const cteQuery = this.repository
       .createQueryBuilder('hp')
       .select([
-        'hp.*', 
+        'hp.*',
         'prod.id AS "productId"',
         'prod.name AS "productName"',
         'prod."unitOfMeasure" AS unit',
@@ -112,7 +115,6 @@ export class PriceHistoryRepository {
       });
     }
 
-    
     const qb = this.repository.manager.connection
       .createQueryBuilder()
       .addCommonTableExpression(cteQuery, 'prices_with_previous')

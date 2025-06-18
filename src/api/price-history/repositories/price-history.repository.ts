@@ -55,7 +55,7 @@ export class PriceHistoryRepository {
       .select([
         
         'rp."productId" AS "productId"',
-        'rp.name AS name',
+        'rp.name AS "productName"',
         'rp.price AS price',
         'rp.unit AS unit',
         `TO_CHAR(rp."lastUpdated", 'YYYY-MM-DD') AS "lastUpdated"`,

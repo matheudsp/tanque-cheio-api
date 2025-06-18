@@ -66,8 +66,8 @@ export class FavoritesService {
             localization: fav.station.localization,
             favoritedAt: fav.favoritedAt,
             product: {
-              id: fav.product.id,
-              name: fav.product.name,
+              productId: fav.product.id,
+              productName: fav.product.name,
               price: priceInfo?.price ?? null,
               unit: priceInfo?.unit ? `R$ / ${priceInfo.unit}` : null,
               lastUpdated: priceInfo?.lastUpdated ?? null,

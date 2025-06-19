@@ -31,7 +31,7 @@ export class PriceHistoryRepository {
         'hp.price AS price',
         'hp.collection_date AS "lastUpdated"',
         'prod.name AS name',
-        'prod."unitOfMeasure" AS unit',
+        'prod.unit_of_measure AS unit',
         // https://learn.microsoft.com/pt-br/sql/t-sql/functions/lag-transact-sql?view=sql-server-ver17#:~:text=LAG%20fornece%20acesso%20a%20uma,valores%20em%20uma%20linha%20anterior.
         // Usa LAG para pegar o preço anterior para o mesmo produto
         'LAG(hp.price, 1) OVER (PARTITION BY hp.product_id ORDER BY hp.collection_date ASC) as "previousPrice"',
@@ -40,7 +40,7 @@ export class PriceHistoryRepository {
       ])
       .innerJoin('hp.product', 'prod')
       .where('hp.gas_station_id = :stationId', { stationId })
-      .andWhere('hp.isActive = true')
+      .andWhere('hp.is_active = true')
       .andWhere('hp.price IS NOT NULL');
 
     if (productFilter && productFilter.trim()) {
@@ -95,7 +95,7 @@ export class PriceHistoryRepository {
         'hp.*',
         'prod.id AS "productId"',
         'prod.name AS "productName"',
-        'prod."unitOfMeasure" AS unit',
+        'prod."unit_of_measure" AS unit',
         // https://learn.microsoft.com/pt-br/sql/t-sql/functions/lag-transact-sql?view=sql-server-ver17#:~:text=LAG%20fornece%20acesso%20a%20uma,valores%20em%20uma%20linha%20anterior.
         // Usa LAG para pegar o preço anterior para o mesmo produto
         'LAG(hp.price, 1) OVER (PARTITION BY hp.product_id ORDER BY hp.collection_date ASC) as "previousPrice"',
@@ -106,7 +106,7 @@ export class PriceHistoryRepository {
         startDate,
         endDate,
       })
-      .andWhere('hp.isActive = :isActive', { isActive: true })
+      .andWhere('hp.is_active = :is_active', { is_active: true })
       .andWhere('hp.price IS NOT NULL');
 
     if (productNameFilter) {

@@ -1,3 +1,4 @@
+import { warn } from 'console';
 import type { CsvRow } from '../interfaces/csv-row.interface';
 
 export class DataUtils {
@@ -28,7 +29,6 @@ export class DataUtils {
       return null;
     }
 
-    
     return `${cleaned.substring(0, 5)}-${cleaned.substring(5)}`;
   }
 
@@ -83,14 +83,9 @@ export class DataUtils {
     return date;
   }
 
-  static parsePrice(priceStr: string): number | null {
-    if (!priceStr) return null;
-
+  static parsePrice(priceStr: string): number {
     // Remove caracteres não numéricos exceto vírgula e ponto
     const cleaned = priceStr.replace(/[R$\s]/g, '').replace(/[^\d,.-]/g, '');
-
-    // Se está vazio após limpeza, retorna null
-    if (!cleaned) return null;
 
     // Substitui vírgula por ponto para parseFloat
     const normalized = cleaned.replace(',', '.');
@@ -99,12 +94,12 @@ export class DataUtils {
     // Validações
     if (isNaN(price)) {
       console.warn(`Preço inválido encontrado: ${priceStr}`);
-      return null;
+      throw warn(`Preço inválido encontrado: ${priceStr}`);
     }
 
     if (price < 0) {
       console.warn(`Preço negativo encontrado: ${priceStr}`);
-      return null;
+      throw warn(`Preço negativo encontrado: ${priceStr}`);
     }
     return price;
   }

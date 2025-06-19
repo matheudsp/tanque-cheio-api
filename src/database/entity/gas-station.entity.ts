@@ -15,15 +15,12 @@ import { PriceHistoryEntity } from './price-history.entity';
 import { UserFavoriteStationEntity } from './user-favorite-station.entity';
 
 @Entity('gas_station')
-@Index(['taxId'], { unique: true })
-@Index(['localization_id'])
-@Index(['legal_name', 'taxId']) // Para busca por RAZAO e CNPJ
-@Index(['isActive'])
+@Index(['tax_id'], { unique: true })
 export class GasStationEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'varchar', length: 200, nullable: false })
+  @Column({ type: 'varchar', length: 200 })
   legal_name: string;
 
   @Column({ type: 'varchar', length: 300, nullable: true })
@@ -32,11 +29,11 @@ export class GasStationEntity {
   @Column({ type: 'varchar', length: 100, nullable: true })
   brand?: string | null;
 
-  @Column({ type: 'varchar', length: 50, nullable: false, unique: true })
-  taxId: string; // Formato: 12.345.678/0001-90
+  @Column({ type: 'varchar', length: 50,unique: true })
+  tax_id: string; // Formato: 12.345.678/0001-90
 
   @Column({ type: 'boolean', default: true })
-  isActive: boolean;
+  is_active: boolean;
 
   @CreateDateColumn()
   created_at: Date;
@@ -44,7 +41,6 @@ export class GasStationEntity {
   @UpdateDateColumn()
   updated_at: Date;
 
-  // Relacionamentos
   @ManyToOne(
     () => LocalizationEntity,
     (localization) => localization.gas_station,
@@ -55,6 +51,7 @@ export class GasStationEntity {
   )
   @JoinColumn({ name: 'localization_id' })
   localization: LocalizationEntity;
+
   @Column({ type: 'uuid', nullable: false })
   localization_id: string;
 
@@ -62,7 +59,7 @@ export class GasStationEntity {
     () => PriceHistoryEntity,
     (priceHistory) => priceHistory.gas_station,
   )
-  priceHistory: PriceHistoryEntity[];
+  price_history: PriceHistoryEntity[];
 
   @OneToMany(() => UserFavoriteStationEntity, (favorite) => favorite.station)
   favorited_by?: UserFavoriteStationEntity[];
@@ -76,7 +73,7 @@ export class GasStationEntity {
   }
 
   normalizeCnpj(): string {
-    return this.taxId?.replace(/[^\d]/g, '') || '';
+    return this.tax_id?.replace(/[^\d]/g, '') || '';
   }
 
   getUpsertKey(): string {
@@ -91,7 +88,7 @@ export class GasStationEntity {
     const cleaned = cnpj.replace(/[^\d]/g, '');
 
     if (cleaned.length !== 14) return false;
-    if (/^(\d)\1+$/.test(cleaned)) return false; // Todos os dígitos iguais
+    if (/^(\d)\1+$/.test(cleaned)) return false;
 
     // Validação dos dígitos verificadores
     const weights1 = [5, 4, 3, 2, 9, 8, 7, 6, 5, 4, 3, 2];
@@ -125,9 +122,9 @@ export class GasStationEntity {
   isValid(): boolean {
     return !!(
       this.legal_name?.trim() &&
-      this.taxId?.trim() &&
+      this.tax_id?.trim() &&
       this.localization_id &&
-      GasStationEntity.validateCnpj(this.taxId)
+      GasStationEntity.validateCnpj(this.tax_id)
     );
   }
 }

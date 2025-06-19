@@ -233,13 +233,13 @@ export class CsvProcessor {
           row,
           localizationMap.get(locKey)!,
         );
-        const gasKey = gasStation.taxId;
+        const gasKey = gasStation.tax_id;
         if (!gasStationMap.has(gasKey)) {
           const existing = await this.findOrCreateEntity(
             queryRunner,
             GasStationEntity,
             gasStation,
-            { taxId: gasStation.taxId },
+            { tax_id: gasStation.tax_id },
           );
           gasStationMap.set(gasKey, existing);
         }
@@ -282,7 +282,7 @@ export class CsvProcessor {
       city: localization.city,
       address: localization.address,
       neighborhood: localization.neighborhood,
-      zipCode: localization.zipCode,
+      zip_code: localization.zip_code,
     };
   }
 
@@ -341,7 +341,7 @@ export class CsvProcessor {
 
           if (needsUpdate) {
             priceHistory.id = existing.id;
-            priceHistory.createdAt = existing.createdAt; // Preservar data de criação original
+            priceHistory.created_at = existing.created_at; // Preservar data de criação original
             toUpdate.push(priceHistory);
           } else {
             // Registro idêntico ou mais antigo, pular

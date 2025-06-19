@@ -28,10 +28,7 @@ export class UserEntity {
   @DeleteDateColumn({ type: 'timestamptz', nullable: true })
   deleted_at?: Date;
 
-  @OneToMany(() => HasRolesEntity, (r) => r.user, {
-    cascade: true,
-    onDelete: 'RESTRICT',
-  })
+  @OneToMany(() => HasRolesEntity, (hasRole) => hasRole.user)
   has_roles?: HasRolesEntity[];
 
   @OneToMany(() => UserFavoriteStationEntity, (favorite) => favorite.user)

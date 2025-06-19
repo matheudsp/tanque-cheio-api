@@ -11,33 +11,30 @@ import { PriceHistoryEntity } from './price-history.entity';
 
 @Entity('product')
 @Index(['name'], { unique: true })
-@Index(['category'])
-@Index(['isActive'])
 export class ProductEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'varchar', length: 100, nullable: false, unique: true })
+  @Column({ type: 'varchar', length: 100, unique: true })
   name: string;
 
-  @Column({ type: 'varchar', length: 50, nullable: false, default: 'COMBUSTÍVEL' })
-  category: string; // COMBUSTÍVEL, GLP, LUBRIFICANTE, etc.
+  @Column({ type: 'varchar', length: 50, default: 'COMBUSTÍVEL' })
+  category: string;
 
-  @Column({ type: 'varchar', length: 20, nullable: false, default: 'litro' })
-  unitOfMeasure: string;
+  @Column({ type: 'varchar', length: 20, default: 'litro' })
+  unit_of_measure: string;
 
-  @Column({ type: 'boolean', default: true })
-  isActive: boolean;
+  @Column({ default: true })
+  is_active: boolean;
 
   @CreateDateColumn()
-  createdAt: Date;
+  created_at: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updated_at: Date;
 
-  // Relacionamentos
   @OneToMany(() => PriceHistoryEntity, (priceHistory) => priceHistory.product)
-  priceHistory: PriceHistoryEntity[];
+  price_history: PriceHistoryEntity[];
 
   // Métodos de negócio
   static normalizeName(nome: string): string {
@@ -99,22 +96,22 @@ export class ProductEntity {
   }
 
   getDisplayName(): string {
-    return `${this.name} (${this.unitOfMeasure})`;
+    return `${this.name} (${this.unit_of_measure})`;
   }
 
   isLiquid(): boolean {
-    return this.unitOfMeasure.toLowerCase().includes('litro');
+    return this.unit_of_measure.toLowerCase().includes('litro');
   }
 
   isGas(): boolean {
-    return this.unitOfMeasure.includes('m³') || this.unitOfMeasure.includes('kg');
+    return this.unit_of_measure.includes('m³') || this.unit_of_measure.includes('kg');
   }
 
   isValid(): boolean {
     return !!(
       this.name?.trim() && 
       this.category?.trim() && 
-      this.unitOfMeasure?.trim()
+      this.unit_of_measure?.trim()
     );
   }
 }

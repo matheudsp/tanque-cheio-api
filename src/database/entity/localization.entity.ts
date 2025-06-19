@@ -12,9 +12,6 @@ import { GasStationEntity } from './gas-station.entity';
 
 @Entity('localization')
 @Index(['state', 'city'])
-@Index(['zipCode'])
-
-@Index(['state', 'city', 'address'])
 export class LocalizationEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -38,22 +35,21 @@ export class LocalizationEntity {
   neighborhood?: string | null;
 
   @Column({ type: 'varchar', length: 10, nullable: true })
-  zipCode?: string | null;
+  zip_code?: string | null;
 
-  // Nova coluna para PostGIS
-    @Column({
+  @Column({
     type: 'geography',
     spatialFeatureType: 'Point',
     srid: 4326, // Padrão para coordenadas geográficas (WGS 84)
     nullable: true,
   })
   coordinates: Point;
-  
+
   @CreateDateColumn()
-  createdAt: Date;
+  created_at: Date;
 
   @UpdateDateColumn()
-  updatedAt: Date;
+  updated_at: Date;
 
   @OneToMany(() => GasStationEntity, (gasStation) => gasStation.localization)
   gas_station: GasStationEntity[];
@@ -72,8 +68,6 @@ export class LocalizationEntity {
     return parts.join('|');
   }
 
-  
-
   getFullAddress(): string {
     const parts = [
       this.address,
@@ -82,14 +76,13 @@ export class LocalizationEntity {
       this.neighborhood,
       this.city,
       this.state,
-      this.zipCode,
+      this.zip_code,
     ].filter(Boolean);
 
     return parts.join(', ');
   }
 
   private normalizeCep(): string {
-    return this.zipCode?.replace(/[^\d]/g, '') || '';
+    return this.zip_code?.replace(/[^\d]/g, '') || '';
   }
-
 }

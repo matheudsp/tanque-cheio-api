@@ -12,33 +12,32 @@ import { ProductEntity } from './product.entity';
 @Entity('user_favorite_stations')
 export class UserFavoriteStationEntity {
   @PrimaryColumn({ type: 'uuid' })
-  userId: string;
+  user_id: string;
 
   @PrimaryColumn({ type: 'uuid' })
-  stationId: string;
+  station_id: string;
 
-  // Adicionando o ID do produto à chave primária
   @PrimaryColumn({ type: 'uuid' })
-  productId: string;
+  product_id: string;
 
   @CreateDateColumn({ type: 'timestamptz' })
-  favoritedAt: Date;
+  favorited_at: Date;
 
   @ManyToOne(() => UserEntity, (user) => user.favorites, {
     onDelete: 'CASCADE',
   })
-  @JoinColumn({ name: 'userId' })
+  @JoinColumn({ name: 'user_id' })
   user: UserEntity;
 
   @ManyToOne(() => GasStationEntity, (station) => station.favorited_by, {
     onDelete: 'CASCADE',
   })
-  @JoinColumn({ name: 'stationId' })
+  @JoinColumn({ name: 'station_id' })
   station: GasStationEntity;
 
   @ManyToOne(() => ProductEntity, {
     onDelete: 'CASCADE',
   })
-  @JoinColumn({ name: 'productId' })
+  @JoinColumn({ name: 'product_id' })
   product: ProductEntity;
 }

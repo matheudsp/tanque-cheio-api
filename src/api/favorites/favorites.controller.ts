@@ -4,8 +4,6 @@ import {
   Controller,
   Delete,
   Get,
-  HttpCode,
-  HttpStatus,
   Param,
   Post,
   Query,
@@ -23,7 +21,6 @@ import { FavoritesService } from './favorites.service';
 import { OpenApiResponses } from '@/common/decorators/openapi.decorator';
 import { Request, Response } from 'express';
 import { FavoriteCreateDto } from './dtos/favorites.dto';
-import { ResponseApi } from '@/common/utils/response-api';
 
 @ApiTags('Favorites')
 @ApiBearerAuth()
@@ -33,18 +30,15 @@ export class FavoritesController {
   constructor(private readonly service: FavoritesService) {}
 
   @Get()
-  @ApiOperation({
-    summary: 'Get all favorite stations and products for the current user',
-  })
+  @ApiOperation({ summary: 'Get all favorites for the current user' })
   @OpenApiResponses([200, 401, 500])
-  async getMyFavorites(@Res() res: Response, @Req() req: Request) {
-    const userId = req.user!.user_id;
-    const r = await this.service.getFavorites(userId);
-    res.status(r.statusCode).send(r);
+  async getMyFavorites(@Req() req: Request, @Res() res: Response) {
+    const user_id = req.user!.user_id;
+    const response = await this.service.getFavorites(user_id);
+    res.status(response.statusCode).json(response);
   }
 
   @Post()
-  @HttpCode(HttpStatus.CREATED)
   @ApiOperation({ summary: 'Add a station and product to favorites' })
   @OpenApiResponses([201, 400, 401, 404, 409, 500])
   async addFavorite(
@@ -52,30 +46,27 @@ export class FavoritesController {
     @Body() body: FavoriteCreateDto,
     @Res() res: Response,
   ) {
-    const userId = req.user!.user_id;
-    const r = await this.service.addFavorite(userId, body);
-    res.status(r.statusCode).send(r);
+    const user_id = req.user!.user_id;
+    const response = await this.service.addFavorite(user_id, body);
+    res.status(response.statusCode).json(response);
   }
 
-  @Delete(':stationId')
-  @HttpCode(HttpStatus.OK)
+  @Delete(':station_id')
   @ApiOperation({ summary: 'Remove a station and product from favorites' })
-  @ApiQuery({
-    name: 'productId',
-    required: true,
-    type: String,
-    description: 'ID of the product to remove from favorites',
-  })
+  @ApiQuery({ name: 'product_id', required: true, type: String })
   @OpenApiResponses([200, 400, 401, 404, 500])
   async removeFavorite(
     @Req() req: Request,
-    @Param('stationId') stationId: string,
-    @Query('productId') productId: string,
-    @Res() res: Response
+    @Param('station_id') station_id: string,
+    @Query('product_id') product_id: string,
+    @Res() res: Response,
   ) {
-    const userId = req.user!.user_id;
-    const r = await this.service.removeFavorite(userId, stationId, productId);
-     res.status(r.statusCode).send(r);
-
+    const user_id = req.user!.user_id;
+    const response = await this.service.removeFavorite(
+      user_id,
+      station_id,
+      product_id,
+    );
+    res.status(response.statusCode).json(response);
   }
 }

@@ -14,7 +14,7 @@ export class EntityFactory {
     localization.number = DataUtils.cleanString(row.NÚMERO) || null;
     localization.complement = DataUtils.cleanString(row.COMPLEMENTO) || null;
     localization.neighborhood = DataUtils.cleanString(row.BAIRRO) || null;
-    localization.zipCode = DataUtils.normalizeCep(row.CEP);
+    localization.zip_code = DataUtils.normalizeCep(row.CEP);
     return localization;
   }
 
@@ -23,10 +23,10 @@ export class EntityFactory {
     const produtoNome = DataUtils.cleanString(row.PRODUTO);
     product.name = ProductEntity.normalizeName(produtoNome);
     product.category = ProductEntity.determineCategory(produtoNome);
-    product.unitOfMeasure =
+    product.unit_of_measure =
       DataUtils.cleanString(row['UNIDADE DE MEDIDA']) ||
       ProductEntity.determineUnit(produtoNome);
-    product.isActive = true;
+    product.is_active = true;
     return product;
   }
 
@@ -38,8 +38,8 @@ export class EntityFactory {
     gasStation.legal_name = DataUtils.cleanString(row.RAZÃO);
     gasStation.trade_name = DataUtils.cleanString(row.FANTASIA) || null;
     gasStation.brand= DataUtils.cleanString(row.BANDEIRA) || null;
-    gasStation.taxId = DataUtils.normalizeCnpj(row.CNPJ);
-    gasStation.isActive = true;
+    gasStation.tax_id = DataUtils.normalizeCnpj(row.CNPJ);
+    gasStation.is_active = true;
     gasStation.localization = localization;
     gasStation.localization_id = localization.id;
     return gasStation;
@@ -53,11 +53,11 @@ export class EntityFactory {
     const priceHistory = new PriceHistoryEntity();
     priceHistory.gas_station = gasStation;
     priceHistory.product = product;
-    priceHistory.gas_station_id = gasStation.id;
-    priceHistory.product_id = product.id;
+    priceHistory.gas_station.id = gasStation.id;
+    priceHistory.product.id = product.id;
     priceHistory.collection_date = DataUtils.parseDate(row['DATA DA COLETA']);
     priceHistory.price = DataUtils.parsePrice(row['PREÇO DE REVENDA']);
-    priceHistory.isActive = true;
+    priceHistory.is_active = true;
     return priceHistory;
   }
 }

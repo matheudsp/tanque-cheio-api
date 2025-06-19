@@ -11,15 +11,15 @@ export class ProductRepository {
   ) {}
 
   async findAll(): Promise<ProductEntity[] | null> {
-    return this.repo.find({
-      where: { isActive: true },
+    return this.repo.find({ 
+      where: { is_active: true },
       order: { name: 'ASC' },
     });
   }
 
   async findById(id: string): Promise<ProductEntity | null> {
     return this.repo.findOne({
-      where: { id, isActive: true },
+      where: { id, is_active: true },
     });
   }
 

@@ -1,209 +1,74 @@
-import { Injectable, Logger, BadRequestException } from '@nestjs/common';
-import { HttpService } from '@nestjs/axios';
+import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { firstValueFrom } from 'rxjs';
 import { LocalizationRepository } from './repositories/localization.repository';
-import { LocalizationEntity } from '@/database/entity/localization.entity';
-import { responseBadRequest, responseInternalServerError, responseOk } from '@/common/utils/response-api';
 import {
-  GeocodingResponse,
-  GeocodingResult,
-} from './interfaces/geocoding.interface';
-import { localizationCreateSchema, LocalizationCreateSchema } from './schemas/localization.schema';
-import { zodErrorParse } from '@/common/utils/lib';
+  ResponseApi, responseBadRequest, responseInternalServerError, responseOk, responseNotFound,
+} from '@/common/utils/response-api';
+import { localizationCreateSchema, localizationQuerySchema, LocalizationQuerySchema } from './schemas/localization.schema';
+import { zodErrorParse, metaPagination } from '@/common/utils/lib';
+import { LocalizationCreateDto } from './dtos/localization.dto';
 
 @Injectable()
 export class LocalizationService {
   private readonly logger = new Logger(LocalizationService.name);
-  private readonly apiKey: string;
-  private readonly requestDelay = 500; // ms
-
+  
   constructor(
-    private readonly localizationRepository: LocalizationRepository,
-    private readonly httpService: HttpService,
-    private readonly configService: ConfigService,
+    private readonly localization_repo: LocalizationRepository,
+    private readonly config_service: ConfigService,
   ) {
-    this.apiKey = this.configService.get<string>('GOOGLE_MAPS_API_KEY')!;
-    if (!this.apiKey) {
-      this.logger.error('GOOGLE_MAPS_API_KEY não configurada');
-      throw new Error(
-        'GOOGLE_MAPS_API_KEY não está definida nas variáveis de ambiente',
-      );
-    }
-  }
-  async update(id:string, data: LocalizationCreateSchema){
- try {
-      const parsed = localizationCreateSchema.parse(data);
-      
-      const updated = await this.localizationRepository.update(id, parsed);
-      
-      return responseOk({ data: updated });
-    } catch (error) {
-      const zodErr = zodErrorParse(error);
-      if (zodErr.isError) return responseBadRequest({ error: zodErr.errors });
-      return responseInternalServerError({
-        message: error.message || 'Internal Server Error',
-      });
+    if (!this.config_service.get<string>('Maps_API_KEY')) {
+      this.logger.error('Maps_API_KEY não configurada');
     }
   }
 
-  async geocodeAll() {
-    const allWithoutCoords =
-      await this.localizationRepository.findWithoutCoordinates();
-    this.logger.log(
-      `Iniciando geocoding para ${allWithoutCoords.length} localizações`,
-    );
-
-    const results: GeocodingResult[] = [];
-    let successCount = 0;
-
-    for (const loc of allWithoutCoords) {
-      const { success, id, latitude, longitude, address, error } =
-        await this.safeGeocode(loc);
-      results.push({ id, address, latitude, longitude, success, error });
-
-      if (success) {
-        successCount++;
-        await this.localizationRepository.updateCoordinates(
-          id,
-          latitude!,
-          longitude!,
-        );
-      }
-
-      await this.delay(this.requestDelay);
-    }
-
-    const total = allWithoutCoords.length;
-    const errors = total - successCount;
-    this.logger.log(
-      `Geocoding concluído: ${successCount} sucessos, ${errors} erros`,
-    );
-
-    return responseOk({
-      data: { total, success: successCount, errors, results },
-    });
-  }
-
-  async geocodeById(id: string) {
-    const loc = await this.localizationRepository.findById(id);
-    if (!loc) throw new BadRequestException('Localização não encontrada');
-
-    const { success, latitude, longitude, address, error } =
-      await this.safeGeocode(loc);
-    if (success) {
-      await this.localizationRepository.updateCoordinates(
-        id,
-        latitude!,
-        longitude!,
-      );
-    }
-    return responseOk({
-      data: { id, address, latitude, longitude, success, error },
-    });
-  }
-
-  private async safeGeocode(loc: LocalizationEntity): Promise<GeocodingResult> {
-    const fullAddress = loc.getFullAddress();
-    const searchAddress = this.buildSearchAddress(loc);
-
-    if (!searchAddress) {
-      return {
-        id: loc.id,
-        address: fullAddress,
-        latitude: null,
-        longitude: null,
-        success: false,
-        error: 'Endereço insuficiente para geocoding',
-      };
-    }
-
+  async index(query: LocalizationQuerySchema): Promise<ResponseApi> {
     try {
-      const response = await firstValueFrom(
-        this.httpService.get<GeocodingResponse>(
-          'https://maps.googleapis.com/maps/api/geocode/json',
-          {
-            params: { 
-              address: searchAddress, 
-              key: this.apiKey, 
-              // Polarização de região
-              region: 'br' },
-          },
-        ),
-      );
-
-      const { status, results, error_message } = response.data;
-      if (status === 'OK' && results.length) {
-        const { lat, lng } = results[0].geometry.location;
-        return {
-          id: loc.id,
-          address: fullAddress,
-          latitude: lat,
-          longitude: lng,
-          success: true,
-        };
-      }
-
-      return {
-        id: loc.id,
-        address: fullAddress,
-        latitude: null,
-        longitude: null,
-        success: false,
-        error: `Geocoding falhou: ${status} - ${error_message ?? 'Endereço não encontrado'}`,
-      };
-    } catch (err) {
-      const msg = err?.message ?? 'Erro desconhecido';
-      this.logger.error(`Erro no geocoding para ${loc.id}: ${msg}`);
-      return {
-        id: loc.id,
-        address: fullAddress,
-        latitude: null,
-        longitude: null,
-        success: false,
-        error: `Erro na requisição: ${msg}`,
-      };
+      const parsed_query = localizationQuerySchema.parse(query);
+      const [localizations, total] = await this.localization_repo.findAll(parsed_query);
+      const meta = metaPagination({ ...parsed_query, total });
+      
+      return responseOk({ data: localizations });
+    } catch (error) {
+      const zod_err = zodErrorParse(error);
+      if (zod_err.isError) return responseBadRequest({ error: zod_err.errors });
+      
+      this.logger.error(`Error in index: ${error.message}`, error.stack);
+      return responseInternalServerError({ message: error.message });
     }
   }
 
-  private buildSearchAddress(loc: LocalizationEntity): string {
-    const parts = [
-      loc.address
-        ? `${loc.address.trim()}${loc.number ? `, ${loc.number.trim()}` : ''}`
-        : null,
-      loc.neighborhood?.trim(),
-      loc.city?.trim(),
-      loc.state?.trim(),
-      loc.zipCode?.trim(),
-      'Brasil',
-    ].filter(Boolean);
-
-    // Se city ou state estiverem faltando, retorna string vazia para sinalizar erro
-    if (!loc.city?.trim() || !loc.state?.trim()) return '';
-    return parts.join(', ');
+  async show(id: string): Promise<ResponseApi> {
+     try {
+       const localization = await this.localization_repo.findById(id);
+       if (!localization) {
+         return responseNotFound({ message: 'Localization not found' });
+       }
+       return responseOk({ data: localization });
+     } catch (error) {
+       this.logger.error(`Error in show: ${error.message}`, error.stack);
+       return responseInternalServerError({ message: error.message });
+     }
   }
 
-  async getGeocodingStats() {
-    const [withCoords, withoutCoords] = await Promise.all([
-      this.localizationRepository.countWithCoordinates(),
-      this.localizationRepository.countWithoutCoordinates(),
-    ]);
-    const total = withCoords + withoutCoords;
-    const percentage = total
-      ? Math.round((withCoords / total) * 10000) / 100
-      : 0;
+  async update(id: string, data: LocalizationCreateDto): Promise<ResponseApi> {
+    try {
+      const parsed_data = localizationCreateSchema.parse(data);
+      
+      const localization = await this.localization_repo.findById(id);
+      if (!localization) {
+        return responseNotFound({ message: 'Localization not found' });
+      }
 
-    return responseOk({
-      data: {
-        total,
-        withCoordinates: withCoords,
-        withoutCoordinates: withoutCoords,
-        percentageComplete: percentage,
-      },
-    });
-  }
+      await this.localization_repo.update(id, parsed_data);
+      const updated_localization = await this.localization_repo.findById(id); 
+      
+      return responseOk({ data: updated_localization });
+    } catch (error) {
+      const zod_err = zodErrorParse(error);
+      if (zod_err.isError) return responseBadRequest({ error: zod_err.errors });
 
-  private delay(ms: number) {
-    return new Promise<void>((resolve) => setTimeout(resolve, ms));
+      this.logger.error(`Error in update: ${error.message}`, error.stack);
+      return responseInternalServerError({ message: error.message });
+    }
   }
 }

@@ -12,50 +12,40 @@ import { GasStationEntity } from './gas-station.entity';
 import { ProductEntity } from './product.entity';
 
 @Entity('price_history')
-@Index(['gas_station_id', 'product_id', 'collection_date']) // Índice composto principal
-@Index(['collection_date']) // Para consultas por período
-@Index(['gas_station_id']) // Para consultas por posto
-@Index(['product_id']) // Para consultas por produto
-@Index(['gas_station_id', 'product_id'], { unique: false }) // Para consultas de posto+produto
-@Index(['price']) // Para consultas de preço
-@Index(['collection_date', 'product_id']) // Para relatórios por período e produto
+@Index(['gas_station.id', 'product.id', 'collection_date'])
 export class PriceHistoryEntity {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Column({ type: 'date', nullable: false })
+  @Column({ type: 'date' })
   collection_date: Date;
 
   @Column({ type: 'decimal', precision: 10, scale: 2 })
-  price: number | null;
+  price: number;
 
-  @Column({ type: 'boolean', default: true })
-  isActive: boolean;
+  @Column({ default: true })
+  is_active: boolean;
 
   @CreateDateColumn()
-  createdAt: Date;
+  created_at: Date;
 
-  @UpdateDateColumn()
-  updatedAt: Date;
+  @UpdateDateColumn() 
+  updated_at: Date;
 
-  // Relacionamentos
-  @ManyToOne(() => GasStationEntity, (gasStation) => gasStation.priceHistory, {
+  // --- Relacionamentos ---
+  @ManyToOne(() => GasStationEntity, (gasStation) => gasStation.price_history, {
     nullable: false,
     onDelete: 'CASCADE',
   })
   @JoinColumn({ name: 'gas_station_id' })
   gas_station: GasStationEntity;
-  @Column({ type: 'uuid', nullable: false })
-  gas_station_id: string;
 
-  @ManyToOne(() => ProductEntity, (produto) => produto.priceHistory, {
+  @ManyToOne(() => ProductEntity, (product) => product.price_history, {
     nullable: false,
     onDelete: 'RESTRICT',
   })
   @JoinColumn({ name: 'product_id' })
   product: ProductEntity;
-  @Column({ type: 'uuid', nullable: false })
-  product_id: string;
 
   getUpsertKey(): string {
     // Garantir que data_coleta é uma instância de Date
@@ -65,7 +55,7 @@ export class PriceHistoryEntity {
         : new Date(this.collection_date);
 
     const dataStr = date.toISOString().split('T')[0];
-    return `${this.gas_station_id}|${this.product_id}|${dataStr}`;
+    return `${this.gas_station.id}|${this.product.id}|${dataStr}`;
   }
 
   static createUpsertKey(
@@ -85,8 +75,8 @@ export class PriceHistoryEntity {
 
   isValid(): boolean {
     return !!(
-      this.gas_station_id &&
-      this.product_id &&
+      this.gas_station.id &&
+      this.product.id &&
       this.collection_date &&
       this.price // Pelo menos um preço deve existir
     );

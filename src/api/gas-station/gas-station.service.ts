@@ -50,7 +50,7 @@ export class GasStationService {
         await this.priceHistoryRepo.getLatestPrices(stationId);
       data = {
         ...station,
-        fuelPrices: fuelPricesData,
+        fuel_prices: fuelPricesData,
       };
       if (!data) return responseNotFound({ message: 'Posto não encontrado' });
       // cached for 15 min in redis

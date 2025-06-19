@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 const periodQuerySchema = z
   .object({
-    startDate: z
+    start_date: z
       .string()
       .regex(
         /^\d{4}-\d{2}-\d{2}$/,
@@ -12,7 +12,7 @@ const periodQuerySchema = z
       )
       .refine((date) => !isNaN(Date.parse(date)), 'Data de início inválida'),
 
-    endDate: z
+    end_date: z
       .string()
       .regex(
         /^\d{4}-\d{2}-\d{2}$/,
@@ -28,8 +28,8 @@ const periodQuerySchema = z
   })
   .refine(
     (data) => {
-      const start = new Date(data.startDate);
-      const end = new Date(data.endDate);
+      const start = new Date(data.start_date);
+      const end = new Date(data.end_date);
       return start <= end;
     },
     {
@@ -39,8 +39,8 @@ const periodQuerySchema = z
   )
   .refine(
     (data) => {
-      const start = new Date(data.startDate);
-      const end = new Date(data.endDate);
+      const start = new Date(data.start_date);
+      const end = new Date(data.end_date);
       const diffTime = Math.abs(end.getTime() - start.getTime());
       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
       return diffDays <= 365; // Máximo 1 ano
@@ -52,7 +52,7 @@ const periodQuerySchema = z
   );
 
 const stationParamSchema = z.object({
-  stationId: z.string().uuid('ID do posto deve ser um UUID válido'),
+  station_id: z.string().uuid('ID do posto deve ser um UUID válido'),
 });
 
 

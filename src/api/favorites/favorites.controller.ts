@@ -35,7 +35,7 @@ export class FavoritesController {
   async getMyFavorites(@Req() req: Request, @Res() res: Response) {
     const user_id = req.user!.user_id;
     const response = await this.service.getFavorites(user_id);
-    res.status(response.statusCode).json(response);
+    res.status(response.statusCode).send(response);
   }
 
   @Post()
@@ -48,7 +48,7 @@ export class FavoritesController {
   ) {
     const user_id = req.user!.user_id;
     const response = await this.service.addFavorite(user_id, body);
-    res.status(response.statusCode).json(response);
+    res.status(response.statusCode).send(response);
   }
 
   @Delete(':station_id')
@@ -67,6 +67,6 @@ export class FavoritesController {
       station_id,
       product_id,
     );
-    res.status(response.statusCode).json(response);
+    res.status(response.statusCode).send(response);
   }
 }

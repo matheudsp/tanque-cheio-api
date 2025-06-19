@@ -12,10 +12,7 @@ import {
   responseInternalServerError,
 } from '@/common/utils/response-api';
 
-import {
-PeriodQueryDto,
-PriceByProductDto,
-} from './dtos/price-history.dto';
+import { PeriodQueryDto, PriceByProductDto } from './dtos/price-history.dto';
 import {
   periodQuerySchema,
   stationParamSchema,
@@ -27,26 +24,24 @@ export class PriceHistoryService {
     @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
     private readonly cacheService: CacheRequestService,
     private readonly repository: PriceHistoryRepository,
-
-    
   ) {}
 
   /**
    * função para buscar preços formatados dos combustíveis
    */
-  async getLatestFuelPrices(stationId: string) {
+  async getLatestFuelPrices(station_id: string) {
     try {
       // Validação do parâmetro
-      stationParamSchema.parse({ stationId });
+      stationParamSchema.parse({ station_id });
 
       const cacheKey = this.cacheService.getCacheKey();
-      const cachedData = await this.cacheManager.get(cacheKey);
 
+      const cachedData = await this.cacheManager.get(cacheKey);
       if (cachedData) {
         return responseOk({ data: cachedData });
       }
 
-      const data = await this.repository.getLatestPrices(stationId);
+      const data = await this.repository.getLatestPrices(station_id);
 
       if (!data.length) {
         return responseNotFound({
@@ -66,37 +61,36 @@ export class PriceHistoryService {
   /**
    * Busca histórico de preços por período
    */
-  async getPriceHistory(stationId: string, query: PeriodQueryDto) {
+  async getPriceHistory(station_id: string, query: PeriodQueryDto) {
     try {
-      stationParamSchema.parse({ stationId });
+      stationParamSchema.parse({ station_id });
       const {
-        startDate: startStr,
-        endDate: endStr,
-        product: productNameFilter,
+        start_date: startStr,
+        end_date: endStr,
+        product: product_name,
       } = periodQuerySchema.parse(query);
 
       const cacheKey = this.cacheService.getCacheKey();
-      const cachedData =
-        await this.cacheManager.get(cacheKey);
-
+      const cachedData = await this.cacheManager.get(cacheKey);
+      
       if (cachedData) {
         return responseOk({ data: cachedData });
       }
 
-      const startDate = new Date(startStr);
-      const endDate = new Date(endStr);
+      const start_date = new Date(startStr);
+      const end_date = new Date(endStr);
 
       const grouped: PriceByProductDto[] =
         await this.repository.getPriceHistoryGrouped(
-          stationId,
-          startDate,
-          endDate,
-          productNameFilter,
+          station_id,
+          start_date,
+          end_date,
+          product_name,
         );
 
       if (!grouped.length) {
-        const productFilter = productNameFilter
-          ? ` para o produto ${productNameFilter}`
+        const productFilter = product_name
+          ? ` para o produto ${product_name}`
           : '';
         return responseNotFound({
           message: `Nenhum preço encontrado no período de ${startStr} a ${endStr}${productFilter}`,
@@ -104,16 +98,15 @@ export class PriceHistoryService {
       }
 
       const response = {
-        stationId,
-        startDate: startStr,
-        endDate: endStr,
+        station_id,
+        start_date: startStr,
+        end_date: endStr,
         prices: grouped,
         totalProducts: grouped.length,
-        queryTime: new Date().toISOString(),
       };
 
       // Cache por 3 minutos
-      await this.cacheManager.set(cacheKey, response, 1);
+      await this.cacheManager.set(cacheKey, response, 120000);
 
       return responseOk({ data: response });
     } catch (error) {

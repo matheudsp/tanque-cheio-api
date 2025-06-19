@@ -37,24 +37,7 @@ export class GasStationService {
     private readonly priceHistoryRepo: PriceHistoryRepository,
   ) {}
 
-  async all(){
-    try {
-      const key = this.cache.getCacheKey();
-      // let data = await this.cacheManager.get(key);
-
-      // if (data) return responseOk({ data });
-
-      let data = await this.repo.all();
-      if (!data) return responseNotFound({ message: 'Nenhum posto encontrado' });
-
-      // cached for 15 min in redis
-      // await this.cacheManager.set(key, data, seconds(900));
-
-      return responseOk({ data });
-    } catch (e) {
-      return getErrorResponse(e);
-    }
-  }
+ 
   async findById(stationId: string) {
     try {
       const key = this.cache.getCacheKey();
@@ -91,9 +74,9 @@ export class GasStationService {
       }
 
       // Define o período padrão (últimos 30 dias) se não for fornecido
-      const endDate = query.endDate ? new Date(query.endDate) : new Date();
-      const startDate = query.startDate
-        ? new Date(query.startDate)
+      const endDate = query.end_date ? new Date(query.end_date) : new Date();
+      const startDate = query.start_date
+        ? new Date(query.start_date)
         : new Date(new Date().setDate(endDate.getDate() - 30));
 
       // Busca o histórico de preços agrupado usando o método que já existe
@@ -142,12 +125,12 @@ export class GasStationService {
   try {
     const parsed = getNearbyStationsSchema.parse(params);
     
-    // const key = this.cache.getCacheKey();
-    // let cached = await this.cacheManager.get(key);
+    const key = this.cache.getCacheKey();
+    let cached = await this.cacheManager.get(key);
 
-    // if (cached) {
-    //   return responseOk({ data: cached });
-    // }
+    if (cached) {
+      return responseOk({ data: cached });
+    }
 
 
      const result = await this.repo.nearby(parsed);

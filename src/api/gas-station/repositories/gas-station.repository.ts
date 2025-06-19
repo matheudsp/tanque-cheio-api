@@ -19,71 +19,21 @@ export class GasStationRepository {
     private readonly priceHistoryRepo: PriceHistoryRepository,
   ) {}
 
-   async all() {
-
-    const rawStations = await this.repo
-      .createQueryBuilder('gs')
-      .innerJoin('gs.localization', 'loc')
-      .where('gs.isActive = :isActive', { isActive: true })
-      .andWhere('loc.coordinates IS NOT NULL')
-      .select([
-        'gs.id AS id',
-        'gs.taxId AS taxId',
-        'gs.legal_name AS legal_name',
-        'gs.trade_name AS trade_name',
-        'gs.brand AS brand',
-        'loc.city AS city',
-        'loc.state AS state',
-        // Transforma a coluna de coordenadas em uma string no formato GeoJSON.
-        'ST_AsGeoJSON(loc.coordinates) AS coordinates', 
-      ])
-      .orderBy('gs.legal_name', 'ASC')
-      .addOrderBy('gs.brand', 'ASC')
-      .getRawMany();
-
-    this.logger.log(`Encontrados ${rawStations.length} postos. Buscando preços para cada um...`);
-
-    // 2. Para cada posto, busca os preços mais recentes.
-    const results = await Promise.all(
-      rawStations.map(async (station) => {
-        const latestPrices = await this.priceHistoryRepo.getLatestPrices(station.id);
-
-        // 3. Monta o objeto final para cada posto.
-        return {
-          id: station.id,
-          taxId: station.taxId,
-          legal_name: station.legal_name,
-          trade_name: station.trade_name,
-          brand: station.brand,
-          localization: {
-            city: station.city,
-            state: station.state,
-            // Converte a string GeoJSON em um objeto JavaScript.
-            coordinates: station.coordinates ? JSON.parse(station.coordinates) : null,
-          },
-          fuelPrices: latestPrices,
-        };
-      }),
-    );
-
-    
-    return results;
-  }
 
   async filter(filters: SearchGasStationsQuerySchema) {
     const queryBuilder = this.repo
       .createQueryBuilder('gs')
       .leftJoinAndSelect('gs.localization', 'loc')
-      .leftJoinAndSelect('gs.priceHistory', 'hp')
+      .leftJoinAndSelect('gs.price_history', 'hp')
       .leftJoinAndSelect('hp.product', 'prod')
-      .where('gs.isActive = :ativo', { ativo: true })
+      .where('gs.is_active = :ativo', { ativo: true })
       .select([
         'gs.id',
-        'gs.taxId',
+        'gs.tax_id',
         'gs.legal_name',
         'gs.trade_name',
         'gs.brand',
-        'gs.isActive',
+        'gs.is_active',
         'loc.city',
         'loc.state',
       ]);
@@ -125,25 +75,33 @@ export class GasStationRepository {
       .createQueryBuilder('gs')
       .leftJoinAndSelect('gs.localization', 'loc')
       .where('gs.id = :id', { id })
-      .andWhere('gs.isActive = :isActive', { isActive: true })
+      .andWhere('gs.is_active = :isActive', { isActive: true })
       .select([
         'gs.id',
-        'gs.taxId',
+        'gs.tax_id',
         'gs.legal_name',
         'gs.trade_name',
         'gs.brand',
         'loc.address',
         'loc.neighborhood',
-        'loc.zipCode',
+        'loc.zip_code',
         'loc.city',
         'loc.state',
-        'loc.coordinates'
+        'loc.coordinates',
       ])
       .getOne();
   }
 
   async nearby(params: GetNearbyStationsSchema) {
-    const { lat, lng, radius, limit = 50, offset = 0, product, sortBy = 'distanceAsc' } = params;
+    const {
+      lat,
+      lng,
+      radius,
+      limit = 50,
+      offset = 0,
+      product,
+      sort = 'distanceAsc',
+    } = params;
 
     const radiusInMeters = radius * 1000;
 
@@ -152,7 +110,7 @@ export class GasStationRepository {
       .innerJoin('gs.localization', 'loc')
       .select([
         'gs.id',
-        'gs.taxId',
+        'gs.tax_id',
         'gs.legal_name',
         'gs.trade_name',
         'gs.brand',
@@ -161,36 +119,45 @@ export class GasStationRepository {
         'loc.coordinates',
       ])
       // Calcula a distância
-      .addSelect(`
+      .addSelect(
+        `
         ST_Distance(
           loc.coordinates::geography,
           ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography
         )
-      `, 'distance')
-      .where('gs.isActive = :isActive', { isActive: true })
+      `,
+        'distance',
+      )
+      .where('gs.is_active = :is_active', { is_active: true })
       // Filtra por raio de distância
-      .andWhere(`
+      .andWhere(
+        `
         ST_DWithin(
           loc.coordinates::geography,
           ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography,
           :radiusInMeters
         )
-      `)
+      `,
+      )
       .setParameters({ lat, lng, radiusInMeters });
 
     if (product && product.trim()) {
       qb = qb
-        .innerJoin('gs.priceHistory', 'hp', 'hp."isActive" = true AND hp.price IS NOT NULL')
+        .innerJoin(
+          'gs.price_history',
+          'hp',
+          'hp."is_active" = true AND hp.price IS NOT NULL',
+        )
         .innerJoin('hp.product', 'prod')
-        .andWhere('UPPER(prod.name) ILIKE UPPER(:product)', { 
-          product: `%${product.trim()}%` 
+        .andWhere('UPPER(prod.name) ILIKE UPPER(:product)', {
+          product: `%${product.trim()}%`,
         });
     }
 
     // Agrupa pelos campos necessários
     qb = qb.groupBy(`
       gs.id,
-      gs.taxId,
+      gs.tax_id,
       gs.legal_name,
       gs.trade_name,
       gs.brand,
@@ -200,11 +167,11 @@ export class GasStationRepository {
     `);
 
     // Para ordenação por preço, precisamos incluir o preço na seleção
-    if (sortBy === 'priceAsc' || sortBy === 'priceDesc') {
+    if (sort === 'priceAsc' || sort === 'priceDesc') {
       if (product && product.trim()) {
         // Adiciona o preço mais recente do produto específico para ordenação
-        qb = qb
-          .addSelect(`
+        qb = qb.addSelect(
+          `
             (
               SELECT hp_latest.price 
               FROM price_history hp_latest
@@ -223,29 +190,37 @@ export class GasStationRepository {
                 )
               LIMIT 1
             )
-          `, 'latest_price');
+          `,
+          'latest_price',
+        );
       } else {
-        this.logger.warn('Ordenação por preço solicitada sem especificar produto. Usando ordenação por distância.');
+        this.logger.warn(
+          'Ordenação por preço solicitada sem especificar produto. Usando ordenação por distância.',
+        );
       }
     }
 
     const total = await qb.getCount();
 
     // Aplica ordenação
-    switch (sortBy) {
+    switch (sort) {
       case 'distanceDesc':
         qb = qb.orderBy('distance', 'DESC');
         break;
       case 'priceAsc':
         if (product && product.trim()) {
-          qb = qb.orderBy('latest_price', 'ASC', 'NULLS LAST').addOrderBy('distance', 'ASC');
+          qb = qb
+            .orderBy('latest_price', 'ASC', 'NULLS LAST')
+            .addOrderBy('distance', 'ASC');
         } else {
           qb = qb.orderBy('distance', 'ASC');
         }
         break;
       case 'priceDesc':
         if (product && product.trim()) {
-          qb = qb.orderBy('latest_price', 'DESC', 'NULLS LAST').addOrderBy('distance', 'ASC');
+          qb = qb
+            .orderBy('latest_price', 'DESC', 'NULLS LAST')
+            .addOrderBy('distance', 'ASC');
         } else {
           qb = qb.orderBy('distance', 'ASC');
         }
@@ -257,20 +232,17 @@ export class GasStationRepository {
     }
 
     // Aplica paginação
-    const rawResults = await qb
-      .limit(limit)
-      .offset(offset)
-      .getRawMany();
+    const rawResults = await qb.limit(limit).offset(offset).getRawMany();
 
     // Mapeia os resultados e busca os preços mais recentes para cada posto
     const results = await Promise.all(
       rawResults.map(async (r) => {
         // Passa o filtro de produto para getLatestPrices quando existe filtro
-        const latestPrices = await this.priceHistoryRepo.getLatestPrices(
-          r.gs_id, 
-          product?.trim() // Passa o filtro de produto
+        const latest_prices = await this.priceHistoryRepo.getLatestPrices(
+          r.gs_id,
+          product?.trim(), // Passa o filtro de produto
         );
-        
+
         return {
           id: r.gs_id,
           taxId: r.gs_taxId,
@@ -283,10 +255,12 @@ export class GasStationRepository {
             coordinates: r.loc_coordinates,
           },
           distance: (Number(r.distance) / 1000).toFixed(1),
-          fuelPrices: latestPrices, 
-          ...(r.latest_price && { filteredProductPrice: Number(r.latest_price).toFixed(2) })
+          fuel_prices: latest_prices,
+          ...(r.latest_price && {
+            filteredProductPrice: Number(r.latest_price).toFixed(2),
+          }),
         };
-      })
+      }),
     );
 
     return {
@@ -296,8 +270,8 @@ export class GasStationRepository {
       offset,
       geo: { lat, lng },
       radius,
-      sortBy,
-      productFilter: product?.trim() || null,
+      sort,
+      product: product?.trim() || null,
     };
   }
 }

@@ -5,12 +5,12 @@ export class PriceHistoryQueryDto {
   @ApiProperty({ required: false, description: 'Data inicial do período (YYYY-MM-DD)' })
   @IsOptional()
   @IsDateString({}, { message: 'A data inicial deve estar no formato YYYY-MM-DD' })
-  startDate?: string;
+  start_date?: string;
 
   @ApiProperty({ required: false, description: 'Data final do período (YYYY-MM-DD)' })
   @IsOptional()
   @IsDateString({}, { message: 'A data final deve estar no formato YYYY-MM-DD' })
-  endDate?: string;
+  end_date?: string;
 
   @ApiProperty({ required: false, description: 'Filtra o histórico por um nome de produto específico' })
   @IsOptional()
@@ -32,16 +32,16 @@ export class GasStationDto {
   brand?: string | null;
 
   @ApiProperty()
-  taxId: string;
+  tax_id: string;
 
   @ApiProperty()
-  isActive: boolean;
+  is_active: boolean;
 
   @ApiProperty()
-  createdAt: Date;
+  created_at: Date;
 
   @ApiProperty()
-  updatedAt: Date;
+  updated_at: Date;
 
   @ApiProperty()
   localization_id: string;
@@ -102,7 +102,7 @@ export class NearbyStationsQueryDto {
     default: 'distance',
     description: 'Critério de ordenação'
   })
-  sortBy?: 'distance' | 'priceAsc' | 'priceDesc';
+  sort?: 'distance' | 'priceAsc' | 'priceDesc';
 
   @ApiProperty({ 
     required: false,

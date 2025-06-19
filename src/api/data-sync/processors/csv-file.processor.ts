@@ -128,7 +128,7 @@ export class CsvProcessor {
     if (headerIndex === -1) {
       throw new Error('❌CSV cabeçaçlho não encontrado');
     }
- 
+
     return lines
       .slice(headerIndex)
       .filter((line) => line.trim() && !line.match(/^,+$/))
@@ -201,7 +201,7 @@ export class CsvProcessor {
     }> = [];
 
     for (const row of batch) {
-      try { 
+      try {
         // Process localization
         const localization = EntityFactory.createLocalization(row);
         const locKey = localization.getLocationKey();
@@ -442,12 +442,15 @@ export class CsvProcessor {
 
     const records = await queryRunner.manager
       .createQueryBuilder(PriceHistoryEntity, 'ph')
+      // Add these two lines to join and select the related entities
+      .leftJoinAndSelect('ph.gas_station', 'gas_station')
+      .leftJoinAndSelect('ph.product', 'product')
       .where(`(${conditions})`, parameters)
       .getMany();
 
     const resultMap = new Map<string, PriceHistoryEntity>();
     records.forEach((record) => {
-      const key = record.getUpsertKey();
+      const key = record.getUpsertKey(); // Now, record.gas_station and record.product will be defined
       resultMap.set(key, record);
     });
 

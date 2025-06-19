@@ -18,7 +18,7 @@ export class PeriodQueryDto {
     {},
     { message: 'Data de início deve estar no formato YYYY-MM-DD' },
   )
-  startDate: string;
+  start_date: string;
 
   @ApiProperty({
     description: 'Data de fim (YYYY-MM-DD)',
@@ -26,7 +26,7 @@ export class PeriodQueryDto {
     required: true,
   })
   @IsDateString({}, { message: 'Data de fim deve estar no formato YYYY-MM-DD' })
-  endDate: string;
+  end_date: string;
 
   @ApiProperty({
     description: 'Nome do produto para filtrar (opcional)',
@@ -43,10 +43,10 @@ export class PriceItemDto {
   id: string;
 
   @ApiProperty({ description: 'ID do produto', example: 'uuid-product-id' })
-  productId: string;
+  product_id: string;
 
   @ApiProperty({ description: 'Nome do produto', example: 'GASOLINA COMUM' })
-  productName: string;
+  product_name: string;
 
   @ApiProperty({ description: 'Preço do combustível', example: 5.89 })
   price: number;
@@ -55,10 +55,10 @@ export class PriceItemDto {
     description: 'Data da coleta (ISO string)',
     example: '2025-01-31T10:30:00Z',
   })
-  date: string;
+  collection_date: string;
 
   @ApiProperty({ description: 'Unidade de medida', example: 'L' })
-  unit: string;
+  unit_of_measure: string;
 
   @ApiProperty({
     description:
@@ -73,7 +73,7 @@ export class PriceItemDto {
     example: -1.5,
     required: false,
   })
-  percentageChange?: number | null;
+  percentage_change?: number | null;
 }
 
 export class FuelPriceDto {
@@ -81,25 +81,25 @@ export class FuelPriceDto {
     description: 'Id do produto',
     example: 'UUID',
   })
-  id: string;
+  product_id: string;
 
   @ApiProperty({
     description: 'Nome do combustível',
     example: 'GASOLINA COMUM',
   })
-  name: string;
+  product_name: string;
 
   @ApiProperty({ description: 'Preço formatado', example: '6.49' })
   price: number | null;
 
   @ApiProperty({ description: 'Unidade com moeda', example: 'R$ / litro' })
-  unit: string;
+  unit_of_measure: string;
 
   @ApiProperty({
     description: 'Data da última atualização (YYYY-MM-DD)',
     example: '2025-05-20',
   })
-  lastUpdated: string;
+  collection_date: string;
 
   @ApiProperty({
     description:
@@ -114,12 +114,12 @@ export class FuelPriceDto {
     example: 2.1,
     required: false,
   })
-  percentageChange?: number | null;
+  percentage_change?: number | null;
 }
 
 export class LatestPricesResponseDto {
   @ApiProperty({ description: 'ID do posto', example: 'uuid-station-id' })
-  stationId: string;
+  station_id: string;
 
   @ApiProperty({
     type: [PriceItemDto],
@@ -128,13 +128,13 @@ export class LatestPricesResponseDto {
   prices: PriceItemDto[];
 
   @ApiProperty({ description: 'Total de produtos encontrados', example: 3 })
-  totalProducts: number;
+  total_products: number;
 
   @ApiProperty({
     description: 'Data/hora da consulta (ISO string)',
     example: '2025-01-31T10:30:00Z',
   })
-  updatedAt: string;
+  updated_at: string;
 }
 
 export class PriceByProductDto {
@@ -143,7 +143,7 @@ export class PriceByProductDto {
     example: 'GASOLINA COMUM',
   })
   @IsString()
-  productName: string;
+  product_name: string;
 
   @ApiProperty({
     description: 'Lista de objetos representando cada registro de preço',

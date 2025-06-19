@@ -29,17 +29,7 @@ import type { GetNearbyStationsSchema } from './schemas/gas-station.schema';
 export class GasStationController {
   constructor(private readonly service: GasStationService) {}
 
-  @Get('all')
-  @ApiOperation({
-    summary: 'All gas stations',
-    description:
-      'Get all gas stations with pagination support. Use filters to narrow down results.',
-  })
-  @OpenApiResponses([200, 400, 401, 403, 404, 500])
-  async all(@Res() res: Response) {
-    const result = await this.service.all();
-    res.status(result.statusCode).send(result);
-  }
+
 
   @Get('search')
   @ApiOperation({

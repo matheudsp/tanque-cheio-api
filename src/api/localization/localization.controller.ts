@@ -21,7 +21,7 @@ export class LocalizationController {
   @OpenApiResponses([200, 404, 500])
   async show(@Param('id') id: string, @Res() res: Response) {
     const response = await this.service.show(id);
-    res.status(response.statusCode).json(response);
+    res.status(response.statusCode).send(response);
   }
 
   @Put(':id')
@@ -33,6 +33,6 @@ export class LocalizationController {
     @Res() res: Response,
   ) {
     const response = await this.service.update(id, body);
-    res.status(response.statusCode).json(response);
+    res.status(response.statusCode).send(response);
   }
 }

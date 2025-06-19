@@ -74,10 +74,6 @@ export class ProductEntity {
       return 'GNV';
     }
     
-    if (normalizedName.includes('LUBRIFICANTE') || normalizedName.includes('ÓLEO')) {
-      return 'LUBRIFICANTE';
-    }
-    
     return 'COMBUSTÍVEL';
   }
 
@@ -95,23 +91,4 @@ export class ProductEntity {
     return 'litro'; // Padrão para combustíveis líquidos
   }
 
-  getDisplayName(): string {
-    return `${this.name} (${this.unit_of_measure})`;
-  }
-
-  isLiquid(): boolean {
-    return this.unit_of_measure.toLowerCase().includes('litro');
-  }
-
-  isGas(): boolean {
-    return this.unit_of_measure.includes('m³') || this.unit_of_measure.includes('kg');
-  }
-
-  isValid(): boolean {
-    return !!(
-      this.name?.trim() && 
-      this.category?.trim() && 
-      this.unit_of_measure?.trim()
-    );
-  }
 }

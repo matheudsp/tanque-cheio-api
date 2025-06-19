@@ -73,20 +73,20 @@ export class PriceHistoryController {
     description: 'Retorna histórico de preços filtrado por período. Se produto não especificado, retorna todos os produtos.',
   })
   @ApiParam({
-    name: 'stationId',
+    name: 'station_id',
     description: 'ID do posto de combustível',
     type: 'string',
     format: 'uuid',
   })
   @ApiQuery({
-    name: 'startDate',
+    name: 'start_date',
     description: 'Data de início (YYYY-MM-DD)',
     required: true,
     type: 'string',
     example: '2025-05-01',
   })
   @ApiQuery({
-    name: 'endDate',
+    name: 'end_date',
     description: 'Data de fim (YYYY-MM-DD)',
     required: true,
     type: 'string',

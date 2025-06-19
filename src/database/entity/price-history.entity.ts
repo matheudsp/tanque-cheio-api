@@ -73,29 +73,8 @@ export class PriceHistoryEntity {
     return `${gas_station_id}|${product_id}|${dataStr}`;
   }
 
-  isValid(): boolean {
-    return !!(
-      this.gas_station.id &&
-      this.product.id &&
-      this.collection_date &&
-      this.price // Pelo menos um preço deve existir
-    );
-  }
 
-  hasCompleteData(): boolean {
-    return !!this.price;
-  }
-
-  isSameDay(other: PriceHistoryEntity): boolean {
-    return (
-      this.collection_date.toDateString() ===
-      other.collection_date.toDateString()
-    );
-  }
-
-  isMoreRecentThan(other: PriceHistoryEntity): boolean {
-    return this.collection_date.getTime() > other.collection_date.getTime();
-  }
+  
 
   // Métodos para comparação de preços
   getPriceVariation(previousPrice?: PriceHistoryEntity): number | null {
@@ -143,14 +122,7 @@ export class PriceHistoryEntity {
     return 'STABLE';
   }
 
-  getFormattedPrice(type: 'venda' | 'compra' = 'venda'): string {
-    const price = type === 'venda' && this.price;
-    if (!price) return 'N/A';
+ 
 
-    return `R$ ${price.toFixed(3).replace('.', ',')}`;
-  }
-
-  getFormattedDate(): string {
-    return this.collection_date.toLocaleDateString('pt-BR');
-  }
+  
 }

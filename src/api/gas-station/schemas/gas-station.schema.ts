@@ -55,7 +55,7 @@ const getNearbyStationsSchema = z.object({
     .max(100, 'Produto deve ter no máximo 100 caracteres')
     .optional()
     .transform((val) => val?.trim()),
-  sortBy: z
+  sort: z
     .enum(['distanceAsc','distanceDesc', 'priceAsc', 'priceDesc'])
     .default('distanceAsc')
     .optional(),

@@ -62,27 +62,11 @@ export class LocalizationEntity {
       this.address?.trim().toUpperCase(),
       this.number?.trim(),
       this.neighborhood?.trim().toUpperCase(),
-      this.normalizeCep(),
+      this.zip_code,
     ].filter((part) => part && part.length > 0);
 
     return parts.join('|');
   }
 
-  getFullAddress(): string {
-    const parts = [
-      this.address,
-      this.number,
-      this.complement,
-      this.neighborhood,
-      this.city,
-      this.state,
-      this.zip_code,
-    ].filter(Boolean);
 
-    return parts.join(', ');
-  }
-
-  private normalizeCep(): string {
-    return this.zip_code?.replace(/[^\d]/g, '') || '';
-  }
 }

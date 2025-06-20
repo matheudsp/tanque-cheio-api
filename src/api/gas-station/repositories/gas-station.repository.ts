@@ -84,6 +84,7 @@ export class GasStationRepository {
         'gs.brand',
         'loc.address',
         'loc.neighborhood',
+        'loc.number',
         'loc.zip_code',
         'loc.city',
         'loc.state',

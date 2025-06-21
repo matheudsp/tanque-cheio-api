@@ -22,8 +22,11 @@ import {
   FavoriteCreateSchema,
   favoriteRemoveSchema,
   favoriteGetUserSchema,
+  type FavoriteBulkSchema,
+  favoriteBulkSchema,
 } from './schemas/favorites.schema';
 import { PriceHistoryRepository } from '../price-history/repositories/price-history.repository';
+import type { FavoriteBulkDto } from './dtos/favorites.dto';
 
 @Injectable()
 export class FavoritesService {
@@ -41,6 +44,66 @@ export class FavoritesService {
 
   private getCacheKey(user_id: string): string {
     return `favorites:${user_id}`;
+  }
+  /**
+   * Adiciona uma lista de produtos favoritos a um posto.
+   */
+  async addFavoritesInBulk(
+    user_id: string,
+    data: FavoriteBulkDto,
+  ): Promise<ResponseApi> {
+    try {
+      favoriteBulkSchema.parse(data);
+      const { station_id, product_ids } = data;
+
+     
+      await this.favorites_repo.storeBulk(user_id, station_id, product_ids);
+      await this.cache_manager.del(this.getCacheKey(user_id));
+
+      return responseCreated({ message: 'Favoritos adicionados com sucesso.' });
+    } catch (error) {
+      const zod_err = zodErrorParse(error);
+      if (zod_err.isError) return responseBadRequest({ error: zod_err.errors });
+
+      // Tratamento para violação de chave primária (favorito já existe)
+      if (error.code === '23505') {
+        return responseBadRequest({
+          message: 'Um ou mais favoritos já existem.',
+        });
+      }
+
+      this.logger.error(
+        `Erro em addFavoritesInBulk: ${error.message}`,
+        error.stack,
+      );
+      return responseInternalServerError({ message: error.message });
+    }
+  }
+  /**
+   * Remove uma lista de produtos favoritos de um posto.
+   */
+  async removeFavoritesInBulk(
+    user_id: string,
+    data: FavoriteBulkDto,
+  ): Promise<ResponseApi> {
+    try {
+      favoriteBulkSchema.parse(data);
+      const { station_id, product_ids } = data;
+
+      await this.favorites_repo.destroyBulk(user_id, station_id, product_ids);
+      await this.cache_manager.del(this.getCacheKey(user_id));
+
+      return responseOk({ message: 'Favoritos removidos com sucesso.' });
+    } catch (error) {
+      const zod_err = zodErrorParse(error);
+      if (zod_err.isError) return responseBadRequest({ error: zod_err.errors });
+
+      this.logger.error(
+        `Erro em removeFavoritesInBulk: ${error.message}`,
+        error.stack,
+      );
+      return responseInternalServerError({ message: error.message });
+    }
   }
 
   async getFavorites(user_id: string): Promise<ResponseApi> {

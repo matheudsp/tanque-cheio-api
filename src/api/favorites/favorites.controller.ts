@@ -20,7 +20,7 @@ import {
 import { FavoritesService } from './favorites.service';
 import { OpenApiResponses } from '@/common/decorators/openapi.decorator';
 import { Request, Response } from 'express';
-import { FavoriteCreateDto } from './dtos/favorites.dto';
+import { FavoriteCreateDto, type FavoriteBulkDto } from './dtos/favorites.dto';
 
 @ApiTags('Favorites')
 @ApiBearerAuth()
@@ -49,6 +49,33 @@ export class FavoritesController {
     const user_id = req.user!.user_id;
     const response = await this.service.addFavorite(user_id, body);
     res.status(response.statusCode).send(response);
+  }
+
+  
+  @Post('bulk')
+  @ApiOperation({ summary: 'Adiciona múltiplos produtos a um posto favorito' })
+  @OpenApiResponses([201, 400, 401, 404, 500])
+  async addFavorites(
+    @Req() req: Request,
+    @Body() body: FavoriteBulkDto,
+    @Res() res: Response,
+  ) {
+    const user_id = req.user!.user_id;
+    const response = await this.service.addFavoritesInBulk(user_id, body );
+    return res.status(response.statusCode).send(response);
+  }
+
+  @Delete('bulk')
+  @ApiOperation({ summary: 'Remove múltiplos produtos de um posto favorito' })
+  @OpenApiResponses([200, 400, 401, 404, 500])
+  async removeFavorites(
+    @Req() req: Request,
+    @Body() body: FavoriteBulkDto,
+    @Res() res: Response,
+  ) {
+    const user_id = req.user!.user_id;
+    const response = await this.service.removeFavoritesInBulk(user_id, body);
+    return res.status(response.statusCode).send(response);
   }
 
   @Delete(':station_id')

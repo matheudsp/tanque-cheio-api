@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { UserFavoriteStationEntity } from '@/database/entity/user-favorite-station.entity';
 import { InjectRepository } from '@nestjs/typeorm';
-import { DeleteResult, Repository } from 'typeorm';
+import { DeleteResult, In, Repository } from 'typeorm';
 
 @Injectable()
 export class FavoritesRepository {
@@ -32,6 +32,20 @@ export class FavoritesRepository {
   }
 
   /**
+   * Adiciona favoritos em lote.
+   */
+  async storeBulk(
+    user_id: string,
+    station_id: string,
+    product_ids: string[],
+  ): Promise<UserFavoriteStationEntity[]> {
+    const favorites = product_ids.map((product_id) =>
+      this.repo.create({ user_id, station_id, product_id }),
+    );
+    return this.repo.save(favorites);
+  }
+
+  /**
    * Adiciona um novo favorito.
    */
   async store(
@@ -41,6 +55,22 @@ export class FavoritesRepository {
   ): Promise<UserFavoriteStationEntity> {
     const new_favorite = this.repo.create({ user_id, station_id, product_id });
     return this.repo.save(new_favorite);
+  }
+
+  /**
+   * Remove em lote
+   */
+
+  async destroyBulk(
+    user_id: string,
+    station_id: string,
+    product_ids: string[],
+  ): Promise<DeleteResult> {
+    return this.repo.delete({
+      user_id,
+      station_id,
+      product_id: In(product_ids),
+    });
   }
 
   /**

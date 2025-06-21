@@ -45,6 +45,38 @@ export class FavoritesService {
   private getCacheKey(user_id: string): string {
     return `favorites:${user_id}`;
   }
+
+   /**
+   * Busca os IDs dos produtos favoritados por um usuário para um posto específico.
+   * @param user_id - O ID do usuário.
+   * @param station_id - O ID do posto.
+   * @returns Uma ResponseApi contendo um array de strings com os IDs dos produtos.
+   */
+  async getFavoritesByStation(
+    user_id: string,
+    station_id: string,
+  ): Promise<ResponseApi> {
+    try {
+      // Aqui poderíamos usar Zod para validar os IDs se necessário
+      const favorites =
+        await this.favorites_repo.findFavoritedProductIdsByStation(
+          user_id,
+          station_id,
+        );
+
+      // Mapeia o resultado de [{ product_id: '...' }] para ['...']
+      const productIds = favorites.map((fav) => fav.product_id);
+
+      return responseOk({ data: productIds });
+    } catch (error) {
+      this.logger.error(
+        `Error in getFavoritesByStation: ${error.message}`,
+        error.stack,
+      );
+      return responseInternalServerError({ message: error.message });
+    }
+  }
+
   /**
    * Adiciona uma lista de produtos favoritos a um posto.
    */
@@ -133,6 +165,7 @@ export class FavoritesService {
           return {
             gas_station_id: fav.station.id,
             gas_station_name: fav.station.getDisplayName(),
+            gas_station_brand: fav.station.brand,
             localization: fav.station.localization,
             favorited_at: fav.favorited_at,
             product: {

@@ -11,6 +11,26 @@ export class FavoritesRepository {
   ) {}
 
   /**
+   * Encontra todos os IDs de produtos favoritados por um usuário para um posto específico.
+   * @param user_id - O ID do usuário.
+   * @param station_id - O ID do posto.
+   * @returns Uma promessa que resolve para uma lista de entidades contendo apenas o product_id.
+   * @example
+   * // Retorna: [{ product_id: 'uuid-1' }, { product_id: 'uuid-2' }]
+   */
+  async findFavoritedProductIdsByStation(
+    user_id: string,
+    station_id: string,
+  ): Promise<{ product_id: string }[]> {
+    return this.repo.find({
+      where: { user_id, station_id },
+      select: ['product_id'], // Seleciona APENAS a coluna product_id para máxima eficiência
+    });
+  }
+
+
+  
+  /**
    * Encontra todos os favoritos de um usuário.
    */
   async findAllByUserId(user_id: string): Promise<UserFavoriteStationEntity[]> {

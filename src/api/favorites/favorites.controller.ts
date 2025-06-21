@@ -51,7 +51,6 @@ export class FavoritesController {
     res.status(response.statusCode).send(response);
   }
 
-  
   @Post('bulk')
   @ApiOperation({ summary: 'Adiciona múltiplos produtos a um posto favorito' })
   @OpenApiResponses([201, 400, 401, 404, 500])
@@ -61,7 +60,7 @@ export class FavoritesController {
     @Res() res: Response,
   ) {
     const user_id = req.user!.user_id;
-    const response = await this.service.addFavoritesInBulk(user_id, body );
+    const response = await this.service.addFavoritesInBulk(user_id, body);
     return res.status(response.statusCode).send(response);
   }
 
@@ -93,6 +92,24 @@ export class FavoritesController {
       user_id,
       station_id,
       product_id,
+    );
+    res.status(response.statusCode).send(response);
+  }
+
+  @Get('station/:station_id')
+  @ApiOperation({
+    summary: 'Get favorited products for a specific station',
+  })
+  @OpenApiResponses([200, 401, 500])
+  async getFavoritesByStation(
+    @Req() req: Request,
+    @Param('station_id') station_id: string,
+    @Res() res: Response,
+  ) {
+    const user_id = req.user!.user_id;
+    const response = await this.service.getFavoritesByStation(
+      user_id,
+      station_id,
     );
     res.status(response.statusCode).send(response);
   }

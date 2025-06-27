@@ -1,0 +1,69 @@
+{
+  "$schema": "https://mintlify.com/docs.json",
+  "theme": "mint",
+  "name": "API Tanque Cheio",
+  "colors": {
+    "primary": "#FF7A00",
+    "light": "#FF8D24",
+    "dark": "#D46800"
+  },
+  "favicon": "/docs/assets/logo.svg",
+  "navigation": {
+    "groups": [
+      {
+        "group": "Início",
+        "pages": [
+          "docs/introduction",
+          "docs/getting-started"
+        ]
+      },
+      {
+        "group": "Autenticação",
+        "pages": [
+          "docs/authentication"
+        ]
+      },
+      {
+        "group": "Recursos Principais",
+        "pages": [
+          "docs/core-features/gas-stations",
+          "docs/core-features/data-sync",
+          "docs/core-features/users"
+        ]
+      },
+      {
+        "group": "Referência da API",
+        "pages": [
+          {
+            "group": "Endpoints",
+            "pages": [
+              "docs/api-reference/swagger"
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "logo": {
+    "light": "/docs/assets/logo.svg",
+    "dark": "/docs/assets/logo.svg"
+  },
+  "background": {
+    "color": {
+      "dark": "#0D1117"
+    }
+  },
+  "navbar": {
+    "links": [
+      {
+        "label": "Fale Conosco",
+        "href": "mailto:seu-email@example.com"
+      }
+    ]
+  },
+  "footer": {
+    "socials": {
+      "github": "https://github.com/matheudsp/tanque-cheio-api"
+    }
+  }
+}

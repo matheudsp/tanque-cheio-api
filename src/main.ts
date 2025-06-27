@@ -28,10 +28,11 @@ async function bootstrap() {
     .addBearerAuth()
     .build();
   const factory = () => SwaggerModule.createDocument(app, swaggerConfig);
-  SwaggerModule.setup('docs', app, factory(), {
+  SwaggerModule.setup('api-docs', app, factory(), {
     swaggerOptions: {
       defaultModelsExpandDepth: -1,
       docExpansion: 'none',
+      persistAuthorization: true,
       filter: true,
       showRequestDuration: true,
       tagsSorter: 'alpha',

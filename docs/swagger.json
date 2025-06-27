@@ -1,0 +1,2570 @@
+{
+  "openapi": "3.0.0",
+  "paths": {
+    "/gas-stations/search": {
+      "get": {
+        "description": "Search for gas stations by municipality, product, brand, with pagination support",
+        "operationId": "GasStationController_search",
+        "parameters": [
+          {
+            "name": "city",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "product",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "brand",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "limit",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "offset",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Search gas stations with filters",
+        "tags": [
+          "Gas Stations"
+        ]
+      }
+    },
+    "/gas-stations/{stationId}": {
+      "get": {
+        "description": "Get Station by ID",
+        "operationId": "GasStationController_find",
+        "parameters": [
+          {
+            "name": "stationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get Station by ID",
+        "tags": [
+          "Gas Stations"
+        ]
+      }
+    },
+    "/gas-stations/{id}/price-history": {
+      "get": {
+        "description": "Returns price history for a specific gas station, grouped by product. Ideal for creating charts.",
+        "operationId": "GasStationController_getPriceHistory",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get price history for a gas station (for charts)",
+        "tags": [
+          "Gas Stations"
+        ]
+      }
+    },
+    "/gas-stations/nearby": {
+      "get": {
+        "operationId": "GasStationController_getNearbyStations",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Busca postos de gasolina por proximidade",
+        "tags": [
+          "Gas Stations"
+        ]
+      }
+    },
+    "/data-sync/download-spreadsheet": {
+      "post": {
+        "description": "Faz o download de uma planilha da ANP em formato XLSX, converte para CSV e aplica lógica de upsert inteligente nos registros.",
+        "operationId": "DataSyncController_downloadSpreadsheet",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DownloadSpreadsheetDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Planilha baixada e processada com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "success": {
+                      "type": "boolean"
+                    },
+                    "message": {
+                      "type": "string"
+                    },
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "downloadInfo": {
+                          "type": "object",
+                          "properties": {
+                            "originalUrl": {
+                              "type": "string"
+                            },
+                            "fileName": {
+                              "type": "string"
+                            },
+                            "csvPath": {
+                              "type": "string"
+                            },
+                            "rowCount": {
+                              "type": "number"
+                            },
+                            "columnCount": {
+                              "type": "number"
+                            },
+                            "fileSize": {
+                              "type": "number"
+                            },
+                            "headers": {
+                              "type": "array",
+                              "items": {
+                                "type": "string"
+                              }
+                            },
+                            "validationSummary": {
+                              "type": "object",
+                              "properties": {
+                                "isValid": {
+                                  "type": "boolean"
+                                },
+                                "errorCount": {
+                                  "type": "number"
+                                },
+                                "warningCount": {
+                                  "type": "number"
+                                },
+                                "emptyRows": {
+                                  "type": "number"
+                                },
+                                "duplicateRows": {
+                                  "type": "number"
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "processingResult": {
+                          "type": "object",
+                          "properties": {
+                            "totalProcessed": {
+                              "type": "number"
+                            },
+                            "totalInserted": {
+                              "type": "number"
+                            },
+                            "totalUpdated": {
+                              "type": "number"
+                            },
+                            "totalSkipped": {
+                              "type": "number"
+                            },
+                            "totalErrors": {
+                              "type": "number"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Baixar e processar planilha da ANP",
+        "tags": [
+          "Data Sync"
+        ]
+      }
+    },
+    "/localizations/{id}": {
+      "get": {
+        "operationId": "LocalizationController_show",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a single localization by ID",
+        "tags": [
+          "Localizations"
+        ]
+      },
+      "put": {
+        "operationId": "LocalizationController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LocalizationCreateDto"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a localization",
+        "tags": [
+          "Localizations"
+        ]
+      }
+    },
+    "/price-history/station/{stationId}/latest": {
+      "get": {
+        "description": "Retorna os preços mais recentes de todos os combustíveis do posto com variações calculadas",
+        "operationId": "PriceHistoryController_getLatestPrices",
+        "parameters": [
+          {
+            "name": "stationId",
+            "required": true,
+            "in": "path",
+            "description": "ID do posto de combustível",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Preços mais recentes retornados com sucesso",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LatestPricesResponseDto"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Obter preços mais recentes",
+        "tags": [
+          "Price History"
+        ]
+      }
+    },
+    "/price-history/station/{stationId}/history": {
+      "get": {
+        "description": "Retorna histórico de preços filtrado por período. Se produto não especificado, retorna todos os produtos.",
+        "operationId": "PriceHistoryController_getPriceHistory",
+        "parameters": [
+          {
+            "name": "stationId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "start_date",
+            "required": true,
+            "in": "query",
+            "description": "Data de início (YYYY-MM-DD)",
+            "schema": {
+              "example": "2025-05-01",
+              "type": "string"
+            }
+          },
+          {
+            "name": "end_date",
+            "required": true,
+            "in": "query",
+            "description": "Data de fim (YYYY-MM-DD)",
+            "schema": {
+              "example": "2025-05-30",
+              "type": "string"
+            }
+          },
+          {
+            "name": "product",
+            "required": false,
+            "in": "query",
+            "description": "Nome do produto para filtrar (opcional). Se não informado, retorna todos os produtos.",
+            "schema": {
+              "example": "GASOLINA",
+              "type": "string"
+            }
+          },
+          {
+            "name": "station_id",
+            "required": true,
+            "in": "path",
+            "description": "ID do posto de combustível",
+            "schema": {
+              "format": "uuid",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Histórico de preços retornado com sucesso"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Obter histórico de preços por período",
+        "tags": [
+          "Price History"
+        ]
+      }
+    },
+    "/products": {
+      "get": {
+        "description": "Retorna os estatísticas",
+        "operationId": "ProductController_getAll",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Obter estatísticas dos produtos",
+        "tags": [
+          "Products"
+        ]
+      }
+    },
+    "/products/stats": {
+      "get": {
+        "description": "Retorna os estatísticas",
+        "operationId": "ProductController_Stats",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Obter estatísticas dos produtos",
+        "tags": [
+          "Products"
+        ]
+      }
+    },
+    "/products/{productId}": {
+      "get": {
+        "description": "Get Product by ID",
+        "operationId": "ProductController_find",
+        "parameters": [
+          {
+            "name": "productId",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "403": {
+            "description": "Forbidden"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get Product by ID",
+        "tags": [
+          "Products"
+        ]
+      }
+    },
+    "/health": {
+      "get": {
+        "description": "Retorna informações completas sobre o status da API, incluindo banco de dados, memória e uptime",
+        "operationId": "HealthController_getHealth",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Status da aplicação",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "ok",
+                        "error"
+                      ]
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    },
+                    "uptime": {
+                      "type": "number",
+                      "description": "Tempo de atividade em segundos"
+                    },
+                    "database": {
+                      "type": "object",
+                      "properties": {
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "connected",
+                            "disconnected"
+                          ]
+                        },
+                        "responseTime": {
+                          "type": "number",
+                          "description": "Tempo de resposta em ms"
+                        }
+                      }
+                    },
+                    "memory": {
+                      "type": "object",
+                      "properties": {
+                        "used": {
+                          "type": "string"
+                        },
+                        "total": {
+                          "type": "string"
+                        },
+                        "percentage": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "environment": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Verify API Health",
+        "tags": [
+          "Health"
+        ]
+      }
+    },
+    "/health/simple": {
+      "get": {
+        "description": "Retorna um status básico para verificação rápida",
+        "operationId": "HealthController_getSimpleHealth",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Status básico da aplicação",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "example": "ok"
+                    },
+                    "timestamp": {
+                      "type": "string",
+                      "format": "date-time"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Verificação simples de saúde",
+        "tags": [
+          "Health"
+        ]
+      }
+    },
+    "/health/database": {
+      "get": {
+        "description": "Testa especificamente a conexão com o banco de dados",
+        "operationId": "HealthController_getDatabaseHealth",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "Status da conexão com banco de dados",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "status": {
+                      "type": "string",
+                      "enum": [
+                        "connected",
+                        "disconnected"
+                      ]
+                    },
+                    "responseTime": {
+                      "type": "number",
+                      "description": "Tempo de resposta em ms"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "summary": "Verificar conexão com banco de dados",
+        "tags": [
+          "Health"
+        ]
+      }
+    },
+    "/roles": {
+      "get": {
+        "operationId": "RolesController_index",
+        "parameters": [
+          {
+            "name": "code",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "name",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 10,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Roles"
+        ]
+      },
+      "post": {
+        "operationId": "RolesController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Roles Schema"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Roles"
+        ]
+      }
+    },
+    "/roles/{id}": {
+      "get": {
+        "operationId": "RolesController_show",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Roles"
+        ]
+      },
+      "put": {
+        "operationId": "RolesController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Roles Schema"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Roles"
+        ]
+      },
+      "delete": {
+        "operationId": "RolesController_destroy",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Roles"
+        ]
+      }
+    },
+    "/users": {
+      "get": {
+        "operationId": "UsersController_index",
+        "parameters": [
+          {
+            "name": "name",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "email",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 10,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all users",
+        "tags": [
+          "Users"
+        ]
+      },
+      "post": {
+        "operationId": "UsersController_store",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateUser"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "409": {
+            "description": "Conflict"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create a new user",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/users/{id}": {
+      "get": {
+        "operationId": "UsersController_show",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get user by ID",
+        "tags": [
+          "Users"
+        ]
+      },
+      "patch": {
+        "operationId": "UsersController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateUser"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update user by ID",
+        "tags": [
+          "Users"
+        ]
+      },
+      "delete": {
+        "operationId": "UsersController_destroy",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/users/{id}/change-password": {
+      "patch": {
+        "operationId": "UsersController_changePassword",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdatePassword"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Change user password by ID",
+        "tags": [
+          "Users"
+        ]
+      }
+    },
+    "/auth/local/sign-in": {
+      "post": {
+        "operationId": "LocalController_localSignIn",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Local Auth"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Local Sign In",
+        "tags": [
+          "Auth - Local"
+        ]
+      }
+    },
+    "/auth/local/refresh-token": {
+      "post": {
+        "operationId": "LocalController_refreshToken",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Refresh Token"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "summary": "Refresh Access Token",
+        "tags": [
+          "Auth - Local"
+        ]
+      }
+    },
+    "/auth/local/logout": {
+      "post": {
+        "operationId": "LocalController_logout",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Logout User",
+        "tags": [
+          "Auth - Local"
+        ]
+      }
+    },
+    "/auth/local/validate": {
+      "post": {
+        "operationId": "LocalController_validateToken",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Validate Token",
+        "tags": [
+          "Auth - Local"
+        ]
+      }
+    },
+    "/permissions": {
+      "get": {
+        "operationId": "PermissionsController_index",
+        "parameters": [
+          {
+            "name": "role_id",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 10,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get Permissions",
+        "tags": [
+          "Permissions"
+        ]
+      },
+      "post": {
+        "operationId": "PermissionsController_store",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Permissions"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "409": {
+            "description": "Conflict"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Create Permission",
+        "tags": [
+          "Permissions"
+        ]
+      }
+    },
+    "/permissions/{id}": {
+      "get": {
+        "operationId": "PermissionsController_show",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get Permission",
+        "tags": [
+          "Permissions"
+        ]
+      },
+      "put": {
+        "operationId": "PermissionsController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Permissions"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "409": {
+            "description": "Conflict"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update Permission",
+        "tags": [
+          "Permissions"
+        ]
+      },
+      "delete": {
+        "operationId": "PermissionsController_destroy",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete Permission",
+        "tags": [
+          "Permissions"
+        ]
+      }
+    },
+    "/has-roles": {
+      "get": {
+        "operationId": "HasRolesController_index",
+        "parameters": [
+          {
+            "name": "user_id",
+            "required": true,
+            "in": "query",
+            "description": "User ID",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 10,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all roles",
+        "tags": [
+          "Has Roles"
+        ]
+      },
+      "post": {
+        "operationId": "HasRolesController_store",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Has Role"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "409": {
+            "description": "Conflict"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add a role",
+        "tags": [
+          "Has Roles"
+        ]
+      }
+    },
+    "/has-roles/{id}": {
+      "get": {
+        "operationId": "HasRolesController_show",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get a role",
+        "tags": [
+          "Has Roles"
+        ]
+      },
+      "put": {
+        "operationId": "HasRolesController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Has Role"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "409": {
+            "description": "Conflict"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Update a role",
+        "tags": [
+          "Has Roles"
+        ]
+      },
+      "delete": {
+        "operationId": "HasRolesController_destroy",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Delete a role",
+        "tags": [
+          "Has Roles"
+        ]
+      }
+    },
+    "/resources": {
+      "get": {
+        "operationId": "ResourcesController_index",
+        "parameters": [
+          {
+            "name": "name",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "path",
+            "required": false,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "page",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 1,
+              "type": "number"
+            }
+          },
+          {
+            "name": "limit",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "default": 10,
+              "type": "number"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Resources"
+        ]
+      },
+      "post": {
+        "operationId": "ResourcesController_create",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Resources Schema"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Resources"
+        ]
+      }
+    },
+    "/resources/{id}": {
+      "get": {
+        "operationId": "ResourcesController_show",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Resources"
+        ]
+      },
+      "put": {
+        "operationId": "ResourcesController_update",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Resources Schema"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Resources"
+        ]
+      },
+      "delete": {
+        "operationId": "ResourcesController_destroy",
+        "parameters": [
+          {
+            "name": "id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "tags": [
+          "Resources"
+        ]
+      }
+    },
+    "/favorites": {
+      "get": {
+        "operationId": "FavoritesController_getMyFavorites",
+        "parameters": [],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get all favorites for the current user",
+        "tags": [
+          "Favorites"
+        ]
+      },
+      "post": {
+        "operationId": "FavoritesController_addFavorite",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreateFavorite"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "409": {
+            "description": "Conflict"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Add a station and product to favorites",
+        "tags": [
+          "Favorites"
+        ]
+      }
+    },
+    "/favorites/bulk": {
+      "post": {
+        "operationId": "FavoritesController_addFavorites",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Function"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Created"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Adiciona múltiplos produtos a um posto favorito",
+        "tags": [
+          "Favorites"
+        ]
+      },
+      "delete": {
+        "operationId": "FavoritesController_removeFavorites",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Function"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove múltiplos produtos de um posto favorito",
+        "tags": [
+          "Favorites"
+        ]
+      }
+    },
+    "/favorites/{station_id}": {
+      "delete": {
+        "operationId": "FavoritesController_removeFavorite",
+        "parameters": [
+          {
+            "name": "station_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "product_id",
+            "required": true,
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "400": {
+            "description": "Bad Request"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Not Found"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Remove a station and product from favorites",
+        "tags": [
+          "Favorites"
+        ]
+      }
+    },
+    "/favorites/station/{station_id}": {
+      "get": {
+        "operationId": "FavoritesController_getFavoritesByStation",
+        "parameters": [
+          {
+            "name": "station_id",
+            "required": true,
+            "in": "path",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK"
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error"
+          }
+        },
+        "security": [
+          {
+            "bearer": []
+          }
+        ],
+        "summary": "Get favorited products for a specific station",
+        "tags": [
+          "Favorites"
+        ]
+      }
+    }
+  },
+  "info": {
+    "title": "Tanque Cheio API",
+    "description": "Documentação completa da API Tanque Cheio.",
+    "version": "1.0",
+    "contact": {}
+  },
+  "tags": [],
+  "servers": [],
+  "components": {
+    "securitySchemes": {
+      "bearer": {
+        "scheme": "bearer",
+        "bearerFormat": "JWT",
+        "type": "http"
+      }
+    },
+    "schemas": {
+      "DownloadSpreadsheetDto": {
+        "type": "object",
+        "properties": {
+          "url": {
+            "type": "string",
+            "description": "URL da planilha XLSX da ANP para download",
+            "example": "https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/arquivos-lpc/2025/revendas_lpc_2025-05-18_2025-05-24.xlsx"
+          }
+        },
+        "required": [
+          "url"
+        ]
+      },
+      "CoordinatesDto": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "enum": [
+              "Point"
+            ]
+          },
+          "coordinates": {
+            "example": [
+              -42.81,
+              -7.07
+            ],
+            "type": "array",
+            "items": {
+              "type": "number"
+            }
+          }
+        },
+        "required": [
+          "type",
+          "coordinates"
+        ]
+      },
+      "LocalizationCreateDto": {
+        "type": "object",
+        "properties": {
+          "state": {
+            "type": "string",
+            "example": "Piauí"
+          },
+          "city": {
+            "type": "string",
+            "example": "Floriano"
+          },
+          "address": {
+            "type": "string"
+          },
+          "number": {
+            "type": "string"
+          },
+          "complement": {
+            "type": "string"
+          },
+          "neighborhood": {
+            "type": "string"
+          },
+          "zip_code": {
+            "type": "string",
+            "example": "64800-000"
+          },
+          "coordinates": {
+            "$ref": "#/components/schemas/CoordinatesDto"
+          }
+        },
+        "required": [
+          "coordinates"
+        ]
+      },
+      "PriceItemDto": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "ID do registro",
+            "example": "uuid-price-id"
+          },
+          "product_id": {
+            "type": "string",
+            "description": "ID do produto",
+            "example": "uuid-product-id"
+          },
+          "product_name": {
+            "type": "string",
+            "description": "Nome do produto",
+            "example": "GASOLINA COMUM"
+          },
+          "price": {
+            "type": "number",
+            "description": "Preço do combustível",
+            "example": 5.89
+          },
+          "collection_date": {
+            "type": "string",
+            "description": "Data da coleta (ISO string)",
+            "example": "2025-01-31T10:30:00Z"
+          },
+          "unit_of_measure": {
+            "type": "string",
+            "description": "Unidade de medida",
+            "example": "L"
+          },
+          "trend": {
+            "type": "object",
+            "description": "Tendência do preço em relação ao registro anterior (UP, DOWN, STABLE)",
+            "example": "DOWN"
+          },
+          "percentage_change": {
+            "type": "object",
+            "description": "Variação percentual em relação ao preço anterior",
+            "example": -1.5
+          }
+        },
+        "required": [
+          "id",
+          "product_id",
+          "product_name",
+          "price",
+          "collection_date",
+          "unit_of_measure"
+        ]
+      },
+      "LatestPricesResponseDto": {
+        "type": "object",
+        "properties": {
+          "station_id": {
+            "type": "string",
+            "description": "ID do posto",
+            "example": "uuid-station-id"
+          },
+          "prices": {
+            "description": "Últimos preços de todos os produtos",
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/PriceItemDto"
+            }
+          },
+          "total_products": {
+            "type": "number",
+            "description": "Total de produtos encontrados",
+            "example": 3
+          },
+          "updated_at": {
+            "type": "string",
+            "description": "Data/hora da consulta (ISO string)",
+            "example": "2025-01-31T10:30:00Z"
+          }
+        },
+        "required": [
+          "station_id",
+          "prices",
+          "total_products",
+          "updated_at"
+        ]
+      },
+      "Roles Schema": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 10
+          },
+          "name": {
+            "type": "string",
+            "minLength": 2
+          }
+        },
+        "description": "Roles Object Schema",
+        "required": [
+          "code",
+          "name"
+        ]
+      },
+      "CreateUser": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Special characters are not allowed",
+            "minLength": 1
+          },
+          "email": {
+            "type": "string"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "example": "password123"
+          },
+          "passwordConfirmation": {
+            "type": "string",
+            "minLength": 8,
+            "example": "password123"
+          }
+        },
+        "required": [
+          "name",
+          "email",
+          "password",
+          "passwordConfirmation"
+        ]
+      },
+      "UpdateUser": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "email": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "email"
+        ]
+      },
+      "UpdatePassword": {
+        "type": "object",
+        "properties": {
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "example": "password123"
+          },
+          "passwordConfirmation": {
+            "type": "string",
+            "minLength": 8,
+            "example": "password123"
+          }
+        },
+        "required": [
+          "password",
+          "passwordConfirmation"
+        ]
+      },
+      "Local Auth": {
+        "type": "object",
+        "properties": {
+          "email": {
+            "type": "string",
+            "description": "E-mail do usuário",
+            "example": "user@example.com"
+          },
+          "password": {
+            "type": "string",
+            "minLength": 8,
+            "description": "Senha do usuário (mínimo 8 caracteres)",
+            "example": "mySecurePassword123"
+          }
+        },
+        "required": [
+          "email",
+          "password"
+        ]
+      },
+      "Refresh Token": {
+        "type": "object",
+        "properties": {
+          "refresh_token": {
+            "type": "string",
+            "description": "Token de refresh para renovar o access token",
+            "example": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+          }
+        },
+        "required": [
+          "refresh_token"
+        ]
+      },
+      "Permissions": {
+        "type": "object",
+        "properties": {
+          "role_id": {
+            "type": "string",
+            "description": "Role ID"
+          },
+          "resource_id": {
+            "type": "string",
+            "description": "Resource ID"
+          },
+          "action": {
+            "type": "string",
+            "description": "Resource Type",
+            "enum": [
+              "GET",
+              "POST",
+              "PUT",
+              "DELETE",
+              "PATCH",
+              "OPTIONS",
+              "HEAD",
+              "ALL"
+            ],
+            "example": [
+              "GET",
+              "POST",
+              "PUT",
+              "DELETE",
+              "PATCH"
+            ]
+          }
+        },
+        "required": [
+          "role_id",
+          "resource_id",
+          "action"
+        ]
+      },
+      "Has Role": {
+        "type": "object",
+        "properties": {
+          "role_id": {
+            "type": "string",
+            "description": "Role ID"
+          },
+          "user_id": {
+            "type": "string",
+            "description": "User ID"
+          }
+        },
+        "required": [
+          "role_id",
+          "user_id"
+        ]
+      },
+      "Resources Schema": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string"
+          },
+          "path": {
+            "type": "string"
+          }
+        },
+        "required": [
+          "name",
+          "path"
+        ]
+      },
+      "CreateFavorite": {
+        "type": "object",
+        "properties": {
+          "station_id": {
+            "type": "string",
+            "description": "The UUID of the gas station to be favorited",
+            "example": "a1b2c3d4-e5f6-7890-1234-567890abcdef"
+          },
+          "product_id": {
+            "type": "string",
+            "description": "The UUID of the product to be favorited at the station",
+            "example": "b2c3d4e5-f6a7-8901-2345-67890abcdef1"
+          }
+        },
+        "required": [
+          "station_id",
+          "product_id"
+        ]
+      },
+      "Function": {
+        "type": "object",
+        "properties": {}
+      }
+    }
+  }
+}

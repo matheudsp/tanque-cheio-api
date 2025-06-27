@@ -1,0 +1,25 @@
+---
+title: 'Guia de Início Rápido'
+description: 'Como configurar e fazer sua primeira chamada à API.'
+---
+
+import { Steps } from '@mintlify/components';
+
+Este guia irá ajudá-lo a configurar o ambiente e fazer sua primeira requisição para a API Tanque Cheio.
+
+<Steps>
+  ### 1. Obtenha sua Chave de API
+
+  Para começar, você precisa se registrar em nossa plataforma para obter uma chave de API (token JWT). A chave é essencial para autenticar suas requisições.
+
+  Faça uma chamada `POST` para o endpoint `v1/auth/local/signup` para criar uma conta e, em seguida, `POST` para `v1/auth/local/signin` para obter seu token de acesso.
+
+  ### 2. Faça sua Primeira Requisição
+
+  Com seu token em mãos, você pode fazer chamadas para os endpoints protegidos. Use o token no cabeçalho `Authorization` como um `Bearer Token`.
+
+  Vamos tentar buscar os postos de combustível próximos.
+
+  ```bash
+  curl -X GET '[https://api.tanquecheio.com/v1/gas-station](https://api.tanquecheio.com/v1/gas-station)' \
+  --header 'Authorization: Bearer SEU_TOKEN_JWT_AQUI'

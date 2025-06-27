@@ -95,13 +95,6 @@ tanque-cheio-api/
 
 A documentação detalhada dos endpoints disponíveis pode ser encontrada no arquivo `postman.json` e importada no Postman.
 
-<!-- ## 🧪 Testes
-
-Para executar os testes automatizados:
-
-```bash
-pnpm test
-``` -->
 
 ## 🧑‍💻 Autor
 

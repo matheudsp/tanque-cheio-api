@@ -3,7 +3,7 @@
   "nodes": [
     {
       "parameters": {
-        "jsCode": "const urls = [\n  'https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/arquivos-lpc/2025/revendas_lpc_2025-04-20_2025-04-26.xlsx',\n  'https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/arquivos-lpc/2025/revendas_lpc_2025-04-27_2025-05-03.xlsx',\n  'https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/arquivos-lpc/2025/revendas_lpc_2025-05-04_2025-05-10.xlsx',\n  'https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/arquivos-lpc/2025/revendas_lpc_2025-05-11_2025-05-17.xlsx',\n  'https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/arquivos-lpc/2025/revendas_lpc_2025-05-18_2025-05-24.xlsx',\n  'https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/arquivos-lpc/2025/revendas_lpc_2025-05-25_2025-05-31.xlsx',\n  'https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/arquivos-lpc/2025/revendas_lpc_2025-06-01_2025-06-07.xlsx'\n];\n\n// Pega o último índice que foi gravado na planilha.\nconst lastWrittenIndex = $input.first().json.lastIndex;\n\n// --> INÍCIO DA VERIFICAÇÃO <--\n// Checa se o índice já atingiu ou ultrapassou o tamanho da lista de URLs.\nif (lastWrittenIndex >= urls.length) {\n  // Se sim, para a execução do workflow retornando um array vazio.\n  console.log(`Fim do processo: Todas as ${urls.length} URLs já foram utilizadas.`);\n  return []; // Retornar um array vazio para o fluxo do n8n aqui.\n}\n// --> FIM DA VERIFICAÇÃO <--\n\n// Se a verificação passar, o processo continua normalmente.\n// O índice a ser usado é o próprio lastWrittenIndex.\nconst currentIndexToUse = lastWrittenIndex;\nconst currentUrl = urls[currentIndexToUse];\n\n// O próximo índice a ser gravado na planilha é simplesmente o último + 1.\nconst nextIndexToWrite = lastWrittenIndex + 1;\n\n// Retorna os dados para os próximos nós\nreturn {\n  currentIndex: currentIndexToUse,\n  url: currentUrl,\n  nextIndex: nextIndexToWrite\n};"
+        "jsCode": "const urls = [\n  \"https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/arquivos-lpc/2025/revendas_lpc_2025-03-23_2025-03-29.xlsx\",\n  \"https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/arquivos-lpc/2025/revendas_lpc_2025-03-30_2025-04-05.xlsx\",\n  \"https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/arquivos-lpc/2025/revendas_lpc_2025-04-06_2025-04-12.xlsx\",\n  \"https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/arquivos-lpc/2025/revendas_lpc_2025-04-13_2025-04-19.xlsx\",\n  \"https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/arquivos-lpc/2025/revendas_lpc_2025-04-20_2025-04-26.xlsx\",\n  \"https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/arquivos-lpc/2025/revendas_lpc_2025-04-27_2025-05-03.xlsx\",\n  \"https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/arquivos-lpc/2025/revendas_lpc_2025-05-04_2025-05-10.xlsx\",\n  \"https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/arquivos-lpc/2025/revendas_lpc_2025-05-11_2025-05-17.xlsx\",\n  \"https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/arquivos-lpc/2025/revendas_lpc_2025-05-18_2025-05-24.xlsx\",\n  \"https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/arquivos-lpc/2025/revendas_lpc_2025-05-25_2025-05-31.xlsx\",\n  \"https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/arquivos-lpc/2025/revendas_lpc_2025-06-01_2025-06-07.xlsx\",\n  \"https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/arquivos-lpc/2025/revendas_lpc_2025-06-08_2025-06-14.xlsx\",\n  \"https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/arquivos-lpc/2025/revendas_lpc_2025-06-15_2025-06-21.xlsx\",\n  \"https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/arquivos-lpc/2025/revendas_lpc_2025-06-22_2025-06-28.xlsx\",\n];\n\n// Pega o último índice que foi gravado na planilha.\nconst lastWrittenIndex = $input.first().json.lastIndex;\n\n// --> INÍCIO DA VERIFICAÇÃO <--\n// Checa se o índice já atingiu ou ultrapassou o tamanho da lista de URLs.\nif (lastWrittenIndex >= urls.length) {\n  // Se sim, para a execução do workflow retornando um array vazio.\n  console.log(\n    `Fim do processo: Todas as ${urls.length} URLs já foram utilizadas.`,\n  );\n  return []; // Retornar um array vazio para o fluxo do n8n aqui.\n}\n// --> FIM DA VERIFICAÇÃO <--\n\n// Se a verificação passar, o processo continua normalmente.\n// O índice a ser usado é o próprio lastWrittenIndex.\nconst currentIndexToUse = lastWrittenIndex;\nconst currentUrl = urls[currentIndexToUse];\n\n// O próximo índice a ser gravado na planilha é simplesmente o último + 1.\nconst nextIndexToWrite = lastWrittenIndex + 1;\n\n// Retorna os dados para os próximos nós\nreturn {\n  currentIndex: currentIndexToUse,\n  url: currentUrl,\n  nextIndex: nextIndexToWrite,\n};\n"
       },
       "name": "3. Selecionar URL da Vez",
       "type": "n8n-nodes-base.code",
@@ -188,8 +188,8 @@
         "rule": {
           "interval": [
             {
-              "field": "cronExpression",
-              "expression": "0 0 * * *"
+              "field": "minutes",
+              "minutesInterval": 2
             }
           ]
         }
@@ -273,11 +273,11 @@
       ]
     }
   },
-  "active": true,
+  "active": false,
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "2ded43fb-d38d-4dab-94d7-77ea4a997c78",
+  "versionId": "9f8af918-657e-4290-ad5e-bbec61ee0462",
   "meta": {
     "templateCredsSetupCompleted": true,
     "instanceId": "1dfc1939a50a40b018139febef8abfb67e29d4eaee838d3ec9987cc42c70fc26"

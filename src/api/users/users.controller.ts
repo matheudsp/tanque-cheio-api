@@ -59,6 +59,15 @@ export class UsersController {
     res.status(r.statusCode).send(r);
   }
 
+  @Get('/me')
+  @ApiOperation({ summary: 'Get me user ' })
+  @OpenApiResponses([200, 400, 404, 500])
+  async me(@Req() req: Request, @Res() res: Response) {
+    const id = req.user?.user_id;
+    const r = await this.service.findOne(id!);
+    res.status(r.statusCode).send(r);
+  }
+
   @Post('')
   @ApiOperation({ summary: 'Create a new user' })
   @OpenApiResponses([201, 400, 409, 500])

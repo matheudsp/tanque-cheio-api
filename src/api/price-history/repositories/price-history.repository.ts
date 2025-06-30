@@ -12,6 +12,29 @@ export class PriceHistoryRepository {
   ) {}
 
   /**
+   * Encontra os dois registros de preço mais recentes para um produto em um posto específico.
+   * @returns Uma tupla com [preço_mais_recente, preço_anterior] ou um array vazio/parcial se não houver registros suficientes.
+   */
+  async findTwoMostRecentPrices(
+    station_id: string,
+    product_id: string,
+  ): Promise<[PriceHistoryEntity?, PriceHistoryEntity?]> {
+    try {
+      const prices = await this.repository.find({
+        where: {
+          gas_station: { id: station_id },
+          product: { id: product_id },
+        },
+        order: { collection_date: 'DESC' },
+        take: 2,
+      });
+      return [prices[0], prices[1]];
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
    * Busca os preços mais recentes de todos os produtos do posto.
    * @param stationId ID do posto de combustível
    * @param productFilter Filtro opcional para buscar apenas um produto específico
@@ -83,23 +106,19 @@ export class PriceHistoryRepository {
     end_date: Date,
     product_name?: string,
   ): Promise<PriceByProductDto[]> {
-
     const whereConditions: any = {
-      
       gas_station: { id: station_id },
       collection_date: Between(start_date, end_date),
       is_active: true,
       price: Not(IsNull()),
     };
 
-  
     if (product_name) {
       whereConditions.product = {
         name: ILike(`%${product_name}%`),
       };
     }
 
-  
     const priceHistories = await this.repository.find({
       where: whereConditions,
       relations: ['product'],
@@ -123,7 +142,6 @@ export class PriceHistoryRepository {
       groupedByProduct.get(productNameKey)!.push(history);
     }
 
-  
     const result: PriceByProductDto[] = [];
     for (const [productNameKey, histories] of groupedByProduct.entries()) {
       const prices = histories
@@ -134,7 +152,7 @@ export class PriceHistoryRepository {
             product_id: current.product.id,
             product_name: current.product.name,
             price: current.price,
-            collection_date: current.collection_date.toString(), 
+            collection_date: current.collection_date.toString(),
             unit_of_measure: current.product.unit_of_measure,
             percentage_change: current.getPriceVariationPercentage(previous),
             trend: current.getTrend(previous),

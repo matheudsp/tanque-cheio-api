@@ -11,6 +11,21 @@ export class FavoritesRepository {
   ) {}
 
   /**
+   * Busca todos os registros de favoritos com as entidades relacionadas para o CRON job.
+   */
+  async findAllWithRelations(): Promise<UserFavoriteStationEntity[]> {
+    try {
+      // Usamos 'relations' para carregar os dados do usuário, posto e produto.
+      // Isso evita o problema de N+1 queries.
+      return await this.repo.find({
+        relations: ['user', 'station', 'product'],
+      });
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  /**
    * Encontra todos os IDs de produtos favoritados por um usuário para um posto específico.
    * @param user_id - O ID do usuário.
    * @param station_id - O ID do posto.
@@ -28,8 +43,6 @@ export class FavoritesRepository {
     });
   }
 
-
-  
   /**
    * Encontra todos os favoritos de um usuário.
    */

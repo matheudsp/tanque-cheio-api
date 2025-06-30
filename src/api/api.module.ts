@@ -12,6 +12,7 @@ import { PermissionsModule } from './permissions/permissions.module';
 import { HasRolesModule } from './has-roles/has-roles.module';
 import { ResourcesModule } from './resources/resources.module';
 import { FavoritesModule } from './favorites/favorites.module';
+import { PushNotificationsModule } from './push-notifications/push-notifications.module';
 
 @Module({
   imports: [
@@ -27,7 +28,8 @@ import { FavoritesModule } from './favorites/favorites.module';
     PermissionsModule,
     HasRolesModule,
     ResourcesModule,
-    FavoritesModule
+    FavoritesModule,
+    PushNotificationsModule,
   ],
   // controllers: [],
   providers: [],

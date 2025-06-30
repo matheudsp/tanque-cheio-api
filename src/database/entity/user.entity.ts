@@ -10,6 +10,7 @@ import {
 
 import { HasRolesEntity } from './has-roles.entity';
 import { UserFavoriteStationEntity } from './user-favorite-station.entity';
+import { PushTokenEntity } from './push_token.entity';
 
 @Entity('users')
 export class UserEntity {
@@ -27,6 +28,9 @@ export class UserEntity {
   updated_at?: Date;
   @DeleteDateColumn({ type: 'timestamptz', nullable: true })
   deleted_at?: Date;
+
+  @OneToMany(() => PushTokenEntity, (token) => token.user)
+  push_tokens?: PushTokenEntity[];
 
   @OneToMany(() => HasRolesEntity, (hasRole) => hasRole.user)
   has_roles?: HasRolesEntity[];

@@ -14,10 +14,11 @@ import {
 import { JwtModule } from '@nestjs/jwt';
 import { APP_GUARD } from '@nestjs/core';
 import { RateLimiterGuard } from './common/guards/rate-limiter/rate-limiter.guard';
-
+import { ScheduleModule } from '@nestjs/schedule';
 
 @Module({
   imports: [
+    ScheduleModule.forRoot(),
     ThrottlerModule.forRootAsync(throttlerModuleConfig),
     CacheModule.registerAsync(cacheRedisModuleConfig),
     JwtModule.register({
@@ -35,7 +36,6 @@ import { RateLimiterGuard } from './common/guards/rate-limiter/rate-limiter.guar
       provide: APP_GUARD,
       useClass: RateLimiterGuard,
     },
-    
   ],
 })
 export class AppModule {}

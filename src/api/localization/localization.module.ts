@@ -15,6 +15,7 @@ import { RolesRepository } from '../roles/repositories/roles.repository';
 import { RolesEntity } from '@/database/entity/roles.entity';
 import { ResourceEntity } from '@/database/entity/resources.entity';
 import { CacheRequestService } from '@/common/services/cache-request/cache-request.service';
+import { GeocodingService } from './services/geocoding.service';
 
 @Module({
   imports: [
@@ -24,13 +25,11 @@ import { CacheRequestService } from '@/common/services/cache-request/cache-reque
       RolesEntity,
       ResourceEntity,
     ]),
-    HttpModule.register({
-      timeout: 10000, // 10 segundos de timeout
-      maxRedirects: 5,
-    }),
+    HttpModule.register({}),
   ],
   controllers: [LocalizationController],
   providers: [
+    GeocodingService,
     LocalizationService,
     LocalizationRepository,
     ConfigService,

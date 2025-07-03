@@ -1,6 +1,13 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { ILike, Repository, type Point } from 'typeorm';
+import {
+  ILike,
+  IsNull,
+  Not,
+  Repository,
+  type Point,
+  type UpdateResult,
+} from 'typeorm';
 import { LocalizationEntity } from '@/database/entity/localization.entity';
 import {
   LocalizationCreateSchema,
@@ -14,9 +21,32 @@ export class LocalizationRepository {
     private readonly repo: Repository<LocalizationEntity>,
   ) {}
 
-  async findAll(
-    query: LocalizationQuerySchema,
-  ) {
+  /**
+   * Finds all localizations that do not have coordinates yet.
+   * @param limit The maximum number of records to return.
+   * @returns A promise that resolves to an array of LocalizationEntity.
+   */
+  async findAllWithoutCoordinates(
+    limit: number = 100,
+  ): Promise<LocalizationEntity[]> {
+    return this.repo.find({
+      where: {
+        coordinates: IsNull(),
+        address: Not(IsNull()),
+      },
+      take: limit,
+    });
+  }
+  async countAllWithoutCoordinates(): Promise<number> {
+    return this.repo.count({
+      where: {
+        coordinates: IsNull(),
+        address: Not(IsNull()),
+      },
+    });
+  }
+
+  async findAll(query: LocalizationQuerySchema) {
     const { page, limit, search } = query;
     const where_clauses = search
       ? [
@@ -34,27 +64,28 @@ export class LocalizationRepository {
     });
   }
 
-  async findById(id: string){
+  async findById(id: string) {
     return this.repo.findOneBy({ id });
   }
 
-   async update(id: string, data: LocalizationCreateSchema) {
-    const { coordinates, ...rest_of_data } = data;
+  async update(
+    id: string,
+    data: Partial<LocalizationEntity>,
+  ): Promise<UpdateResult> {
+    const payload: Partial<LocalizationEntity> = {};
 
+    // Se vier coordinates, converte para Point
+    if (data.coordinates) {
+      const [lng, lat] = data.coordinates.coordinates;
+      payload.coordinates = {
+        type: 'Point',
+        coordinates: [lng, lat],
+      } as Point;
+    }
 
-    const new_coords: Point = {
-      type: 'Point',
-      coordinates: [
-        coordinates.coordinates[1],
-        coordinates.coordinates[0],
-      ],
-    };
+    const { coordinates, ...rest } = data;
+    Object.assign(payload, rest);
 
-    const payload_to_update = {
-      ...rest_of_data,
-      coordinates: new_coords,
-    };
-    
-    return this.repo.update(id, payload_to_update);
+    return this.repo.update(id, payload);
   }
 }

@@ -70,7 +70,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\r\n    \"refresh_token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMDE5NzM3NGYtNWJlYi03NDU5LWFjNWMtYmE0MjNmYjQyNjk1Iiwicm9sZV9pZCI6IjAxOTczNzRmLTVkZDMtNzQ1NS04ODgyLWE3YjY2MTQwYTcwMCIsInNlc3Npb25faWQiOiI2MTEyMmZiMWJhODIyNWJkZjUwNmVkNzk4N2VhYTk3YjEyMGQ5OGFhM2Y4OTA0ZjZhMjhkMzk4ZDhjOTljZjRmIiwiaWF0IjoxNzQ5NTE2MzY0LCJ0eXBlIjoicmVmcmVzaCIsImV4cCI6MTc1MjEwODM2NCwiYXVkIjoiYXBpLWNsaWVudCIsImlzcyI6ImF1dGgtc2VydmljZSJ9.I3nGsXq1JWBTi16KUG5T4cLVUh1kxxxwlXfvg7RZP8Q\"\r\n}",
+									"raw": "{\r\n    \"refresh_token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMDE5Nzg1YjktZjdiYS03NTRmLTlkYjItZTQ1NTA1MzkzN2NhIiwicm9sZV9pZCI6IjAxOTc4NWI5LWY5Y2MtNzY1Zi05ZWZhLTk1M2ZjNDBmNGViYiIsInNlc3Npb25faWQiOiJjMzYwNzkzMWIwOGRmZWRiYjFiNjY2MTI5NjU5YjRhNjIxZmFhZTI0NTc2N2VkOTAwOTlkNDRhZGQ4NzJjMGEzIiwiaWF0IjoxNzUwMjk1NDYyLCJ0eXBlIjoicmVmcmVzaCIsImV4cCI6MTc1Mjg4NzQ2MiwiYXVkIjoiYXBpLWNsaWVudCIsImlzcyI6ImF1dGgtc2VydmljZSJ9.-lFEO1FfGorC-r2jaOliX8iyehlGJ_bwmTxGiDgwj3w\"\r\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -277,7 +277,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\r\n  \"url\": \"https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/arquivos-lpc/2025/revendas_lpc_2025-05-25_2025-05-31.xlsx\"\r\n}",
+									"raw": "{\r\n  \"url\": \"https://www.gov.br/anp/pt-br/assuntos/precos-e-defesa-da-concorrencia/precos/arquivos-lpc/2025/revendas_lpc_2025-06-22_2025-06-28.xlsx\"\r\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -366,40 +366,6 @@
 						}
 					],
 					"description": "The `/collections` endpoints let you manage your [collections](https://learning.postman.com/docs/sending-requests/intro-to-collections/)."
-				},
-				{
-					"name": "Logs",
-					"item": [
-						{
-							"name": "Data-Sync-Log",
-							"request": {
-								"auth": {
-									"type": "bearer",
-									"bearer": [
-										{
-											"key": "token",
-											"value": "{{jwtToken}}",
-											"type": "string"
-										}
-									]
-								},
-								"method": "GET",
-								"header": [],
-								"url": {
-									"raw": "{{baseUrl}}/api/v1/data-sync-log",
-									"host": [
-										"{{baseUrl}}"
-									],
-									"path": [
-										"api",
-										"v1",
-										"data-sync-log"
-									]
-								}
-							},
-							"response": []
-						}
-					]
 				},
 				{
 					"name": "Resources",
@@ -806,7 +772,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/api/v1/has-roles?page&limit",
+									"raw": "{{baseUrl}}/api/v1/has-roles?user_id=019785b9-f7ba-754f-9db2-e455053937ca&page&limit",
 									"host": [
 										"{{baseUrl}}"
 									],
@@ -818,13 +784,13 @@
 									"query": [
 										{
 											"key": "code",
-											"value": null,
+											"value": "",
 											"disabled": true
 										},
 										{
-											"key": "name",
-											"value": null,
-											"disabled": true
+											"key": "user_id",
+											"value": "019785b9-f7ba-754f-9db2-e455053937ca",
+											"description": "required"
 										},
 										{
 											"key": "page",
@@ -999,7 +965,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/api/v1/permissions?role_id=0197374f-5dd3-7455-8882-a7b66140a700&page&limit",
+									"raw": "{{baseUrl}}/api/v1/permissions?role_id=019785b9-f9cc-765f-9efa-953fc40f4ebb&page&limit",
 									"host": [
 										"{{baseUrl}}"
 									],
@@ -1011,7 +977,7 @@
 									"query": [
 										{
 											"key": "role_id",
-											"value": "0197374f-5dd3-7455-8882-a7b66140a700",
+											"value": "019785b9-f9cc-765f-9efa-953fc40f4ebb",
 											"description": "required"
 										},
 										{
@@ -1237,7 +1203,7 @@
 									"response": []
 								},
 								{
-									"name": "Geocode Stats",
+									"name": "Get Count All Without Coordinates",
 									"request": {
 										"auth": {
 											"type": "bearer",
@@ -1252,7 +1218,7 @@
 										"method": "GET",
 										"header": [],
 										"url": {
-											"raw": "{{baseUrl}}/api/v1/localizations/geocode/stats",
+											"raw": "{{baseUrl}}/api/v1/localizations/geocode/all",
 											"host": [
 												"{{baseUrl}}"
 											],
@@ -1261,7 +1227,7 @@
 												"v1",
 												"localizations",
 												"geocode",
-												"stats"
+												"all"
 											]
 										}
 									},
@@ -1286,7 +1252,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\r\n    \"coordinates\": {\r\n        \"type\": \"Point\",\r\n        \"coordinates\": [\r\n            -6.776959538734574,\r\n            -43.033106186639635\r\n        ]\r\n    }\r\n}",
+									"raw": "{\r\n    \"coordinates\": {\r\n        \"type\": \"Point\",\r\n        \"coordinates\": [\r\n            -5.0866208753338205, -42.80238092759628\r\n        ]\r\n    }\r\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -1294,7 +1260,7 @@
 									}
 								},
 								"url": {
-									"raw": "{{baseUrl}}/api/v1/localizations/{{localizationId}}",
+									"raw": "{{baseUrl}}/api/v1/localizations/{{localization_id}}",
 									"host": [
 										"{{baseUrl}}"
 									],
@@ -1302,7 +1268,53 @@
 										"api",
 										"v1",
 										"localizations",
-										"{{localizationId}}"
+										"{{localization_id}}"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Push Notifications",
+					"item": [
+						{
+							"name": "Send A Notification",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwtToken}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"title\":\"Notificação de Teste\",\r\n    \"body\":\"Olá! Esta é uma mensagem de teste enviada\",\r\n    \"data\":{ \"testId\": \"one-123\" }\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/notifications/send/user/019785b9-f7ba-754f-9db2-e455053937ca",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"notifications",
+										"send",
+										"user",
+										"019785b9-f7ba-754f-9db2-e455053937ca"
 									]
 								}
 							},
@@ -1334,7 +1346,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/api/v1/price-history/station/{{stationId}}/latest",
+									"raw": "{{baseUrl}}/api/v1/price-history/station/{{station_id}}/latest",
 									"host": [
 										"{{baseUrl}}"
 									],
@@ -1343,7 +1355,7 @@
 										"v1",
 										"price-history",
 										"station",
-										"{{stationId}}",
+										"{{station_id}}",
 										"latest"
 									]
 								}
@@ -1366,7 +1378,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/api/v1/price-history/station/{{stationId}}/history?endDate=2025-06-30&startDate=2025-04-02",
+									"raw": "{{baseUrl}}/api/v1/price-history/station/{{station_id}}/history?end_date=2025-06-30&start_date=2025-04-02",
 									"host": [
 										"{{baseUrl}}"
 									],
@@ -1375,7 +1387,7 @@
 										"v1",
 										"price-history",
 										"station",
-										"{{stationId}}",
+										"{{station_id}}",
 										"history"
 									],
 									"query": [
@@ -1390,11 +1402,11 @@
 											"disabled": true
 										},
 										{
-											"key": "endDate",
+											"key": "end_date",
 											"value": "2025-06-30"
 										},
 										{
-											"key": "startDate",
+											"key": "start_date",
 											"value": "2025-04-02"
 										}
 									]
@@ -1424,7 +1436,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/api/v1/gas-stations/search?city=FLORIANO&brand=IPIRANGA",
+									"raw": "{{baseUrl}}/api/v1/gas-stations/search?brand=IPIRANGA&city=TERESINA",
 									"host": [
 										"{{baseUrl}}"
 									],
@@ -1435,10 +1447,6 @@
 										"search"
 									],
 									"query": [
-										{
-											"key": "city",
-											"value": "FLORIANO"
-										},
 										{
 											"key": "product",
 											"value": "GASOLINA COMUM",
@@ -1457,6 +1465,10 @@
 											"key": "offset",
 											"value": "",
 											"disabled": true
+										},
+										{
+											"key": "city",
+											"value": "TERESINA"
 										}
 									]
 								}
@@ -1526,7 +1538,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/api/v1/gas-stations/{{stationId}}",
+									"raw": "{{baseUrl}}/api/v1/gas-stations/{{station_id}}",
 									"host": [
 										"{{baseUrl}}"
 									],
@@ -1534,7 +1546,7 @@
 										"api",
 										"v1",
 										"gas-stations",
-										"{{stationId}}"
+										"{{station_id}}"
 									],
 									"query": [
 										{
@@ -1568,7 +1580,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/api/v1/gas-stations/{{stationId}}/price-history",
+									"raw": "{{baseUrl}}/api/v1/gas-stations/{{station_id}}/price-history",
 									"host": [
 										"{{baseUrl}}"
 									],
@@ -1576,18 +1588,28 @@
 										"api",
 										"v1",
 										"gas-stations",
-										"{{stationId}}",
+										"{{station_id}}",
 										"price-history"
 									],
 									"query": [
 										{
 											"key": "limit",
-											"value": null,
+											"value": "",
 											"disabled": true
 										},
 										{
 											"key": "offset",
-											"value": null,
+											"value": "",
+											"disabled": true
+										},
+										{
+											"key": "start_date",
+											"value": "2025-04-02",
+											"disabled": true
+										},
+										{
+											"key": "end_date",
+											"value": "2025-05-30",
 											"disabled": true
 										}
 									]
@@ -1611,7 +1633,7 @@
 								"method": "GET",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/api/v1/gas-stations/nearby?limit=10&lat=-6.770616820162108&lng=-43.03112947771905&radius=999&sortBy=priceAsc",
+									"raw": "{{baseUrl}}/api/v1/gas-stations/nearby?limit=10&lat=-6.770616820162108&lng=-43.03112947771905&radius=1000&sort=priceAsc",
 									"host": [
 										"{{baseUrl}}"
 									],
@@ -1641,10 +1663,10 @@
 										},
 										{
 											"key": "radius",
-											"value": "999"
+											"value": "1000"
 										},
 										{
-											"key": "sortBy",
+											"key": "sort",
 											"value": "priceAsc"
 										},
 										{
@@ -1835,6 +1857,49 @@
 							"response": []
 						},
 						{
+							"name": "Get All Favorites From Gas Station Id",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwtToken}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/favorites/station/{{station_id}}",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"favorites",
+										"station",
+										"{{station_id}}"
+									],
+									"query": [
+										{
+											"key": "limit",
+											"value": null,
+											"disabled": true
+										},
+										{
+											"key": "offset",
+											"value": null,
+											"disabled": true
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
 							"name": "Add A Favorite",
 							"request": {
 								"auth": {
@@ -1851,7 +1916,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\r\n    \"stationId\":\"ad21a863-8eda-432b-97f7-dfb9c1622624\",\r\n    \"productId\":\"0e36c0c2-6b36-4087-a785-ce85066575a8\"\r\n}",
+									"raw": "{\r\n    \"station_id\":\"492564f5-748a-4f61-b4db-060195d96cff\",\r\n    \"product_id\":\"1f4f084d-6f2b-4e3b-94cd-0f51e06cc799\"\r\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -1885,6 +1950,108 @@
 							"response": []
 						},
 						{
+							"name": "Add Array Favorites",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwtToken}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"station_id\": \"4b302226-f236-4ebf-ba52-78f18f8e5dc8\",\r\n    \"product_ids\": [\r\n        \"c8d847b7-7e40-4e4d-911e-d740d580b820\",\r\n        \"735cbb81-8a34-4451-a139-37f1804c84da\",\r\n        \"3ee6a229-3f1f-4196-8ffc-de2879e297c6\",\r\n        \"c372c4c6-69eb-4103-b50a-227541f1015b\",\r\n        \"1f4f084d-6f2b-4e3b-94cd-0f51e06cc799\"\r\n    ]\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/favorites/bulk",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"favorites",
+										"bulk"
+									],
+									"query": [
+										{
+											"key": "limit",
+											"value": null,
+											"disabled": true
+										},
+										{
+											"key": "offset",
+											"value": null,
+											"disabled": true
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Delete Array Favorites",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwtToken}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "DELETE",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"station_id\": \"4b302226-f236-4ebf-ba52-78f18f8e5dc8\",\r\n    \"product_ids\": [\r\n        \"c8d847b7-7e40-4e4d-911e-d740d580b820\",\r\n        \"735cbb81-8a34-4451-a139-37f1804c84da\",\r\n        \"3ee6a229-3f1f-4196-8ffc-de2879e297c6\",\r\n        \"c372c4c6-69eb-4103-b50a-227541f1015b\",\r\n        \"1f4f084d-6f2b-4e3b-94cd-0f51e06cc799\"\r\n    ]\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/favorites/bulk",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"favorites",
+										"bulk"
+									],
+									"query": [
+										{
+											"key": "limit",
+											"value": null,
+											"disabled": true
+										},
+										{
+											"key": "offset",
+											"value": null,
+											"disabled": true
+										}
+									]
+								}
+							},
+							"response": []
+						},
+						{
 							"name": "Delete A Favorite",
 							"request": {
 								"auth": {
@@ -1900,7 +2067,7 @@
 								"method": "DELETE",
 								"header": [],
 								"url": {
-									"raw": "{{baseUrl}}/api/v1/favorites/{{stationId}}?productId={{productId}}",
+									"raw": "{{baseUrl}}/api/v1/favorites/{{station_id}}?product_id={{product_id}}",
 									"host": [
 										"{{baseUrl}}"
 									],
@@ -1908,7 +2075,7 @@
 										"api",
 										"v1",
 										"favorites",
-										"{{stationId}}"
+										"{{station_id}}"
 									],
 									"query": [
 										{
@@ -1922,9 +2089,44 @@
 											"disabled": true
 										},
 										{
-											"key": "productId",
-											"value": "{{productId}}"
+											"key": "product_id",
+											"value": "{{product_id}}"
 										}
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Users",
+					"item": [
+						{
+							"name": "Get Me User",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwtToken}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "GET",
+								"header": [],
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/users/me",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"users",
+										"me"
 									]
 								}
 							},

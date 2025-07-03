@@ -6,7 +6,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { HttpService } from '@nestjs/axios';
-import { catchError, firstValueFrom, timeout } from 'rxjs';
+import { catchError, delay, firstValueFrom, retry, timer, timeout } from 'rxjs';
 
 import {
   responseInternalServerError,
@@ -105,6 +105,7 @@ export class GeocodingService {
             `Erro geocoding localization → ID=${loc.id}: ${e.message}`,
           );
         }
+        await new Promise((resolve) => setTimeout(resolve, 1000)); //delay de 1000ms/1s
       }
 
       return responseOk({
@@ -154,8 +155,22 @@ export class GeocodingService {
             headers: { 'X-Goog-Api-Key': this.googleApiKey },
           })
           .pipe(
-            timeout(5000),
+            timeout(30000),
+            retry({
+              count: 3,
+              delay: (error, retryCount) => {
+                const retryDelay = Math.pow(2, retryCount) * 1000; // 2s, 4s, 8s
+                this.logger.warn(
+                  `Retrying geocoding for ID=${loc.id} (attempt ${retryCount}/3). Delay: ${retryDelay / 1000}s`,
+                );
+                return timer(retryDelay);
+              },
+            }),
             catchError((err) => {
+              this.logger.error(
+                `HTTP error during geocoding for ID=${loc.id}: ${err.message}`,
+                err.stack,
+              );
               throw new InternalServerErrorException(
                 `HTTP error: ${err.message}`,
               );
@@ -165,6 +180,10 @@ export class GeocodingService {
       responseData = axiosResponse.data;
     } catch (err) {
       if (err instanceof BadRequestException) throw err;
+      this.logger.error(
+        `Error processing geocoding response for ID=${loc.id}: ${err.message}`,
+        err.stack,
+      );
       throw new InternalServerErrorException(err.message);
     }
 

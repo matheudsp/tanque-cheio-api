@@ -105,8 +105,6 @@ export class GasStationRepository {
 
     const radiusInMeters = radius * 1000;
 
-    // --- Parte 1: Buscar IDs ordenados e paginados com QueryBuilder ---
-
     let qb = this.repo
       .createQueryBuilder('gs')
       .innerJoin('gs.localization', 'loc')
@@ -148,10 +146,17 @@ export class GasStationRepository {
     );
 
     if (stationIds.length === 0) {
-      return { results: [], total, limit, offset };
+      return {
+        results: [],
+        total,
+        limit,
+        offset,
+        geo: [{ lat, long: lng }],
+        radius,
+        sort,
+        product: product?.trim() || null,
+      };
     }
-
-    // --- Parte 2: Buscar detalhes e preços com uma única Raw Query eficiente ---
 
     const stationsQuery = `
       WITH LatestPrices AS (
@@ -177,10 +182,10 @@ export class GasStationRepository {
             'number', loc.number,
             'neighborhood', loc.neighborhood,
             'zip_code', loc.zip_code,
-            'coordinates', loc.coordinates
+            'coordinates', ST_AsGeoJSON(loc.coordinates)::json
         ) as localization,
         ST_Distance(loc.coordinates::geography, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography) as distance,
-        json_agg(json_build_object('product', lp.name, 'price', lp.price)) FILTER (WHERE lp.name IS NOT NULL) as "fuelPrices"
+        json_agg(json_build_object('product', lp.name, 'price', lp.price)) FILTER (WHERE lp.name IS NOT NULL) as "fuel_prices"
       FROM gas_station gs
       INNER JOIN localization loc ON gs.localization_id = loc.id
       LEFT JOIN LatestPrices lp ON gs.id = lp.gas_station_id AND lp.rn = 1
@@ -204,11 +209,20 @@ export class GasStationRepository {
         brand: r.brand,
         tax_id: r.tax_id,
         localization: r.localization,
-        distance: (Number(r.distance) / 1000).toFixed(1),
-        fuelPrices: r.fuelPrices || [],
+        distance: parseFloat((Number(r.distance) / 1000).toFixed(1)),
+        fuel_prices: r.fuel_prices || [],
       }))
       .sort((a, b) => (orderMap.get(a.id) ?? 0) - (orderMap.get(b.id) ?? 0));
 
-    return { results, total, limit, offset };
+    return {
+      results,
+      total,
+      limit,
+      offset,
+      geo: [{ lat, long: lng }],
+      radius,
+      sort,
+      product: product?.trim() || null,
+    };
   }
 }

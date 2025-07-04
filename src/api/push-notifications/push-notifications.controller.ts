@@ -16,17 +16,18 @@ import {
   SendNotificationDto,
   type RegisterPushTokenDto,
 } from './dtos/push-notications.dto';
+import { RoleGuard } from '@/common/guards/role/role.guard';
 
 @ApiTags('Push Notifications')
 @ApiBearerAuth()
-@UseGuards(AuthGuard)
-@Controller({ version: ['1'], path: 'notifications' })
+@Controller({ version: ['1'], path: 'push-notifications' })
 export class PushNotificationsController {
   constructor(
     private readonly pushNotificationService: PushNotificationService,
   ) {}
 
   @Post('send/user/:userId')
+  @UseGuards(RoleGuard)
   @ApiOperation({ summary: 'Envia uma notificação para um usuário específico' })
   @ApiBody({ type: SendNotificationDto })
   async sendNotificationToUser(
@@ -40,6 +41,7 @@ export class PushNotificationsController {
   }
 
   @Post('tokens/register')
+  @UseGuards(AuthGuard)
   @ApiOperation({
     summary: 'Registra um Expo Push Token para o usuário autenticado',
   })

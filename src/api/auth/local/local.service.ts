@@ -18,7 +18,7 @@ import { randomBytes } from 'crypto';
 interface TokenPayload {
   user_id: string;
   role_id: string | null;
-  session_id: string;
+ 
   iat: number;
 }
 
@@ -62,14 +62,13 @@ export class LocalService {
         name: userRole?.role?.name || null,
       };
 
-      // session ID único para prevenir session fixation
-      const sessionId = randomBytes(32).toString('hex');
+      
       
       // Criar tokens
       const tokens = this.generateTokens({
         user_id: user.id,
         role_id: roleData.id,
-        session_id: sessionId,
+        
       });
 
       const { password, ...restUser } = user;
@@ -136,7 +135,7 @@ export class LocalService {
       const tokens = this.generateTokens({
         user_id: user.id,
         role_id: roleData.id,
-        session_id: newSessionId,
+      
       });
 
       return responseOk({

@@ -69,6 +69,13 @@ export const seedUsersFactory = async (db: DataSource) => {
       // ADMIN PERMISSIONS
       {
         id: uuid(),
+        name: 'Push Notifications',
+        path: 'push-notifications',
+        created_at: new Date(),
+        updated_at: new Date(),
+      },
+      {
+        id: uuid(),
         name: 'Data Upload',
         path: 'data-sync',
         created_at: new Date(),
@@ -170,28 +177,35 @@ export const seedUsersFactory = async (db: DataSource) => {
         resource_id: resources[0].id, // All resources /*
         role_id: roles[0].id, //admin role
       },
+      
       {
         id: uuid(),
         action: [Action.GET],
-        resource_id: resources[8].id, // Gas Stations
+        resource_id: resources[9].id, // Gas Stations
         role_id: roles[1].id, // guest role
       },
       {
         id: uuid(),
         action: [Action.GET],
-        resource_id: resources[9].id, // Price History
-        role_id: roles[1].id, // guest role
-      },
-      {
-        id: uuid(),
-        action: [Action.GET],
-        resource_id: resources[10].id, // Product
+        resource_id: resources[10].id, // Price History
         role_id: roles[1].id, // guest role
       },
       {
         id: uuid(),
         action: [Action.GET],
         resource_id: resources[11].id, // Product
+        role_id: roles[1].id, // guest role
+      },
+      {
+        id: uuid(),
+        action: [Action.GET],
+        resource_id: resources[11].id, // Product
+        role_id: roles[1].id, // guest role
+      },
+      {
+        id: uuid(),
+        action: ['ALL'] as Action[],
+        resource_id: resources[12].id, // Favorites
         role_id: roles[1].id, // guest role
       },
       // {

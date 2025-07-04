@@ -98,7 +98,7 @@ export class GasStationRepository {
       lat,
       lng,
       radius,
-      limit = 50,
+      limit,
       offset = 0,
       product,
       sort = 'distanceAsc',

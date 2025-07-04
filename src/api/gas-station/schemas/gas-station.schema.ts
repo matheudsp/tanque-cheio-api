@@ -22,7 +22,7 @@ const searchGasStationsQuerySchema = z.object({
     .int('Limite deve ser um número inteiro')
     .min(1, 'Limite deve ser pelo menos 1')
     .max(1000, 'Limite não pode ser maior que 1000')
-    .default(50)
+    .default(100)
     .optional(),
   offset: z
     .number()
@@ -63,8 +63,8 @@ const getNearbyStationsSchema = z.object({
     .coerce.number()
     .int('Limite deve ser um número inteiro')
     .min(1, 'Limite deve ser pelo menos 1')
-    .max(10, 'Limite não pode ser maior que 10 para busca por proximidade')
-    .default(50)
+    .max(100, 'Limite não pode ser maior que 100 para busca por proximidade')
+    .default(100)
     .optional(),
   offset: z
     .coerce.number()

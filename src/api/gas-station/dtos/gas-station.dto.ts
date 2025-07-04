@@ -106,9 +106,9 @@ export class NearbyStationsQueryDto {
 
   @ApiProperty({ 
     required: false,
-    default: 10,
+    default: 100,
     minimum: 1,
-    maximum: 10
+    maximum: 1000
   })
   limit?: number;
 

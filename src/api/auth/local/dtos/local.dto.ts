@@ -25,14 +25,33 @@ export class RefreshTokenDto {
   refresh_token: string;
 }
 
-@ApiSchema({ name: 'Logout' })
-export class LogoutDto {
+@ApiSchema({ name: 'Local Sign Up' })
+export class LocalSignUpDto {
   @ApiProperty({
-    description: 'Logout em todos os dispositivos',
-    example: false,
-    required: false,
+    description: 'Nome do usuário',
+    example: 'João da Silva',
   })
-  logout_all?: boolean;
+  name: string;
+
+  @ApiProperty({
+    description: 'E-mail do usuário',
+    example: 'joao.silva@example.com',
+  })
+  email: string;
+
+  @ApiProperty({
+    minLength: 8,
+    description: 'Senha do usuário (mínimo 8 caracteres)',
+    example: 'SenhaForte@123',
+  })
+  password: string;
+
+  @ApiProperty({
+    minLength: 8,
+    description: 'Confirmação da senha do usuário',
+    example: 'SenhaForte@123',
+  })
+  passwordConfirmation: string;
 }
 
 @ApiSchema({ name: 'Local Sign In Roles' })

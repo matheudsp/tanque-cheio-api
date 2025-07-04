@@ -1,8 +1,9 @@
-import { LocalSignInDto } from './dtos/local.dto';
-import { compareHash, zodErrorParse } from '@/common/utils/lib';
-import { localAuthSchema } from './schemas/local.schema';
+import { LocalSignInDto, LocalSignUpDto } from './dtos/local.dto';
+import { compareHash, createHash, zodErrorParse } from '@/common/utils/lib';
+import { localAuthSchema, signUpLocalSchema } from './schemas/local.schema';
 import {
   responseBadRequest,
+  responseConflict,
   responseInternalServerError,
   responseNotFound,
   responseOk,
@@ -13,12 +14,11 @@ import { HasRoleRepository } from '@/api/has-roles/repositories/has-roles.reposi
 import { Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersRepository } from '@/api/users/repositories/users.repository';
-import { randomBytes } from 'crypto';
+import { RolesRepository } from '@/api/roles/repositories/roles.repository';
 
 interface TokenPayload {
   user_id: string;
   role_id: string | null;
- 
   iat: number;
 }
 
@@ -32,43 +32,87 @@ export class LocalService {
     private readonly userRepo: UsersRepository,
     private readonly jwt: JwtService,
     private readonly hasRolesRepo: HasRoleRepository,
+    private readonly rolesRepo: RolesRepository,
   ) {}
+  async signUp(data: LocalSignUpDto) {
+    try {
+      const parsedData = signUpLocalSchema.parse(data);
 
-  async localSignIn(data: LocalSignInDto) {
+      const userExists = await this.userRepo.findByEmail(parsedData.email);
+
+      if (userExists) {
+        return responseConflict({
+          message: 'O e-mail fornecido já está em uso.',
+        });
+      }
+
+      const hashedPassword = createHash(parsedData.password);
+
+      const newUser = await this.userRepo.store({
+        name: parsedData.name,
+        email: parsedData.email,
+        password: hashedPassword,
+        passwordConfirmation: parsedData.passwordConfirmation,
+      });
+
+      const guestRole = await this.rolesRepo.findByCode('guest');
+      if (!guestRole) {
+        // Se a role 'guest' não existir, é um erro de configuração do sistema
+        console.error("A role 'guest' não foi encontrada no banco de dados.");
+        return responseInternalServerError({
+          message: 'Erro na configuração do sistema de permissões.',
+        });
+      }
+
+      await this.hasRolesRepo.store({
+        user_id: newUser.id,
+        role_id: guestRole.id,
+      });
+
+      const { password, ...user } = newUser;
+
+      return responseOk({
+        message: 'Usuário registrado com sucesso!',
+        data: user,
+      });
+    } catch (error) {
+      const zodErr = zodErrorParse(error);
+      if (zodErr.isError) {
+        return responseBadRequest({ error: zodErr.errors });
+      }
+      console.error('Erro no registro de usuário:', error);
+      return responseInternalServerError({
+        message: 'Ocorreu um erro interno ao tentar registrar o usuário.',
+        error,
+      });
+    }
+  }
+
+  async signIn(data: LocalSignInDto) {
     try {
       const parsed = localAuthSchema.parse(data);
-      
+
       const user = await this.userRepo.findByEmail(parsed.email);
       if (!user) {
         return responseNotFound({ message: 'Usuário não encontrado' });
       }
-
-      // // Verificar se o usuário está ativo
-      // if (!user.is_active) {
-      //   return responseUnauthorized({ message: 'Conta desativada' });
-      // }
 
       const isMatch = compareHash(parsed.password, user.password);
       if (!isMatch) {
         return responseBadRequest({ message: 'Credenciais inválidas' });
       }
 
-      // Buscar roles do usuário
       const userRole = await this.hasRolesRepo.findByUserId(user.id);
-      
+
       const roleData = {
         id: userRole?.role?.id || null,
         code: userRole?.role?.code || null,
         name: userRole?.role?.name || null,
       };
 
-      
-      
-      // Criar tokens
       const tokens = this.generateTokens({
         user_id: user.id,
         role_id: roleData.id,
-        
       });
 
       const { password, ...restUser } = user;
@@ -80,19 +124,18 @@ export class LocalService {
           role: roleData,
           access_token: tokens.accessToken,
           refresh_token: tokens.refreshToken,
-          expires_in: 28800, // 8 horas em segundos
+          expires_in: process.env.JWT_EXPIRES_IN,
           token_type: 'Bearer',
         },
       });
-
     } catch (error) {
       const zodErr = zodErrorParse(error);
       if (zodErr.isError) {
         return responseBadRequest({ error: zodErr.errors });
       }
-      
+
       console.error('Erro no login:', error);
-      
+
       return responseInternalServerError({
         error: 'Erro interno do servidor',
       });
@@ -116,26 +159,24 @@ export class LocalService {
       // Verificar se o usuário ainda existe e está ativo
       const user = await this.userRepo.findById(decoded.user_id);
       if (!user) {
-        return responseUnauthorized({ message: 'Usuário não encontrado ou inativo' });
+        return responseUnauthorized({
+          message: 'Usuário não encontrado ou inativo',
+        });
       }
 
       // Buscar roles atualizadas do usuário
       const userRole = await this.hasRolesRepo.findByUserId(user.id);
-      
+
       const roleData = {
         id: userRole?.role?.id || null,
         code: userRole?.role?.code || null,
         name: userRole?.role?.name || null,
       };
 
-      // Gerar novo session ID
-      const newSessionId = randomBytes(32).toString('hex');
-      
       // Gerar novos tokens
       const tokens = this.generateTokens({
         user_id: user.id,
         role_id: roleData.id,
-      
       });
 
       return responseOk({
@@ -143,11 +184,10 @@ export class LocalService {
         data: {
           access_token: tokens.accessToken,
           refresh_token: tokens.refreshToken,
-          expires_in: 28800,
+          expires_in: process.env.JWT_REFRESH_EXPIRES_IN,
           token_type: 'Bearer',
         },
       });
-
     } catch (error) {
       if (error.name === 'TokenExpiredError') {
         return responseUnauthorized({ message: 'Refresh token expirado' });
@@ -155,29 +195,8 @@ export class LocalService {
       if (error.name === 'JsonWebTokenError') {
         return responseUnauthorized({ message: 'Refresh token inválido' });
       }
-      
+
       console.error('Erro no refresh token:', error);
-      return responseInternalServerError({
-        error: 'Erro interno do servidor',
-      });
-    }
-  }
-
-  async logout(userId: string, sessionId: string) {
-    try {
-      // Aqui você pode implementar uma blacklist de tokens
-      // ou invalidar a sessão no Redis/banco de dados
-      
-      // Por enquanto, apenas retornamos sucesso
-      // Em uma implementação completa, você adicionaria o token/sessão
-      // a uma blacklist para invalidá-lo
-      
-      return responseOk({
-        message: 'Logout realizado com sucesso',
-      });
-
-    } catch (error) {
-      console.error('Erro no logout:', error);
       return responseInternalServerError({
         error: 'Erro interno do servidor',
       });
@@ -190,23 +209,21 @@ export class LocalService {
       iat: Math.floor(Date.now() / 1000),
     };
 
-    // Access Token (8 horas)
     const accessToken = this.jwt.sign(basePayload, {
-      expiresIn: '8h',
+      expiresIn: process.env.JWT_EXPIRES_IN,
       secret: process.env.JWT_SECRET,
       audience: 'api-client',
       issuer: 'auth-service',
     });
 
-    // Refresh Token (30 dias)
     const refreshToken = this.jwt.sign(
       { ...basePayload, type: 'refresh' },
       {
-        expiresIn: '30d',
+        expiresIn: process.env.JWT_REFRESH_EXPIRES_IN,
         secret: process.env.JWT_SECRET,
         audience: 'api-client',
         issuer: 'auth-service',
-      }
+      },
     );
 
     return { accessToken, refreshToken };

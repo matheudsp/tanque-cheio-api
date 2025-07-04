@@ -1,3 +1,4 @@
+import { safeInputTextRegex } from '@/common/utils/lib';
 import { z } from 'zod';
 
 const localAuthSchema = z.object({
@@ -15,40 +16,32 @@ const refreshTokenSchema = z.object({
   refresh_token: z
     .string()
     .min(1, 'Refresh token é obrigatório')
-    .refine(
-      (token) => {
-        // Validação básica de formato JWT
-        const parts = token.split('.');
-        return parts.length === 3;
-      },
-      'Refresh token deve ter formato JWT válido'
-    ),
+    .refine((token) => {
+      // Validação básica de formato JWT
+      const parts = token.split('.');
+      return parts.length === 3;
+    }, 'Refresh token deve ter formato JWT válido'),
 });
 
-const logoutSchema = z.object({
-  logout_all: z.boolean().optional().default(false),
-});
-
-const localAuthSchemaWithRole = z.object({
-  user_id: z.string().uuid('ID do usuário deve ser um UUID válido'),
-  role_id: z.string().uuid('ID da role deve ser um UUID válido'),
-});
+const signUpLocalSchema = z
+  .object({
+    name: z.string().min(1, { message: 'O nome é obrigatório' }),
+    email: z.string().email({ message: 'Endereço de e-mail inválido' }),
+    password: z
+      .string()
+      .min(8, { message: 'A senha deve ter pelo menos 8 caracteres' }),
+    passwordConfirmation: z
+      .string()
+      .min(8, { message: 'A confirmação da senha é obrigatória' }),
+  })
+  .refine((data) => data.password === data.passwordConfirmation, {
+    message: 'As senhas não coincidem',
+    path: ['passwordConfirmation'], // Indica qual campo recebe o erro
+  });
 
 type LocalAuthSchema = z.infer<typeof localAuthSchema>;
 type RefreshTokenSchema = z.infer<typeof refreshTokenSchema>;
-type LogoutSchema = z.infer<typeof logoutSchema>;
-type LocalAuthSchemaWithRole = z.infer<typeof localAuthSchemaWithRole>;
+type SignUpLocalSchema = z.infer<typeof signUpLocalSchema>;
 
-export { 
-  localAuthSchema, 
-  refreshTokenSchema,
-  logoutSchema,
-  localAuthSchemaWithRole 
-};
-
-export type { 
-  LocalAuthSchema, 
-  RefreshTokenSchema,
-  LogoutSchema,
-  LocalAuthSchemaWithRole 
-};
+export { localAuthSchema, signUpLocalSchema, refreshTokenSchema };
+export type { LocalAuthSchema, SignUpLocalSchema, RefreshTokenSchema };

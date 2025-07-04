@@ -19,7 +19,6 @@ export class GasStationRepository {
     private readonly priceHistoryRepo: PriceHistoryRepository,
   ) {}
 
-
   async filter(filters: SearchGasStationsQuerySchema) {
     const queryBuilder = this.repo
       .createQueryBuilder('gs')
@@ -98,7 +97,7 @@ export class GasStationRepository {
       lat,
       lng,
       radius,
-      limit,
+      limit = 20,
       offset = 0,
       product,
       sort = 'distanceAsc',
@@ -106,173 +105,98 @@ export class GasStationRepository {
 
     const radiusInMeters = radius * 1000;
 
+    // --- Parte 1: Buscar IDs ordenados e paginados com QueryBuilder ---
+
     let qb = this.repo
       .createQueryBuilder('gs')
       .innerJoin('gs.localization', 'loc')
-      .select([
-        'gs.id',
-        'gs.tax_id',
-        'gs.legal_name',
-        'gs.trade_name',
-        'gs.brand',
-        'loc.city',
-        'loc.state',
-        'loc.coordinates',
-      ])
-      // Calcula a distância
-      .addSelect(
-        `
-        ST_Distance(
-          loc.coordinates::geography,
-          ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography
-        )
-      `,
-        'distance',
-      )
-      .where('gs.is_active = :is_active', { is_active: true })
-      // Filtra por raio de distância
+      .where('gs.is_active = :isActive', { isActive: true })
       .andWhere(
-        `
-        ST_DWithin(
-          loc.coordinates::geography,
-          ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography,
-          :radiusInMeters
-        )
-      `,
-      )
-      .setParameters({ lat, lng, radiusInMeters });
+        'ST_DWithin(loc.coordinates::geography, ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography, :radiusInMeters)',
+      );
 
-    if (product && product.trim()) {
-      qb = qb
-        .innerJoin(
-          'gs.price_history',
-          'hp',
-          'hp."is_active" = true AND hp.price IS NOT NULL',
-        )
-        .innerJoin('hp.product', 'prod')
-        .andWhere('UPPER(prod.name) ILIKE UPPER(:product)', {
-          product: `%${product.trim()}%`,
-        });
-    }
+    const priceSubQuery = `(
+        SELECT ph.price
+        FROM price_history ph
+        INNER JOIN product p ON p.id = ph.product_id
+        WHERE ph.gas_station_id = gs.id
+          AND p.name ILIKE :product
+          AND ph.is_active = true
+        ORDER BY ph.collection_date DESC
+        LIMIT 1
+      )`;
 
-    // Agrupa pelos campos necessários
-    qb = qb.groupBy(`
-      gs.id,
-      gs.tax_id,
-      gs.legal_name,
-      gs.trade_name,
-      gs.brand,
-      loc.city,
-      loc.state,
-      loc.coordinates
-    `);
-
-    // Para ordenação por preço, precisamos incluir o preço na seleção
-    if (sort === 'priceAsc' || sort === 'priceDesc') {
-      if (product && product.trim()) {
-        // Adiciona o preço mais recente do produto específico para ordenação
-        qb = qb.addSelect(
-          `
-            (
-              SELECT hp_latest.price 
-              FROM price_history hp_latest
-              INNER JOIN product prod_latest ON hp_latest.product_id = prod_latest.id
-              WHERE hp_latest.gas_station_id = gs.id 
-               
-                AND hp_latest.price IS NOT NULL
-                AND UPPER(prod_latest.name) ILIKE UPPER(:product)
-                AND hp_latest.collection_date = (
-                  SELECT MAX(hp_max.collection_date)
-                  FROM price_history hp_max
-                  INNER JOIN product prod_max ON hp_max.product_id = prod_max.id
-                  WHERE hp_max.gas_station_id = gs.id 
-                    AND hp_max.product_id = prod_latest.id
-                    AND hp_max.price IS NOT NULL
-                )
-              LIMIT 1
-            )
-          `,
-          'latest_price',
-        );
-      } else {
-        this.logger.warn(
-          'Ordenação por preço solicitada sem especificar produto. Usando ordenação por distância.',
-        );
-      }
-    }
-
-    const total = await qb.getCount();
-
-    // Aplica ordenação
-    switch (sort) {
-      case 'distanceDesc':
-        qb = qb.orderBy('distance', 'DESC');
-        break;
-      case 'priceAsc':
-        if (product && product.trim()) {
-          qb = qb
-            .orderBy('latest_price', 'ASC', 'NULLS LAST')
-            .addOrderBy('distance', 'ASC');
-        } else {
-          qb = qb.orderBy('distance', 'ASC');
-        }
-        break;
-      case 'priceDesc':
-        if (product && product.trim()) {
-          qb = qb
-            .orderBy('latest_price', 'DESC', 'NULLS LAST')
-            .addOrderBy('distance', 'ASC');
-        } else {
-          qb = qb.orderBy('distance', 'ASC');
-        }
-        break;
-      case 'distanceAsc':
-      default:
-        qb = qb.orderBy('distance', 'ASC');
-        break;
-    }
-
-    // Aplica paginação
-    const rawResults = await qb.limit(limit).offset(offset).getRawMany();
-
-    // Mapeia os resultados e busca os preços mais recentes para cada posto
-    const results = await Promise.all(
-      rawResults.map(async (r) => {
-        // Passa o filtro de produto para getLatestPrices quando existe filtro
-        const latest_prices = await this.priceHistoryRepo.getLatestPrices(
-          r.gs_id,
-          product?.trim(), // Passa o filtro de produto
-        );
-
-        return {
-          id: r.gs_id,
-          taxId: r.gs_taxId,
-          legal_name: r.gs_legal_name,
-          trade_name: r.gs_trade_name,
-          brand: r.gs_brand,
-          localization: {
-            city: r.loc_city,
-            state: r.loc_state,
-            coordinates: r.loc_coordinates,
-          },
-          distance: (Number(r.distance) / 1000).toFixed(1),
-          fuel_prices: latest_prices,
-          ...(r.latest_price && {
-            filteredProductPrice: Number(r.latest_price).toFixed(2),
-          }),
-        };
-      }),
+    qb.select('gs.id', 'id').addSelect(
+      'ST_Distance(loc.coordinates::geography, ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography)',
+      'distance',
     );
 
-    return {
-      results,
-      total,
-      limit,
-      offset,
-      geo: { lat, lng },
-      radius,
-      sort,
-      product: product?.trim() || null,
-    };
+    if (sort === 'priceAsc' && product) {
+      qb.orderBy(priceSubQuery, 'ASC', 'NULLS LAST');
+    } else if (sort === 'priceDesc' && product) {
+      qb.orderBy(priceSubQuery, 'DESC', 'NULLS LAST');
+    } else if (sort === 'distanceDesc') {
+      qb.orderBy('distance', 'DESC');
+    }
+    qb.addOrderBy('distance', 'ASC');
+
+    qb.setParameters({ lat, lng, radiusInMeters, product: product || '' });
+
+    const total = await qb.getCount();
+    const stationIds = (await qb.limit(limit).offset(offset).getRawMany()).map(
+      (s) => s.id,
+    );
+
+    if (stationIds.length === 0) {
+      return { results: [], total, limit, offset };
+    }
+
+    // --- Parte 2: Buscar detalhes e preços com uma única Raw Query eficiente ---
+
+    const stationsQuery = `
+      WITH LatestPrices AS (
+        SELECT
+          ph.gas_station_id,
+          p.name,
+          ph.price,
+          ROW_NUMBER() OVER(PARTITION BY ph.gas_station_id, p.id ORDER BY ph.collection_date DESC) as rn
+        FROM price_history ph
+        INNER JOIN product p ON p.id = ph.product_id
+        WHERE ph.gas_station_id = ANY($1) AND ph.is_active = true
+      )
+      SELECT
+        gs.id,
+        gs.trade_name as "tradeName",
+        gs.brand,
+        loc.city,
+        loc.state,
+        loc.coordinates,
+        ST_Distance(loc.coordinates::geography, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography) as distance,
+        json_agg(json_build_object('product', lp.name, 'price', lp.price)) FILTER (WHERE lp.name IS NOT NULL) as "fuelPrices"
+      FROM gas_station gs
+      INNER JOIN localization loc ON gs.localization_id = loc.id
+      LEFT JOIN LatestPrices lp ON gs.id = lp.gas_station_id AND lp.rn = 1
+      WHERE gs.id = ANY($1)
+      GROUP BY gs.id, loc.id
+    `;
+
+    const rawResults = await this.repo.manager.query(stationsQuery, [
+      stationIds,
+      lng,
+      lat,
+    ]);
+
+    const orderMap = new Map(stationIds.map((id, index) => [id, index]));
+
+    // **A CORREÇÃO ESTÁ AQUI**: Adicionado `?? 0` para tratar o tipo `undefined`.
+    const results = rawResults
+      .map((r) => ({
+        ...r,
+        distance: (Number(r.distance) / 1000).toFixed(1),
+        fuelPrices: r.fuelPrices || [],
+      }))
+      .sort((a, b) => (orderMap.get(a.id) ?? 0) - (orderMap.get(b.id) ?? 0));
+
+    return { results, total, limit, offset };
   }
 }

@@ -37,6 +37,7 @@ export class LocalizationEntity {
   @Column({ type: 'varchar', length: 10, nullable: true })
   zip_code?: string | null;
 
+  @Index({ spatial: true })
   @Column({
     type: 'geography',
     spatialFeatureType: 'Point',
@@ -67,6 +68,4 @@ export class LocalizationEntity {
 
     return parts.join('|');
   }
-
-
 }

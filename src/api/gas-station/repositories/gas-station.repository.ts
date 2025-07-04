@@ -166,11 +166,19 @@ export class GasStationRepository {
       )
       SELECT
         gs.id,
-        gs.trade_name as "tradeName",
+        gs.legal_name,
+        gs.trade_name,
         gs.brand,
-        loc.city,
-        loc.state,
-        loc.coordinates,
+        gs.tax_id,
+        json_build_object(
+            'state', loc.state,
+            'city', loc.city,
+            'address', loc.address,
+            'number', loc.number,
+            'neighborhood', loc.neighborhood,
+            'zip_code', loc.zip_code,
+            'coordinates', loc.coordinates
+        ) as localization,
         ST_Distance(loc.coordinates::geography, ST_SetSRID(ST_MakePoint($2, $3), 4326)::geography) as distance,
         json_agg(json_build_object('product', lp.name, 'price', lp.price)) FILTER (WHERE lp.name IS NOT NULL) as "fuelPrices"
       FROM gas_station gs
@@ -188,10 +196,14 @@ export class GasStationRepository {
 
     const orderMap = new Map(stationIds.map((id, index) => [id, index]));
 
-    // **A CORREÇÃO ESTÁ AQUI**: Adicionado `?? 0` para tratar o tipo `undefined`.
     const results = rawResults
       .map((r) => ({
-        ...r,
+        id: r.id,
+        legal_name: r.legal_name,
+        trade_name: r.trade_name,
+        brand: r.brand,
+        tax_id: r.tax_id,
+        localization: r.localization,
         distance: (Number(r.distance) / 1000).toFixed(1),
         fuelPrices: r.fuelPrices || [],
       }))

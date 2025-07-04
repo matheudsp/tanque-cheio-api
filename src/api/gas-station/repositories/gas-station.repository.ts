@@ -93,43 +93,68 @@ export class GasStationRepository {
   }
 
   async nearby(params: GetNearbyStationsSchema) {
-    const {
-      lat,
-      lng,
-      radius,
-      limit = 20,
-      offset = 0,
-      product,
-      sort = 'distanceAsc',
-    } = params;
+    const { lat, lng, radius, limit = 20, offset = 0, product, sort } = params;
+
     const radiusInMeters = radius * 1000;
+    const basePoint = `ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography`;
 
     let qb = this.repo
       .createQueryBuilder('gs')
       .innerJoin('gs.localization', 'loc')
       .where('gs.is_active = :isActive', { isActive: true })
       .andWhere(
-        'ST_DWithin(loc.coordinates::geography, ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography, :radiusInMeters)',
+        `ST_DWithin(loc.coordinates::geography, ${basePoint}, :radiusInMeters)`,
       );
 
-    const priceSubQuery = `(SELECT ph.price FROM price_history ph INNER JOIN product p ON p.id = ph.product_id WHERE ph.gas_station_id = gs.id AND p.name ILIKE :product AND ph.is_active = true ORDER BY ph.collection_date DESC LIMIT 1)`;
+    if (product) {
+      qb.andWhere(
+        `EXISTS (
+        SELECT 1 FROM price_history ph
+        INNER JOIN product p ON p.id = ph.product_id
+        WHERE ph.gas_station_id = gs.id
+        AND p.name ILIKE :product
+        AND ph.is_active = true
+      )`,
+      );
+    }
 
-    qb.select('gs.id', 'id').addSelect(
-      'ST_Distance(loc.coordinates::geography, ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography)',
-      'distance',
-    );
+    qb.select([
+      'gs.id AS id',
+      `ST_Distance(loc.coordinates::geography, ${basePoint}) AS distance`,
+    ]);
 
-    if (sort === 'priceAsc' && product)
-      qb.orderBy(priceSubQuery, 'ASC', 'NULLS LAST');
-    else if (sort === 'priceDesc' && product)
-      qb.orderBy(priceSubQuery, 'DESC', 'NULLS LAST');
-    else if (sort === 'distanceDesc') qb.orderBy('distance', 'DESC');
-    qb.addOrderBy('distance', 'ASC');
+    const priceSubQuery = product
+      ? `(SELECT ph.price FROM price_history ph 
+        INNER JOIN product p ON p.id = ph.product_id 
+        WHERE ph.gas_station_id = gs.id 
+        AND p.name ILIKE :product 
+        AND ph.is_active = true 
+        ORDER BY ph.collection_date DESC 
+        LIMIT 1)`
+      : null;
 
-    qb.setParameters({ lat, lng, radiusInMeters, product: product || '' });
+    if (product && sort === 'priceAsc') {
+      qb.orderBy(`${priceSubQuery}`, 'ASC', 'NULLS LAST');
+    } else if (product && sort === 'priceDesc') {
+      qb.orderBy(`${priceSubQuery}`, 'DESC', 'NULLS LAST');
+    } else if (sort === 'distanceDesc') {
+      qb.orderBy('distance', 'DESC');
+    } else {
+      qb.orderBy('distance', 'ASC'); // somente se não for distanceDesc
+    }
 
-    const total = await qb.getCount();
-    const paginatedStations = await qb.limit(limit).offset(offset).getRawMany();
+    qb.setParameters({
+      lat,
+      lng,
+      radiusInMeters,
+      product: `%${product || ''}%`,
+    });
+
+    const [paginatedStations, total] = await Promise.all([
+      qb.limit(limit).offset(offset).getRawMany(),
+      qb.getCount(),
+    ]);
+
     const stationIds = paginatedStations.map((s) => s.id);
 
     if (stationIds.length === 0) {
@@ -145,21 +170,19 @@ export class GasStationRepository {
       };
     }
 
-    const stationsDetails = await this.repo
-      .createQueryBuilder('gs')
-      .innerJoinAndSelect('gs.localization', 'loc')
-      .where('gs.id IN (:...stationIds)', { stationIds })
-      .getMany();
-
-    const fuelPricesMap =
-      await this.priceHistoryRepo.getLatestPricesForMultipleStations(
-        stationIds,
-      );
+    const [stationsDetails, fuelPricesMap] = await Promise.all([
+      this.repo
+        .createQueryBuilder('gs')
+        .innerJoinAndSelect('gs.localization', 'loc')
+        .where('gs.id IN (:...stationIds)', { stationIds })
+        .getMany(),
+      this.priceHistoryRepo.getLatestPricesForMultipleStations(stationIds),
+    ]);
 
     const distanceMap = new Map(
       paginatedStations.map((s) => [s.id, s.distance]),
     );
-    const orderMap = new Map(stationIds.map((id, index) => [id, index]));
+    const orderMap = new Map(stationIds.map((id, idx) => [id, idx]));
 
     const results = stationsDetails
       .map((station) => ({

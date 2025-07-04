@@ -7,6 +7,7 @@ import {
 import {
   compareHash,
   createHash,
+  parseDurationToSeconds,
   uniqueCodeUppercase,
   zodErrorParse,
 } from '@/common/utils/lib';
@@ -207,6 +208,10 @@ export class LocalService {
 
       const { password, ...restUser } = user;
 
+      const expiresInSeconds = parseDurationToSeconds(
+        process.env.JWT_EXPIRES_IN || '8h',
+      );
+
       return responseOk({
         message: 'Login realizado com sucesso',
         data: {
@@ -214,7 +219,7 @@ export class LocalService {
           role: roleData,
           access_token: tokens.accessToken,
           refresh_token: tokens.refreshToken,
-          expires_in: process.env.JWT_EXPIRES_IN,
+          expires_in: expiresInSeconds,
           token_type: 'Bearer',
         },
       });
@@ -269,12 +274,16 @@ export class LocalService {
         role_id: roleData.id,
       });
 
+      const expiresInSeconds = parseDurationToSeconds(
+        process.env.JWT_REFRESH_EXPIRES_IN || '8h',
+      );
+
       return responseOk({
         message: 'Tokens renovados com sucesso',
         data: {
           access_token: tokens.accessToken,
           refresh_token: tokens.refreshToken,
-          expires_in: process.env.JWT_REFRESH_EXPIRES_IN,
+          expires_in: expiresInSeconds,
           token_type: 'Bearer',
         },
       });

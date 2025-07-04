@@ -80,6 +80,28 @@ const getErrorResponse = (error: any) => {
   return responseInternalServerError({ message });
 };
 
+/**
+ * Converte uma string de duração (ex: "8h", "30d") em segundos.
+ * @param durationString A string de duração do .env
+ * @returns O número de segundos.
+ */
+function parseDurationToSeconds(durationString: string): number {
+  const duration = parseInt(durationString, 10);
+  const unit = durationString.charAt(durationString.length - 1);
+
+  switch (unit) {
+    case 'h':
+      return duration * 60 * 60; // horas para segundos
+    case 'd':
+      return duration * 24 * 60 * 60; // dias para segundos
+    case 's':
+      return duration; // já está em segundos
+    default:
+      // Retorna um padrão seguro (ex: 8 horas) se o formato for desconhecido
+      return 8 * 60 * 60;
+  }
+}
+
 export {
   safeInputNumberRegex,
   safeInputTextRegex,
@@ -92,4 +114,5 @@ export {
   uniqueCodeUppercase,
   metaPagination,
   getErrorResponse,
+  parseDurationToSeconds,
 };

@@ -54,6 +54,45 @@
 							"response": []
 						},
 						{
+							"name": "Sign Up",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwtToken}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"name\": \"Matheus Pereira\",\r\n    \"email\": \"matheuzimdsp@gmail.com\",\r\n    \"password\": \"2025tanquecheio\",\r\n    \"passwordConfirmation\": \"2025tanquecheio\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/auth/local/sign-up",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"auth",
+										"local",
+										"sign-up"
+									]
+								}
+							},
+							"response": []
+						},
+						{
 							"name": "Refresh Token",
 							"request": {
 								"auth": {
@@ -70,7 +109,7 @@
 								"header": [],
 								"body": {
 									"mode": "raw",
-									"raw": "{\r\n    \"refresh_token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMDE5Nzg1YjktZjdiYS03NTRmLTlkYjItZTQ1NTA1MzkzN2NhIiwicm9sZV9pZCI6IjAxOTc4NWI5LWY5Y2MtNzY1Zi05ZWZhLTk1M2ZjNDBmNGViYiIsInNlc3Npb25faWQiOiJjMzYwNzkzMWIwOGRmZWRiYjFiNjY2MTI5NjU5YjRhNjIxZmFhZTI0NTc2N2VkOTAwOTlkNDRhZGQ4NzJjMGEzIiwiaWF0IjoxNzUwMjk1NDYyLCJ0eXBlIjoicmVmcmVzaCIsImV4cCI6MTc1Mjg4NzQ2MiwiYXVkIjoiYXBpLWNsaWVudCIsImlzcyI6ImF1dGgtc2VydmljZSJ9.-lFEO1FfGorC-r2jaOliX8iyehlGJ_bwmTxGiDgwj3w\"\r\n}",
+									"raw": "{\r\n    \"refresh_token\":\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VyX2lkIjoiMDE5Nzg1YjktZjdiYS03NTRmLTlkYjItZTQ1NTA1MzkzN2NhIiwicm9sZV9pZCI6IjAxOTc4NWI5LWY5Y2MtNzY1Zi05ZWZhLTk1M2ZjNDBmNGViYiIsImlhdCI6MTc1MTU5MjYwMCwidHlwZSI6InJlZnJlc2giLCJleHAiOjE3NTQxODQ2MDAsImF1ZCI6ImFwaS1jbGllbnQiLCJpc3MiOiJhdXRoLXNlcnZpY2UifQ.pfbvfP7vCdP-Glv8IrEyEt1acRKuGdNbaipzuJQhGts\"\r\n}",
 									"options": {
 										"raw": {
 											"language": "json"
@@ -93,7 +132,7 @@
 							"response": []
 						},
 						{
-							"name": "Logout",
+							"name": "Reset Password",
 							"request": {
 								"auth": {
 									"type": "bearer",
@@ -107,8 +146,17 @@
 								},
 								"method": "POST",
 								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"email\":\"mdsp.personal@gmail.com\",\r\n    \"code\":\"1E1EVZ\",\r\n    \"password\":\"2025tanquecheio\",\r\n    \"passwordConfirmation\":\"2025tanquecheio\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
 								"url": {
-									"raw": "{{baseUrl}}/api/auth/local/logout",
+									"raw": "{{baseUrl}}/api/auth/local/reset-password",
 									"host": [
 										"{{baseUrl}}"
 									],
@@ -116,7 +164,85 @@
 										"api",
 										"auth",
 										"local",
-										"logout"
+										"reset-password"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Forgot Password",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwtToken}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"email\":\"mdsp.personal@gmail.com\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/auth/local/forgot-password",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"auth",
+										"local",
+										"forgot-password"
+									]
+								}
+							},
+							"response": []
+						},
+						{
+							"name": "Forgot Password",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwtToken}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"email\":\"mdsp.personal@gmail.com\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/auth/local/forgot-password",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"auth",
+										"local",
+										"forgot-password"
 									]
 								}
 							},
@@ -1304,14 +1430,14 @@
 									}
 								},
 								"url": {
-									"raw": "{{baseUrl}}/api/v1/notifications/send/user/019785b9-f7ba-754f-9db2-e455053937ca",
+									"raw": "{{baseUrl}}/api/v1/push-notifications/send/user/019785b9-f7ba-754f-9db2-e455053937ca",
 									"host": [
 										"{{baseUrl}}"
 									],
 									"path": [
 										"api",
 										"v1",
-										"notifications",
+										"push-notifications",
 										"send",
 										"user",
 										"019785b9-f7ba-754f-9db2-e455053937ca"
@@ -2127,6 +2253,51 @@
 										"v1",
 										"users",
 										"me"
+									]
+								}
+							},
+							"response": []
+						}
+					]
+				},
+				{
+					"name": "Push Notifications",
+					"item": [
+						{
+							"name": "Register A Token",
+							"request": {
+								"auth": {
+									"type": "bearer",
+									"bearer": [
+										{
+											"key": "token",
+											"value": "{{jwtToken}}",
+											"type": "string"
+										}
+									]
+								},
+								"method": "POST",
+								"header": [],
+								"body": {
+									"mode": "raw",
+									"raw": "{\r\n    \"token\":\"ExponentPushToken[XXXXXXXXXXXXXX]\"\r\n}",
+									"options": {
+										"raw": {
+											"language": "json"
+										}
+									}
+								},
+								"url": {
+									"raw": "{{baseUrl}}/api/v1/push-notifications/tokens/register",
+									"host": [
+										"{{baseUrl}}"
+									],
+									"path": [
+										"api",
+										"v1",
+										"push-notifications",
+										"tokens",
+										"register"
 									]
 								}
 							},

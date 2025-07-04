@@ -1,8 +1,4 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
-import { CACHE_MANAGER } from '@nestjs/cache-manager';
-import { Cache } from 'cache-manager';
-import { seconds } from '@nestjs/throttler';
-
 import {
   responseOk,
   responseNotFound,
@@ -10,8 +6,11 @@ import {
   responseBadRequest,
 } from '@/common/utils/response-api';
 import { getErrorResponse } from '@/common/utils/lib';
-import { CacheRequestService } from '@/common/services/cache-request/cache-request.service';
 
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
+import { CacheRequestService } from '@/common/services/cache-request/cache-request.service';
+import { seconds } from '@nestjs/throttler';
 import {
   getNearbyStationsSchema,
   searchGasStationsQuerySchema,
@@ -31,61 +30,71 @@ export class GasStationService {
   private readonly logger = new Logger(GasStationService.name);
 
   constructor(
-    @Inject(CACHE_MANAGER) private readonly cacheManager: Cache,
-    private readonly cache: CacheRequestService,
+    @Inject(CACHE_MANAGER) private readonly cache: Cache,
+    private readonly cacheKey: CacheRequestService,
     private readonly repo: GasStationRepository,
     private readonly priceHistoryRepo: PriceHistoryRepository,
   ) {}
 
   async findById(stationId: string) {
     try {
-      const key = this.cache.getCacheKey();
-      let data = await this.cacheManager.get(key);
-
-      if (data) return responseOk({ data });
+      const cacheKey = `station:${stationId}`;
+      const cacheData = await this.cache.get<any>(cacheKey);
+      if (cacheData) {
+        return responseOk({ data: cacheData });
+      }
 
       const station = await this.repo.findById(stationId);
+      if (!station) {
+        return responseNotFound({ message: 'Posto não encontrado' });
+      }
+
       const fuelPricesData =
         await this.priceHistoryRepo.getLatestPrices(stationId);
-      data = {
+      const data = {
         ...station,
         fuel_prices: fuelPricesData,
       };
-      if (!data) return responseNotFound({ message: 'Posto não encontrado' });
-      // cached for 15 min in redis
-      await this.cacheManager.set(key, data, seconds(900));
+
+      // cache por 15 minutos (900 segundos)
+      await this.cache.set(cacheKey, data, seconds(900));
 
       return responseOk({ data });
     } catch (e) {
       return getErrorResponse(e);
     }
   }
-
   async getPriceHistoryForChart(
     stationId: string,
     query: PriceHistoryQueryDto,
   ) {
     try {
-      // Valida se o posto existe antes de prosseguir
+      const cacheKey = `price-history:${stationId}:${JSON.stringify(query)}`;
+      const cachedData = await this.cache.get<any>(cacheKey);
+      if (cachedData) {
+        return responseOk({ data: cachedData });
+      }
+
       const stationExists = await this.repo.findById(stationId);
       if (!stationExists) {
         return responseNotFound({ message: 'Posto não encontrado' });
       }
 
-      // Define o período padrão (últimos 30 dias) se não for fornecido
       const endDate = query.end_date ? new Date(query.end_date) : new Date();
       const startDate = query.start_date
         ? new Date(query.start_date)
         : new Date(new Date().setDate(endDate.getDate() - 30));
 
-      // Busca o histórico de preços agrupado usando o método que já existe
       const priceHistoryData =
         await this.priceHistoryRepo.getPriceHistoryGrouped(
           stationId,
           startDate,
           endDate,
-          query.product, // Passa o filtro de produto, se houver
+          query.product,
         );
+
+      //cache por 10 minutos (600 segundos)
+      await this.cache.set(cacheKey, priceHistoryData, seconds(600));
 
       return responseOk({ data: priceHistoryData });
     } catch (e) {
@@ -100,24 +109,25 @@ export class GasStationService {
   async search(filters: SearchGasStationsQuerySchema) {
     try {
       searchGasStationsQuerySchema.parse({ filters });
-      const key = this.cache.getCacheKey();
+      const key = `search:${JSON.stringify(filters)}`;
 
-      let data = await this.cacheManager.get(key);
-      if (data) return responseOk({ data });
+      const cachedData = await this.cache.get<any>(key);
+      if (cachedData) {
+        return responseOk({ data: cachedData });
+      }
 
       const { results, total } = await this.repo.filter(filters);
-
-      const searchResult: SearchResult = {
+      const searchResult = {
         results,
         total,
         limit: filters.limit || 50,
         offset: filters.offset || 0,
       };
 
-      await this.cacheManager.set(key, searchResult, seconds(300)); // 5 minutos
+      await this.cache.set(key, searchResult, seconds(300)); // 5 minutos
+
       return responseOk({ data: searchResult });
     } catch (e) {
-      // this.logger.error('Error searching gas stations:', e);
       return getErrorResponse(e);
     }
   }
@@ -125,17 +135,25 @@ export class GasStationService {
   async findNearby(params: GetNearbyStationsSchema) {
     try {
       const parsed = getNearbyStationsSchema.parse(params);
+      const { lat, lng, radius, product, sort, limit, offset } = parsed;
 
-      const key = this.cache.getCacheKey();
-      let cached = await this.cacheManager.get(key);
+      const cacheKey = `nearby-stations:${lat}:${lng}:${radius}:${product || 'any'}:${sort}:${limit}:${offset}`;
 
-      if (cached) {
-        return responseOk({ data: cached });
+      this.logger.log(`[CACHE] Attempting to get data from key: ${cacheKey}`);
+
+      const cachedData = await this.cache.get<any>(cacheKey);
+      if (cachedData) {
+        this.logger.log(`[CACHE] Hit for key: ${cacheKey}`);
+        return responseOk({ data: cachedData });
       }
+
+      this.logger.log(
+        `[CACHE] Miss for key: ${cacheKey}. Fetching from repository.`,
+      );
 
       const result = await this.repo.nearby(parsed);
 
-      // await this.cacheManager.set(key, nearbyResult, seconds(600));
+      await this.cache.set(cacheKey, result, seconds(300));
 
       return responseOk({ data: result });
     } catch (e) {

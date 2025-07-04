@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, Between, Not, IsNull, ILike } from 'typeorm';
 import { PriceHistoryEntity } from '@/database/entity/price-history.entity';
 import { PriceByProductDto } from '../dtos/price-history.dto';
+import type { FuelPriceProduct } from '../interfaces/fuel-prices.interface';
 
 @Injectable()
 export class PriceHistoryRepository {
@@ -34,6 +35,92 @@ export class PriceHistoryRepository {
     }
   }
 
+  async getLatestPricesForMultipleStations(
+    stationIds: string[],
+  ): Promise<Map<string, FuelPriceProduct[]>> {
+    if (!stationIds || stationIds.length === 0) {
+      return new Map();
+    }
+
+    // Esta é uma única e poderosa consulta SQL.
+    // Ela usa CTEs para rankear os preços e a função LAG() para pegar o preço anterior.
+    // O cálculo de variação e tendência é feito diretamente no SELECT final.
+    const query = `
+      WITH RankedPrices AS (
+        -- Primeiro, rankeamos todos os históricos de preço para os postos selecionados
+        SELECT
+          ph.gas_station_id,
+          p.id AS product_id,
+          p.name AS product_name,
+          p.unit_of_measure,
+          ph.price,
+          ph.collection_date,
+          -- Usamos ROW_NUMBER para ter uma ordenação clara do mais novo para o mais antigo
+          ROW_NUMBER() OVER(PARTITION BY ph.gas_station_id, p.id ORDER BY ph.collection_date DESC) as rn
+        FROM price_history ph
+        INNER JOIN product p ON p.id = ph.product_id
+        WHERE ph.gas_station_id = ANY($1) AND ph.is_active = true
+      ),
+      PriceComparison AS (
+        -- Agora, para o preço mais recente (rn=1), usamos LAG() para buscar o preço anterior (rn=2)
+        -- e trazê-lo para a mesma linha.
+        SELECT
+          gas_station_id,
+          product_id,
+          product_name,
+          unit_of_measure,
+          price,
+          collection_date,
+          LAG(price, 1, NULL) OVER(PARTITION BY gas_station_id, product_id ORDER BY collection_date DESC) as previous_price
+        FROM RankedPrices
+        WHERE rn <= 2
+      )
+      -- Finalmente, selecionamos apenas os preços mais recentes e calculamos a variação e a tendência
+      SELECT
+        pc.gas_station_id,
+        pc.product_id,
+        pc.product_name,
+        pc.unit_of_measure,
+        pc.price::text, -- Converte para texto
+        TO_CHAR(pc.collection_date, 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as collection_date,
+        -- Calcula a variação percentual
+        CASE
+          WHEN pc.previous_price IS NOT NULL AND pc.previous_price > 0 THEN
+            ROUND(((pc.price - pc.previous_price) / pc.previous_price * 100)::numeric, 2)
+          ELSE NULL
+        END as percentage_change,
+        -- Determina a tendência (UP, DOWN, STABLE)
+        CASE
+          WHEN pc.previous_price IS NULL THEN NULL
+          WHEN pc.price > pc.previous_price THEN 'UP'
+          WHEN pc.price < pc.previous_price THEN 'DOWN'
+          ELSE 'STABLE'
+        END as trend
+      FROM PriceComparison pc
+      WHERE pc.previous_price IS NOT NULL OR (
+        SELECT COUNT(*) FROM PriceComparison sub 
+        WHERE sub.gas_station_id = pc.gas_station_id AND sub.product_id = pc.product_id
+      ) = 1
+      ORDER BY pc.gas_station_id, pc.product_name;
+    `;
+
+    const rawResults: FuelPriceProduct[] = await this.repository.manager.query(
+      query,
+      [stationIds],
+    );
+
+    // Agrupamos os resultados em um Map, como o GasStationRepository espera
+    const resultMap = new Map<string, FuelPriceProduct[]>();
+    for (const result of rawResults) {
+      const stationId = (result as any).gas_station_id;
+      if (!resultMap.has(stationId)) {
+        resultMap.set(stationId, []);
+      }
+      resultMap.get(stationId)!.push(result);
+    }
+
+    return resultMap;
+  }
   /**
    * Busca os preços mais recentes de todos os produtos do posto.
    * @param stationId ID do posto de combustível

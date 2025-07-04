@@ -10,11 +10,23 @@ import { UsersRepository } from '@/api/users/repositories/users.repository';
 import { JwtGuardService } from '@/common/services/jwt-auth/jwt-guard.service';
 import { RolesRepository } from '@/api/roles/repositories/roles.repository';
 import { RolesEntity } from '@/database/entity/roles.entity';
-
+import { CacheRequestService } from '@/common/services/cache-request/cache-request.service';
+import { EmailService } from '@/common/services/email/email.service';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([UserEntity,HasRolesEntity, RolesEntity])],
+  imports: [
+    TypeOrmModule.forFeature([UserEntity, HasRolesEntity, RolesEntity]),
+  ],
   controllers: [LocalController],
-  providers: [LocalService, JwtService, UsersRepository, HasRoleRepository, RolesRepository, JwtGuardService],
+  providers: [
+    LocalService,
+    JwtService,
+    UsersRepository,
+    HasRoleRepository,
+    RolesRepository,
+    JwtGuardService,
+    CacheRequestService,
+    EmailService
+  ],
 })
 export class LocalModule {}

@@ -38,10 +38,43 @@ const signUpLocalSchema = z
     message: 'As senhas não coincidem',
     path: ['passwordConfirmation'], // Indica qual campo recebe o erro
   });
+const forgotPasswordSchema = z.object({
+  email: z.string().email({ message: 'Endereço de e-mail inválido' }),
+});
+const resetPasswordSchema = z
+  .object({
+    email: z.string().email({ message: 'Endereço de e-mail inválido' }),
+    code: z
+      .string()
+      .length(6, { message: 'O código deve ter exatamente 6 dígitos' }),
+    password: z
+      .string()
+      .min(8, { message: 'A senha deve ter pelo menos 8 caracteres' }),
+    passwordConfirmation: z
+      .string()
+      .min(8, { message: 'A confirmação da senha é obrigatória' }),
+  })
+  .refine((data) => data.password === data.passwordConfirmation, {
+    message: 'As senhas não coincidem',
+    path: ['passwordConfirmation'],
+  });
 
 type LocalAuthSchema = z.infer<typeof localAuthSchema>;
 type RefreshTokenSchema = z.infer<typeof refreshTokenSchema>;
 type SignUpLocalSchema = z.infer<typeof signUpLocalSchema>;
-
-export { localAuthSchema, signUpLocalSchema, refreshTokenSchema };
-export type { LocalAuthSchema, SignUpLocalSchema, RefreshTokenSchema };
+type ResetPasswordSchema = z.infer<typeof resetPasswordSchema>;
+type ForgotPasswordSchema = z.infer<typeof forgotPasswordSchema>;
+export {
+  localAuthSchema,
+  resetPasswordSchema,
+  forgotPasswordSchema,
+  signUpLocalSchema,
+  refreshTokenSchema,
+};
+export type {
+  LocalAuthSchema,
+  ForgotPasswordSchema,
+  ResetPasswordSchema,
+  SignUpLocalSchema,
+  RefreshTokenSchema,
+};

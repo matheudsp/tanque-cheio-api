@@ -1,5 +1,43 @@
 import { ApiProperty, ApiSchema } from '@nestjs/swagger';
 
+@ApiSchema({ name: 'Forgot Password' })
+export class ForgotPasswordDto {
+  @ApiProperty({
+    description: 'E-mail do usuário que esqueceu a senha',
+    example: 'usuario@exemplo.com',
+  })
+  email: string;
+}
+
+@ApiSchema({ name: 'Reset Password with Code' })
+export class ResetPasswordDto {
+  @ApiProperty({
+    description: 'E-mail do usuário que está redefinindo a senha',
+    example: 'usuario@exemplo.com',
+  })
+  email: string;
+
+  @ApiProperty({
+    description: 'O código de 6 dígitos recebido por e-mail',
+    example: '123456',
+  })
+  code: string;
+
+  @ApiProperty({
+    minLength: 8,
+    description: 'A nova senha do usuário',
+    example: 'NovaSenha@123',
+  })
+  password: string;
+
+  @ApiProperty({
+    minLength: 8,
+    description: 'Confirmação da nova senha',
+    example: 'NovaSenha@123',
+  })
+  passwordConfirmation: string;
+}
+
 @ApiSchema({ name: 'Local Auth' })
 export class LocalSignInDto {
   @ApiProperty({

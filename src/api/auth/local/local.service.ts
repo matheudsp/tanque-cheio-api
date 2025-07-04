@@ -1,6 +1,21 @@
-import { LocalSignInDto, LocalSignUpDto } from './dtos/local.dto';
-import { compareHash, createHash, zodErrorParse } from '@/common/utils/lib';
-import { localAuthSchema, signUpLocalSchema } from './schemas/local.schema';
+import {
+  LocalSignInDto,
+  LocalSignUpDto,
+  type ForgotPasswordDto,
+  type ResetPasswordDto,
+} from './dtos/local.dto';
+import {
+  compareHash,
+  createHash,
+  uniqueCodeUppercase,
+  zodErrorParse,
+} from '@/common/utils/lib';
+import {
+  forgotPasswordSchema,
+  localAuthSchema,
+  resetPasswordSchema,
+  signUpLocalSchema,
+} from './schemas/local.schema';
 import {
   responseBadRequest,
   responseConflict,
@@ -11,10 +26,14 @@ import {
 } from '@/common/utils/response-api';
 
 import { HasRoleRepository } from '@/api/has-roles/repositories/has-roles.repository';
-import { Injectable } from '@nestjs/common';
+import { Inject, Injectable } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { UsersRepository } from '@/api/users/repositories/users.repository';
 import { RolesRepository } from '@/api/roles/repositories/roles.repository';
+import { EmailService } from '@/common/services/email/email.service';
+import { CACHE_MANAGER } from '@nestjs/cache-manager';
+import { Cache } from 'cache-manager';
+import { seconds } from '@nestjs/throttler';
 
 interface TokenPayload {
   user_id: string;
@@ -29,11 +48,82 @@ interface RefreshTokenPayload extends TokenPayload {
 @Injectable()
 export class LocalService {
   constructor(
+    @Inject(CACHE_MANAGER) private readonly cache: Cache,
     private readonly userRepo: UsersRepository,
     private readonly jwt: JwtService,
     private readonly hasRolesRepo: HasRoleRepository,
     private readonly rolesRepo: RolesRepository,
+    private readonly emailService: EmailService,
   ) {}
+
+  async forgotPassword(data: ForgotPasswordDto) {
+    try {
+      const { email } = forgotPasswordSchema.parse(data);
+      const user = await this.userRepo.findByEmail(email);
+
+      if (user) {
+        const code = uniqueCodeUppercase(6); // Gerando um código de 6 dígitos
+        const cacheKey = `reset-password:${email}`;
+
+        // Armazena o código no cache por 10 minutos (600 segundos)
+        await this.cache.set(cacheKey, code, seconds(600));
+        await this.emailService.sendPasswordResetCode(user.email, code);
+      }
+
+      return responseOk({
+        message:
+          'Se um usuário com este e-mail existir, um código de redefinição foi enviado.',
+      });
+    } catch (error) {
+      const zodErr = zodErrorParse(error);
+      if (zodErr.isError) {
+        return responseBadRequest({ error: zodErr.errors });
+      }
+      return responseInternalServerError({
+        message: 'Erro ao processar a solicitação.',
+      });
+    }
+  }
+
+  async resetPassword(data: ResetPasswordDto) {
+    try {
+      const { email, code, password } = resetPasswordSchema.parse(data);
+
+      const cacheKey = `reset-password:${email}`;
+      const cachedCode = await this.cache.get<string>(cacheKey);
+
+      if (!cachedCode) {
+        return responseBadRequest({ message: 'Código expirado ou inválido.' });
+      }
+
+      if (cachedCode !== code) {
+        return responseBadRequest({ message: 'Código incorreto.' });
+      }
+
+      const user = await this.userRepo.findByEmail(email);
+      if (!user) {
+        // Isso não deveria acontecer se o código existe, mas é uma segurança extra
+        return responseBadRequest({ message: 'Usuário não encontrado.' });
+      }
+
+      const hashedPassword = createHash(password);
+      await this.userRepo.updatePassword(user.id, hashedPassword);
+
+      // Remove o código do cache para que não possa ser reutilizado
+      await this.cache.del(cacheKey);
+
+      return responseOk({ message: 'Senha redefinida com sucesso!' });
+    } catch (error) {
+      const zodErr = zodErrorParse(error);
+      if (zodErr.isError) {
+        return responseBadRequest({ error: zodErr.errors });
+      }
+      return responseInternalServerError({
+        message: 'Erro ao redefinir a senha.',
+      });
+    }
+  }
+
   async signUp(data: LocalSignUpDto) {
     try {
       const parsedData = signUpLocalSchema.parse(data);

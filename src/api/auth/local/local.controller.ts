@@ -5,6 +5,8 @@ import {
   LocalSignInDto,
   RefreshTokenDto,
   LocalSignUpDto,
+  type ForgotPasswordDto,
+  type ResetPasswordDto,
 } from './dtos/local.dto';
 import { Response, Request } from 'express';
 import { OpenApiResponses } from '@/common/decorators/openapi.decorator';
@@ -28,6 +30,22 @@ export class LocalController {
   @OpenApiResponses([200, 400, 409, 500])
   async signUp(@Body() body: LocalSignUpDto, @Res() res: Response) {
     const r = await this.service.signUp(body);
+    return res.status(r.statusCode).send(r);
+  }
+
+  @Post('forgot-password')
+  @ApiOperation({ summary: 'Solicitar código de redefinição de senha' })
+  @OpenApiResponses([200, 400, 500])
+  async forgotPassword(@Body() body: ForgotPasswordDto, @Res() res: Response) {
+    const r = await this.service.forgotPassword(body);
+    return res.status(r.statusCode).send(r);
+  }
+
+  @Post('reset-password')
+  @ApiOperation({ summary: 'Redefinir a senha com o código' })
+  @OpenApiResponses([200, 400, 500])
+  async resetPassword(@Body() body: ResetPasswordDto, @Res() res: Response) {
+    const r = await this.service.resetPassword(body);
     return res.status(r.statusCode).send(r);
   }
 

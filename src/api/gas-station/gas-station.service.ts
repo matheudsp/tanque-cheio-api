@@ -37,7 +37,6 @@ export class GasStationService {
     private readonly priceHistoryRepo: PriceHistoryRepository,
   ) {}
 
- 
   async findById(stationId: string) {
     try {
       const key = this.cache.getCacheKey();
@@ -62,11 +61,11 @@ export class GasStationService {
     }
   }
 
-
-   async getPriceHistoryForChart(stationId: string, query: PriceHistoryQueryDto) {
+  async getPriceHistoryForChart(
+    stationId: string,
+    query: PriceHistoryQueryDto,
+  ) {
     try {
-      
-
       // Valida se o posto existe antes de prosseguir
       const stationExists = await this.repo.findById(stationId);
       if (!stationExists) {
@@ -87,11 +86,13 @@ export class GasStationService {
           endDate,
           query.product, // Passa o filtro de produto, se houver
         );
-      
-      return responseOk({ data: priceHistoryData });
 
+      return responseOk({ data: priceHistoryData });
     } catch (e) {
-      this.logger.error(`Erro ao buscar histórico de preços para o posto ${stationId}:`, e);
+      this.logger.error(
+        `Erro ao buscar histórico de preços para o posto ${stationId}:`,
+        e,
+      );
       return getErrorResponse(e);
     }
   }
@@ -122,27 +123,24 @@ export class GasStationService {
   }
 
   async findNearby(params: GetNearbyStationsSchema) {
-  try {
-    const parsed = getNearbyStationsSchema.parse(params);
-    
-    const key = this.cache.getCacheKey();
-    let cached = await this.cacheManager.get(key);
+    try {
+      const parsed = getNearbyStationsSchema.parse(params);
 
-    if (cached) {
-      return responseOk({ data: cached });
+      const key = this.cache.getCacheKey();
+      let cached = await this.cacheManager.get(key);
+
+      if (cached) {
+        return responseOk({ data: cached });
+      }
+
+      const result = await this.repo.nearby(parsed);
+
+      // await this.cacheManager.set(key, nearbyResult, seconds(600));
+
+      return responseOk({ data: result });
+    } catch (e) {
+      this.logger.error('Error finding nearby stations:', e);
+      return getErrorResponse(e);
     }
-
-
-     const result = await this.repo.nearby(parsed);
-    
-    // await this.cacheManager.set(key, nearbyResult, seconds(600));
-
-    return responseOk({ data: result });
-  } catch (e) {
-    this.logger.error('Error finding nearby stations:', e);
-    return getErrorResponse(e);
   }
-}
-
-  
 }

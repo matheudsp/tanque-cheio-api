@@ -1,0 +1,10 @@
+mkdir -p certbot/conf certbot/www
+
+docker compose down
+
+docker compose run --rm -p 80:80 --entrypoint "\
+  certbot certonly --standalone \
+  --email atendimentoaocliente.valedosol@gmail.com -d api.tanquecheio.site \
+  --text --agree-tos --no-eff-email" certbot
+
+docker compose up -d --build
